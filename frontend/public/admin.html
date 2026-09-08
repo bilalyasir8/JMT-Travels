@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>JMT Admin Operations Console</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/css/jmt-theme.css">
+  <style>
+    body { background: #0B132B; color: #E2E8F0; }
+    .admin-card { background: #1C2541; border: 1px solid #3A506B; border-radius: 12px; padding: 24px; margin-bottom: 24px; }
+    .table-admin { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 16px; }
+    .table-admin th { text-align: left; padding: 12px; border-bottom: 2px solid #3A506B; color: #5BC0BE; }
+    .table-admin td { padding: 12px; border-bottom: 1px solid #3A506B; }
+    .select-status { background: #0B132B; color: #FFFFFF; border: 1px solid #3A506B; padding: 6px 10px; border-radius: 6px; }
+  </style>
+</head>
+<body>
+
+  <!-- ADMIN LOGIN VIEW -->
+  <div id="admin-login-view" style="min-height: 100vh; display: grid; place-items: center; padding: 20px;">
+    <form id="admin-login-form" class="admin-card" style="max-width: 400px; width: 100%;">
+      <div style="display:flex; align-items:center; gap:12px; margin-bottom:20px;">
+        <img src="/assets/logo.png" alt="JMT" style="height:44px;">
+        <div>
+          <b style="font-size:18px; color:#FFFFFF; display:block;">JMT ADMIN</b>
+          <small style="color:#5BC0BE;">Staff Operations Workspace</small>
+        </div>
+      </div>
+      <h2 style="color:#FFFFFF; margin-bottom:8px;">Sign In to Staff Console</h2>
+      <p style="color:#94A3B8; font-size:13px; margin-bottom:24px;">Enter administrator credentials or staff key.</p>
+      
+      <div style="margin-bottom:16px;">
+        <label style="display:block; font-size:12px; margin-bottom:6px; font-weight:700;">Email Address / Staff Key</label>
+        <input type="text" id="admin-email" class="chat-input" style="width:100%; width:-webkit-fill-available;" required value="admin@jmttravels.com">
+      </div>
+      <div style="margin-bottom:24px;">
+        <label style="display:block; font-size:12px; margin-bottom:6px; font-weight:700;">Password</label>
+        <input type="password" id="admin-password" class="chat-input" style="width:100%; width:-webkit-fill-available;" required value="JMTAdmin2026!">
+      </div>
+      <button type="submit" class="btn btn-primary" style="width:100%; padding:12px;">Open Staff Console</button>
+      <div id="admin-login-error" style="margin-top:16px; color:#FF6B6B; font-size:13px; font-weight:700;"></div>
+    </form>
+  </div>
+
+  <!-- ADMIN WORKSPACE VIEW -->
+  <div id="admin-workspace-view" style="display:none; min-height: 100vh;">
+    <!-- TOP HEADER -->
+    <header style="background:#1C2541; padding:16px 32px; border-bottom:1px solid #3A506B; display:flex; justify-content:space-between; align-items:center;">
+      <div style="display:flex; align-items:center; gap:12px;">
+        <img src="/assets/logo.png" alt="JMT" style="height:36px;">
+        <strong style="font-size:18px; color:#FFFFFF;">JMT Admin Operations Console</strong>
+      </div>
+      <div>
+        <span id="admin-user-display" style="margin-right:16px; font-size:14px; color:#5BC0BE;">Staff User</span>
+        <button onclick="logoutAdmin()" class="btn btn-sm btn-outline" style="color:#FFFFFF; border-color:#3A506B;">Sign Out</button>
+      </div>
+    </header>
+
+    <!-- CONTENT BODY -->
+    <div class="shell" style="padding: 32px 20px;">
+      <!-- METRICS GRID -->
+      <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:16px; margin-bottom:32px;" id="admin-metrics">
+        <!-- Rendered dynamically -->
+      </div>
+
+      <!-- VISA APPLICATIONS SECTION -->
+      <div class="admin-card">
+        <h2 style="color:#FFFFFF; font-size:20px; margin-bottom:16px;">Visa Applications Management</h2>
+        <div id="admin-visas-table-container">Loading visa applications...</div>
+      </div>
+
+      <!-- TOUR BOOKINGS SECTION -->
+      <div class="admin-card">
+        <h2 style="color:#FFFFFF; font-size:20px; margin-bottom:16px;">Tour Reservations &amp; Bookings</h2>
+        <div id="admin-bookings-table-container">Loading bookings...</div>
+      </div>
+
+      <!-- PAYMENTS SECTION -->
+      <div class="admin-card">
+        <h2 style="color:#FFFFFF; font-size:20px; margin-bottom:16px;">Payment Transactions &amp; Audit Logs</h2>
+        <div id="admin-payments-table-container">Loading transactions...</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let adminToken = localStorage.getItem('jmt_token') || '';
+    const api = (url, method='GET', body=null) => fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + adminToken, 'x-admin-key': 'JMTAdmin2026!' },
+      body: body ? JSON.stringify(body) : null
+    }).then(r => r.json());
+
+    document.getElementById('admin-login-form').onsubmit = async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('admin-email').value;
+      const password = document.getElementById('admin-password').value;
+      const errDiv = document.getElementById('admin-login-error');
+
+      try {
+        const res = await api('/api/auth/login', 'POST', { email, password });
+        if (!res.success) throw new Error(res.error?.message || 'Login failed');
+        adminToken = res.token;
+        localStorage.setItem('jmt_token', res.token);
+        openAdminWorkspace(res.user);
+      } catch (err) {
+        errDiv.textContent = err.message;
+      }
+    };
+
+    function openAdminWorkspace(user) {
+      document.getElementById('admin-login-view').style.display = 'none';
+      document.getElementById('admin-workspace-view').style.display = 'block';
+      if (user) document.getElementById('admin-user-display').textContent = `${user.name} (${user.role})`;
+      loadAdminDashboard();
+    }
+
+    async function loadAdminDashboard() {
+      try {
+        const overview = await api('/api/admin/overview');
+        if (overview.metrics) {
+          const m = overview.metrics;
+          document.getElementById('admin-metrics').innerHTML = `
+            <div class="admin-card" style="margin:0; padding:16px;">
+              <small style="color:#94A3B8;">Customers</small>
+              <h3 style="font-size:28px; color:#5BC0BE; margin-top:4px;">${m.customers}</h3>
+            </div>
+            <div class="admin-card" style="margin:0; padding:16px;">
+              <small style="color:#94A3B8;">Visa Applications</small>
+              <h3 style="font-size:28px; color:#5BC0BE; margin-top:4px;">${m.visaApplications}</h3>
+            </div>
+            <div class="admin-card" style="margin:0; padding:16px;">
+              <small style="color:#94A3B8;">Open Visas</small>
+              <h3 style="font-size:28px; color:#FFD166; margin-top:4px;">${m.openVisaApplications}</h3>
+            </div>
+            <div class="admin-card" style="margin:0; padding:16px;">
+              <small style="color:#94A3B8;">Reservations</small>
+              <h3 style="font-size:28px; color:#5BC0BE; margin-top:4px;">${m.reservations}</h3>
+            </div>
+          `;
+        }
+
+        const [visasRes, bookingsRes, paymentsRes] = await Promise.all([
+          api('/api/admin/visa-applications'),
+          api('/api/admin/bookings'),
+          api('/api/admin/payments').catch(() => ({ payments: [] }))
+        ]);
+
+        // Visas table
+        const visas = visasRes.applications || [];
+        document.getElementById('admin-visas-table-container').innerHTML = visas.length === 0 ? '<p>No applications.</p>' : `
+          <table class="table-admin">
+            <thead>
+              <tr><th>Reference</th><th>Applicant</th><th>Destination</th><th>Status</th><th>Actions</th></tr>
+            </thead>
+            <tbody>
+              ${visas.map(v => `
+                <tr>
+                  <td><b>${v.applicationNumber || v.id}</b></td>
+                  <td>${v.fullName} (${v.email})</td>
+                  <td>${v.destination} (${v.visaType})</td>
+                  <td>
+                    <select class="select-status" onchange="updateVisaStatus('${v.id}', this.value)">
+                      ${['DRAFT','SUBMITTED','PAYMENT_PENDING','PAYMENT_COMPLETED','DOCUMENT_REVIEW','PROCESSING','APPROVED','REJECTED','CANCELLED'].map(s => `
+                        <option value="${s}" ${v.status === s ? 'selected' : ''}>${s}</option>
+                      `).join('')}
+                    </select>
+                  </td>
+                  <td><button onclick="alert('Viewing application timeline for ${v.applicationNumber}')" class="btn btn-sm btn-outline">View Details</button></td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        `;
+
+        // Bookings table
+        const bookings = bookingsRes.bookings || [];
+        document.getElementById('admin-bookings-table-container').innerHTML = bookings.length === 0 ? '<p>No bookings.</p>' : `
+          <table class="table-admin">
+            <thead>
+              <tr><th>Reference</th><th>Lead Traveler</th><th>Package</th><th>Amount</th><th>Status</th></tr>
+            </thead>
+            <tbody>
+              ${bookings.map(b => `
+                <tr>
+                  <td><b>${b.bookingNumber || b.id}</b></td>
+                  <td>${b.travellerName} (${b.email})</td>
+                  <td>${b.packageTitle}</td>
+                  <td>${b.currency} ${b.amount}</td>
+                  <td><span class="badge badge-primary">${b.status}</span></td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        `;
+
+        // Payments table
+        const payments = paymentsRes.payments || [];
+        document.getElementById('admin-payments-table-container').innerHTML = payments.length === 0 ? '<p>No payment records.</p>' : `
+          <table class="table-admin">
+            <thead>
+              <tr><th>Transaction ID</th><th>Provider</th><th>Amount</th><th>Status</th></tr>
+            </thead>
+            <tbody>
+              ${payments.map(p => `
+                <tr>
+                  <td>${p.providerOrderId}</td>
+                  <td>${p.provider}</td>
+                  <td>${p.currency} ${p.amount}</td>
+                  <td><span class="badge badge-success">${p.status}</span></td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        `;
+
+      } catch (err) {
+        console.error('Failed to load admin dashboard:', err);
+      }
+    }
+
+    async function updateVisaStatus(id, status) {
+      try {
+        await api(`/api/visa/applications/${id}/status`, 'PATCH', { status });
+        alert('Visa status updated to ' + status);
+        loadAdminDashboard();
+      } catch (err) {
+        alert('Failed to update status: ' + err.message);
+      }
+    }
+
+    function logoutAdmin() {
+      localStorage.removeItem('jmt_token');
+      location.reload();
+    }
+
+    if (adminToken) {
+      api('/api/auth/me').then(res => {
+        if (res.user && ['STAFF','ADMIN','SUPER_ADMIN'].includes(res.user.role)) {
+          openAdminWorkspace(res.user);
+        }
+      }).catch(() => {});
+    }
+  </script>
+</body>
+</html>

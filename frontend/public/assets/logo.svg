@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="500" height="500">
+  <defs>
+    <linearGradient id="greenGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4EAE4B" />
+      <stop offset="100%" stop-color="#1F6B35" />
+    </linearGradient>
+    <linearGradient id="navyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#33328C" />
+      <stop offset="100%" stop-color="#242265" />
+    </linearGradient>
+  </defs>
+
+  <!-- Circular background -->
+  <circle cx="250" cy="250" r="240" fill="#FAF8F4" stroke="#33328C" stroke-width="6"/>
+  <circle cx="250" cy="250" r="230" fill="none" stroke="#4EAE4B" stroke-width="2" stroke-dasharray="8 6"/>
+
+  <!-- Dynamic Flying Arc / Wing Motif -->
+  <g transform="translate(0, -20)">
+    <!-- Outer green swoosh -->
+    <path d="M 110,230 C 130,120 280,100 390,150 C 330,140 220,150 150,220 C 130,240 120,245 110,230 Z" fill="url(#greenGrad)" opacity="0.95"/>
+    
+    <!-- Inner dynamic wing sweep -->
+    <path d="M 130,250 C 190,160 320,140 400,190 C 330,180 230,200 170,260 C 150,270 140,265 130,250 Z" fill="url(#navyGrad)" opacity="0.9"/>
+    
+    <!-- Modern stylized aircraft icon silhouette taking off -->
+    <path d="M 370,145 L 395,138 L 388,155 L 398,153 L 405,160 L 388,162 L 378,172 L 374,170 L 377,162 L 365,163 L 360,167 L 357,166 L 360,158 Z" fill="#C9962E" transform="rotate(-10 380 150)"/>
+  </g>
+
+  <!-- JMT Bold Brand Typography -->
+  <text x="250" y="300" font-family="'Manrope', 'Segoe UI', Arial, sans-serif" font-size="76" font-weight="900" fill="#33328C" text-anchor="middle" letter-spacing="4">JMT</text>
+  
+  <!-- TRAVEL & TOURISM Subtitle -->
+  <text x="250" y="338" font-family="'Manrope', 'Segoe UI', Arial, sans-serif" font-size="18" font-weight="800" fill="#4EAE4B" text-anchor="middle" letter-spacing="7">TRAVEL &amp; TOURISM</text>
+  
+  <!-- Arabic Subtitle: للسفر والسياحة -->
+  <text x="250" y="375" font-family="'Traditional Arabic', 'Segoe UI', Tahoma, sans-serif" font-size="22" font-weight="bold" fill="#1F6B35" text-anchor="middle">للسفر والسياحة</text>
+  
+  <!-- Est 20+ Years Oman Stamp -->
+  <circle cx="250" cy="412" r="3" fill="#C9962E"/>
+  <text x="250" y="416" font-family="'JetBrains Mono', monospace, sans-serif" font-size="11" font-weight="700" fill="#17171F" text-anchor="middle" letter-spacing="2">OMAN · EST. 2004</text>
+</svg>

@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JMT TRAVELS | Visa Services &amp; Tourism | Muscat, Oman</title>
+  <meta name="description" content="JMT TRAVELS — 20+ years of trusted visa clearing, flight ticketing, Umrah, and holiday packages across Oman and the GCC.">
+  <meta name="keywords" content="JMT Travels, Oman visa, GCC visa, Salalah tours, Dubai holiday packages, Muscat travel agency, Umrah packages">
+
+  <!-- Open Graph & SEO -->
+  <meta property="og:title" content="JMT TRAVELS — Muscat, Oman">
+  <meta property="og:description" content="Visa Services • Holiday Packages • Travel Assistance">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="/assets/logo.png">
+
+  <!-- Fonts & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/png" href="/assets/logo.png">
+
+  <!-- Centralized Design System CSS -->
+  <link rel="stylesheet" href="/assets/css/jmt-theme.css">
+
+  <!-- Structured Data JSON-LD -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TravelAgency",
+    "name": "JMT TRAVELS",
+    "image": "https://jmttravels.com/assets/logo.png",
+    "telephone": "+96871132424",
+    "email": "info@jmttravels.com",
+    "address": {
+      "@type": "PostalAddress",
+      "streetAddress": "near Mazda R/A, next to Yahar Restaurant",
+      "addressLocality": "Muscat",
+      "postalCode": "512",
+      "addressCountry": "OM"
+    }
+  }
+  </script>
+</head>
+<body>
+
+  <!-- TOP INFORMATION BAR -->
+  <div class="top-bar">
+    <div class="shell">
+      <span>Trusted Oman travel, visa &amp; Umrah specialists for over 20+ years</span>
+      <div>
+        <a href="tel:+96871132424">📞 +968 7113 2424</a> &nbsp;·&nbsp;
+        <a href="https://wa.me/96897608999" target="_blank">💬 WhatsApp</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN HEADER NAVIGATION -->
+  <header class="header-nav">
+    <div class="shell">
+      <a class="brand-logo" href="/" onclick="event.preventDefault(); navigate('/')">
+        <img src="/assets/logo.png" alt="JMT TRAVELS Logo">
+        <span class="brand-title">
+          <b>JMT TRAVELS</b>
+          <small>DISCOVER · BOOK · TRAVEL</small>
+        </span>
+      </a>
+
+      <ul class="nav-links">
+        <li><a href="/" onclick="event.preventDefault(); navigate('/')">Home</a></li>
+        <li><a href="/visa" onclick="event.preventDefault(); navigate('/visa')">Visa Services</a></li>
+        <li><a href="/tourism" onclick="event.preventDefault(); navigate('/tourism')">Tourism Packages</a></li>
+        <li><a href="/contact" onclick="event.preventDefault(); navigate('/contact')">Contact</a></li>
+      </ul>
+
+      <div class="nav-actions">
+        <button class="lang-toggle" onclick="toggleLanguage()">English | العربية</button>
+        <div id="nav-auth">
+          <a href="/login" onclick="event.preventDefault(); navigate('/login')" class="btn btn-outline">Login</a>
+          <a href="/register" onclick="event.preventDefault(); navigate('/register')" class="btn">Register</a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN VIEW CONTAINER (SPA ROUTED) -->
+  <main id="view-container">
+    <!-- Rendered dynamically by app.js -->
+  </main>
+
+  <!-- FLOATING CHATBOT WIDGET -->
+  <button class="chatbot-trigger" id="chat-trigger">💬 JMT Assistant</button>
+  
+  <div class="chatbot-drawer" id="chat-drawer">
+    <div class="chat-header">
+      <div>
+        <strong style="font-size:16px;">JMT Assistant</strong>
+        <div style="font-size:11px; opacity:0.8;">Typically replies instantly</div>
+      </div>
+      <button id="chat-close" style="background:none; border:0; color:#fff; font-size:20px; cursor:pointer;">×</button>
+    </div>
+    <div class="chat-body" id="chat-body-content">
+      <div class="chat-bubble bot">
+        Hello! 👋 I am JMT Assistant. I can help you with visa rules, holiday packages, flight info, or check your booking status.
+      </div>
+    </div>
+    <div class="chat-input">
+      <input type="text" id="chat-input-field" placeholder="Type a message or question...">
+      <button id="chat-send" class="btn btn-sm" style="margin-left:8px;">Send</button>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="footer-main">
+    <div class="shell">
+      <div class="footer-grid">
+        <div class="footer-col">
+          <img src="/assets/logo.png" alt="JMT TRAVELS" style="height:44px; margin-bottom:16px;">
+          <p style="font-size:14px; color:#CBD5E1; line-height:1.7;">Your trusted travel team in Oman for digital visas, flight ticketing, Umrah arrangements, and memorable holiday packages.</p>
+        </div>
+        <div class="footer-col">
+          <h4>Services</h4>
+          <ul>
+            <li><a href="/visa" onclick="event.preventDefault(); navigate('/visa')">Visa Services</a></li>
+            <li><a href="/tourism" onclick="event.preventDefault(); navigate('/tourism')">Tourism Packages</a></li>
+            <li><a href="/contact" onclick="event.preventDefault(); navigate('/contact')">Flight Assistance</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Legal &amp; Support</h4>
+          <ul>
+            <li><a href="/privacy" onclick="event.preventDefault(); navigate('/privacy')">Privacy Policy</a></li>
+            <li><a href="/terms" onclick="event.preventDefault(); navigate('/terms')">Terms &amp; Conditions</a></li>
+            <li><a href="/refund-policy" onclick="event.preventDefault(); navigate('/refund-policy')">Refund Policy</a></li>
+            <li><a href="/cancellation-policy" onclick="event.preventDefault(); navigate('/cancellation-policy')">Cancellation Policy</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Office</h4>
+          <p style="font-size:13px; color:#CBD5E1; margin-bottom:8px;">near Mazda R/A, next to Yahar Restaurant, 512, Oman</p>
+          <p style="font-size:13px; color:#CBD5E1;">Call: +968 7113 2424</p>
+          <a href="/admin" style="display:inline-block; margin-top:16px; font-size:11px; color:#94A3B8;">Staff Console</a>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        © <span id="footer-year"></span> JMT TRAVELS. All rights reserved.
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    document.getElementById('footer-year').textContent = new Date().getFullYear();
+    function toggleLanguage() {
+      const current = localStorage.getItem('jmt_lang') || 'en';
+      const next = current === 'en' ? 'ar' : 'en';
+      localStorage.setItem('jmt_lang', next);
+      window.location.reload();
+    }
+  </script>
+  <!-- Client Application Script -->
+  <script src="/assets/js/app.js"></script>
+</body>
+</html>
