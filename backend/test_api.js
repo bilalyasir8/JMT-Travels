@@ -511,25 +511,211 @@ async function runTestSuite() {
     assert.strictEqual(refundRes.body.refund.status, 'REFUND_REQUESTED');
     console.log('  ✅ Staff refund request created cleanly');
 
-    // 25. Payment & Webhook Regression Test
-    console.log('\n[25] Testing Payment & Webhook Regression...');
-    const orderRes = await request('/api/payments/create-order', {
+    // 25. Task #5: Payment Order Creation & IDOR Isolation Test
+    console.log('\n[25] Testing Payment Creation & IDOR Isolation...');
+    // Create new test booking for Customer 1
+    const testBookRes = await request('/api/tourism/bookings', {
       method: 'POST',
       headers: { Authorization: `Bearer ${customer1Token}` },
-      body: { bookingId: bookingRef, amount: 300, currency: 'OMR' }
+      body: { packageId: newPkgId, travellerName: 'Customer One', email: email1, phone: '+96891111111', travellers: 2 }
     });
-    assert.strictEqual(orderRes.status, 200);
+    assert.strictEqual(testBookRes.status, 201);
+    const payableBookingRef = testBookRes.body.reference;
+    const payableBookingId = testBookRes.body.booking.id;
 
-    const webhookRes = await request('/api/payments/webhook', {
+    // Customer 2 attempting to pay Customer 1's booking (IDOR Attack!)
+    const idorPayRes = await request('/api/payments/create-order', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${customer2Token}` },
+      body: { bookingId: payableBookingId }
+    });
+    assert.strictEqual(idorPayRes.status, 403);
+    console.log('  ✅ IDOR Check PASSED: Customer 2 blocked from creating payment for Customer 1\'s booking (403)');
+
+    // Customer 1 paying own booking
+    const validPayOrder = await request('/api/payments/create-order', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${customer1Token}` },
+      body: { bookingId: payableBookingId }
+    });
+    assert.strictEqual(validPayOrder.status, 201);
+    assert.strictEqual(validPayOrder.body.amount, 500); // 250 * 2 = 500 OMR! Authoritative calculation!
+    assert.ok(validPayOrder.body.paymentNumber.startsWith('JMT-P-'));
+    const paymentRecordId = validPayOrder.body.payment.id;
+    const providerOrdId = validPayOrder.body.providerOrderId;
+    console.log(`  ✅ Payment order created cleanly: ${validPayOrder.body.paymentNumber} (Authoritative Total: ${validPayOrder.body.amount} OMR)`);
+
+    // 26. Task #5: Amount & Currency Security Test
+    console.log('\n[26] Testing Amount & Currency Security (Client Override Rejection)...');
+    const tamperAmountPayOrder = await request('/api/payments/create-order', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${customer1Token}` },
+      body: { bookingId: payableBookingId, amount: 1.000, currency: 'USD' } // Client trying to pay 1 USD!
+    });
+    assert.strictEqual(tamperAmountPayOrder.status, 201);
+    assert.strictEqual(tamperAmountPayOrder.body.amount, 500); // Must strictly remain 500 OMR!
+    assert.strictEqual(tamperAmountPayOrder.body.currency, 'OMR');
+    console.log('  ✅ Amount & currency security PASSED: Server enforced 500 OMR (ignored 1 USD claim)');
+
+    // 27. Task #5: Payment Creation Idempotency Test
+    console.log('\n[27] Testing Payment Creation Idempotency...');
+    const payIdemKey = `pay_idem_${Date.now()}`;
+    const firstPayReq = await request('/api/payments/create-order', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${customer1Token}` },
+      body: { bookingId: payableBookingId, idempotencyKey: payIdemKey }
+    });
+    assert.strictEqual(firstPayReq.status, 201);
+
+    const replayPayReq = await request('/api/payments/create-order', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${customer1Token}` },
+      body: { bookingId: payableBookingId, idempotencyKey: payIdemKey }
+    });
+    assert.strictEqual(replayPayReq.status, 200);
+    assert.strictEqual(replayPayReq.body.isDuplicate, true);
+    assert.strictEqual(replayPayReq.body.paymentNumber, firstPayReq.body.paymentNumber);
+    console.log('  ✅ Payment creation idempotency PASSED: Replay returned existing order');
+
+    // 28. Task #5: Payment Detail View & IDOR Protection Test
+    console.log('\n[28] Testing Payment Detail View & IDOR Protection...');
+    const ownPayDetail = await request(`/api/payments/${paymentRecordId}`, {
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(ownPayDetail.status, 200);
+
+    const idorPayDetail = await request(`/api/payments/${paymentRecordId}`, {
+      headers: { Authorization: `Bearer ${customer2Token}` } // Customer 2 viewing Customer 1's payment!
+    });
+    assert.strictEqual(idorPayDetail.status, 403);
+    console.log('  ✅ Payment detail IDOR check PASSED: Customer 2 blocked from viewing Customer 1\'s payment (403)');
+
+    // 29. Task #5: Webhook Signature Verification Test
+    console.log('\n[29] Testing Webhook Signature Verification...');
+    // Set NODE_ENV to production temporarily to test signature rejection
+    const origEnv = process.env.NODE_ENV;
+    process.env.NODE_ENV = 'production';
+    const fakeSigWebhook = await request('/api/payments/webhook', {
+      method: 'POST',
+      headers: { 'x-signature': 'invalid-hacker-signature' },
+      body: { providerOrderId: providerOrdId, status: 'SUCCESS' }
+    });
+    assert.strictEqual(fakeSigWebhook.status, 401);
+    process.env.NODE_ENV = origEnv;
+    console.log('  ✅ Webhook signature security PASSED: Fraudulent webhook rejected (401)');
+
+    // 30. Task #5: Webhook Amount Reconciliation Test
+    console.log('\n[30] Testing Webhook Amount Reconciliation...');
+    const amountMismatchWebhook = await request('/api/payments/webhook', {
       method: 'POST',
       headers: { 'x-signature': 'sandbox' },
-      body: { providerOrderId: orderRes.body.providerOrderId, providerPaymentId: `pay_${Date.now()}`, status: 'SUCCESS', idempotencyKey: `evt_${Date.now()}` }
+      body: { providerOrderId: providerOrdId, status: 'SUCCESS', amountMinor: 1000, currency: 'OMR' } // Claims 1 OMR!
     });
-    assert.strictEqual(webhookRes.status, 200);
-    console.log('  ✅ Payment order & webhook signed completion regression test PASSED');
+    assert.strictEqual(amountMismatchWebhook.status, 400);
+    assert.ok(amountMismatchWebhook.body.error.message.includes('mismatch'));
+    console.log('  ✅ Webhook amount mismatch rejected (400)');
 
-    // 26. Production DB Rule Regression Test
-    console.log('\n[26] Testing Production DB Fallback Blocking Regression...');
+    // 31. Task #5: Webhook Processing & Booking Status Update Test
+    console.log('\n[31] Testing Webhook Success Execution & Automatic Booking Confirmation...');
+    const webhookEvtId = `evt_success_${Date.now()}`;
+    const validWebhook = await request('/api/payments/webhook', {
+      method: 'POST',
+      headers: { 'x-signature': 'sandbox' },
+      body: {
+        providerOrderId: providerOrdId,
+        providerPaymentId: `pay_gateway_${Date.now()}`,
+        status: 'SUCCESS',
+        amountMinor: 500000, // 500 OMR in minor units
+        currency: 'OMR',
+        idempotencyKey: webhookEvtId
+      }
+    });
+    assert.strictEqual(validWebhook.status, 200);
+
+    // Verify payment status changed to PAID
+    const paidPayDetail = await request(`/api/payments/${paymentRecordId}`, {
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(paidPayDetail.body.payment.status, 'PAID');
+
+    // Verify linked booking status changed to CONFIRMED
+    const confirmedBooking = await request(`/api/tourism/bookings/${payableBookingRef}`, {
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(confirmedBooking.body.booking.status, 'CONFIRMED');
+    console.log('  ✅ Webhook success PASSED: Payment status updated to PAID & Booking automatically CONFIRMED');
+
+    // 32. Task #5: Webhook Replay & Duplicate Event Defense Test
+    console.log('\n[32] Testing Webhook Replay & Duplicate Event Defense...');
+    const duplicateWebhook = await request('/api/payments/webhook', {
+      method: 'POST',
+      headers: { 'x-signature': 'sandbox' },
+      body: {
+        providerOrderId: providerOrdId,
+        status: 'SUCCESS',
+        amountMinor: 500000,
+        currency: 'OMR',
+        idempotencyKey: webhookEvtId
+      }
+    });
+    assert.strictEqual(duplicateWebhook.status, 200);
+    assert.strictEqual(duplicateWebhook.body.duplicate, true);
+    console.log('  ✅ Webhook replay defense PASSED: Duplicate event handled idempotently');
+
+    // 33. Task #5: Partial & Full Refund Workflow Test
+    console.log('\n[33] Testing Partial & Full Refund Workflow...');
+    // A. Partial Refund 200 OMR
+    const partialRefundRes = await request(`/api/payments/${paymentRecordId}/refund`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${adminToken}` },
+      body: { amount: 200, reason: 'Partial refund requested.' }
+    });
+    assert.strictEqual(partialRefundRes.status, 201);
+
+    const checkPartialPay = await request(`/api/payments/${paymentRecordId}`, {
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(checkPartialPay.body.payment.status, 'PARTIALLY_REFUNDED');
+    assert.strictEqual(checkPartialPay.body.payment.refundedAmountMinor, 200000);
+    console.log('  ✅ Partial refund (200 OMR) PASSED: Payment status updated to PARTIALLY_REFUNDED');
+
+    // B. Excess Refund Rejection (Attempting 400 OMR when only 300 OMR remains!)
+    const excessRefundRes = await request(`/api/payments/${paymentRecordId}/refund`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${adminToken}` },
+      body: { amount: 400, reason: 'Excessive refund attempt' }
+    });
+    assert.strictEqual(excessRefundRes.status, 400);
+    assert.ok(excessRefundRes.body.error.message.includes('exceeds remaining refundable balance'));
+    console.log('  ✅ Excess refund rejected (400): Blocked attempt exceeding remaining 300 OMR balance');
+
+    // C. Remaining Full Refund (300 OMR)
+    const fullRefundRes = await request(`/api/payments/${paymentRecordId}/refund`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${adminToken}` },
+      body: { amount: 300, reason: 'Remaining refund processed.' }
+    });
+    assert.strictEqual(fullRefundRes.status, 201);
+
+    const checkFullPay = await request(`/api/payments/${paymentRecordId}`, {
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(checkFullPay.body.payment.status, 'REFUNDED');
+    assert.strictEqual(checkFullPay.body.payment.refundedAmountMinor, 500000);
+    console.log('  ✅ Remaining refund (300 OMR) PASSED: Payment status updated to REFUNDED');
+
+    // 34. Task #5: Customer Refund RBAC Protection Test
+    console.log('\n[34] Testing Customer Refund RBAC Protection...');
+    const custRefundAttempt = await request(`/api/payments/${paymentRecordId}/refund`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${customer1Token}` },
+      body: { amount: 50, reason: 'Customer refund attempt' }
+    });
+    assert.strictEqual(custRefundAttempt.status, 403);
+    console.log('  ✅ Customer refund attempt blocked (403)');
+
+    // 35. Task #5: Production DB Fallback Blocking Regression Test
+    console.log('\n[35] Testing Production DB Fallback Blocking Regression...');
     process.env.DATABASE_MODE = 'mongodb';
     const readyProdRes = await request('/ready');
     assert.strictEqual(readyProdRes.status, 503);
@@ -537,7 +723,7 @@ async function runTestSuite() {
     console.log('  ✅ Production database readiness check PASSED (503 Service Unavailable when DB is offline)');
 
     console.log('\n================================================================');
-    console.log('🎉 ALL AUTOMATED TESTS PASSED SUCCESSFULLY! (26/26)');
+    console.log('🎉 ALL AUTOMATED TESTS PASSED SUCCESSFULLY! (35/35)');
     console.log('================================================================');
   } catch (err) {
     console.error('\n❌ Test Failure Details:', err);

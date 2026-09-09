@@ -988,31 +988,80 @@ app.post('/api/tourism/bookings/:id/refund', authenticate, authorize('STAFF', 'A
   }
 });
 
-// --- 6. PAYMENTS & WEBHOOKS ---
-app.post('/api/payments/create-order', authenticate, async (req, res) => {
+// --- 6. PAYMENTS & WEBHOOKS (TASK #5 ENHANCED) ---
+
+// CREATE PAYMENT ORDER (AUTHORITATIVE AMOUNT, IDOR PROTECTION, IDEMPOTENCY)
+app.post('/api/payments/create-order', authenticate, submissionLimiter, async (req, res) => {
   try {
-    const { bookingId, visaApplicationId, amount, currency } = req.body || {};
+    const { bookingId, visaApplicationId, idempotencyKey } = req.body || {};
     const result = await paymentService.createPaymentOrder({
       userId: req.user.id,
       bookingId,
       visaApplicationId,
-      amount,
-      currency: currency || 'OMR'
+      idempotencyKey,
+      actorUser: req.user
     });
-    res.json(result);
+
+    await logAudit(req, `Created payment order ${result.paymentNumber}`, 'PAYMENT', result.payment ? result.payment.id : result.paymentNumber);
+
+    res.status(result.isDuplicate ? 200 : 201).json(result);
   } catch (err) {
-    res.status(400).json({ success: false, error: { code: 'PAYMENT_ERROR', message: err.message } });
+    const isForbidden = err.message.includes('Permission Denied');
+    const isValidation = err.message.includes('Payment Error') || err.message.includes('Validation Error');
+    const status = isForbidden ? 403 : (isValidation ? 400 : 500);
+    res.status(status).json({ success: false, error: { code: isForbidden ? 'FORBIDDEN' : (isValidation ? 'VALIDATION_ERROR' : 'SERVER_ERROR'), message: err.message } });
   }
 });
 
+// GET PAYMENT DETAIL (IDOR RESTRICTED)
+app.get('/api/payments/:id', authenticate, async (req, res) => {
+  try {
+    const payment = await db.payments.findById(req.params.id) || await db.payments.findOne({ paymentNumber: req.params.id });
+    if (!payment) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Payment record not found.' } });
+
+    const isStaff = ['STAFF', 'ADMIN', 'SUPER_ADMIN'].includes(req.user.role);
+    if (!isStaff && payment.userId !== req.user.id) {
+      await logAudit(req, 'SUSPICIOUS_IDOR_PAYMENT_ATTEMPT', 'PAYMENT', req.params.id);
+      return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Access denied: You do not own this payment record.' } });
+    }
+
+    res.json({ success: true, payment: paymentService.sanitizePayment(payment, req.user.role) });
+  } catch (err) {
+    res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: err.message } });
+  }
+});
+
+// SECURE PROVIDER WEBHOOK LISTENER (SIGNATURE VERIFICATION, REPLAY PROTECTION, AMOUNT RECONCILIATION)
 app.post('/api/payments/webhook', async (req, res) => {
   try {
-    const signature = req.get('x-signature') || req.get('x-razorpay-signature') || 'sandbox';
+    const signature = req.get('x-signature') || req.get('x-paytabs-signature') || req.get('x-thawani-signature') || req.get('x-razorpay-signature') || 'sandbox';
     const rawBody = JSON.stringify(req.body);
     const result = await paymentService.handleWebhook(rawBody, signature, req.body);
     res.json(result);
   } catch (err) {
-    res.status(400).json({ success: false, error: { code: 'WEBHOOK_FAILED', message: err.message } });
+    const isSecurity = err.message.includes('Security Violation') || err.message.includes('signature');
+    const isMismatch = err.message.includes('mismatch');
+    const status = isSecurity ? 401 : (isMismatch ? 400 : 400);
+    res.status(status).json({ success: false, error: { code: isSecurity ? 'UNAUTHORIZED_SIGNATURE' : 'WEBHOOK_FAILED', message: err.message } });
+  }
+});
+
+// PROCESS REFUND WORKFLOW (STAFF/ADMIN ONLY)
+app.post('/api/payments/:id/refund', authenticate, authorize('STAFF', 'ADMIN', 'SUPER_ADMIN'), async (req, res) => {
+  try {
+    const { amount, reason, idempotencyKey } = req.body || {};
+    const result = await paymentService.processRefund({
+      paymentId: req.params.id,
+      amount,
+      reason,
+      idempotencyKey,
+      actorUser: req.user
+    });
+
+    await logAudit(req, `Processed refund for payment ${req.params.id}`, 'REFUND', result.refund ? result.refund.id : req.params.id);
+    res.status(result.isDuplicate ? 200 : 201).json(result);
+  } catch (err) {
+    res.status(400).json({ success: false, error: { code: 'REFUND_ERROR', message: err.message } });
   }
 });
 
