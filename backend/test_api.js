@@ -348,26 +348,175 @@ async function runTestSuite() {
     }
     console.log('  ✅ Path traversal attempt (../../etc/passwd) safely blocked');
 
-    // 15. Tourism & Booking Regression Test
-    console.log('\n[15] Testing Tourism & Booking Regression...');
-    const pkgs = await request('/api/tourism/packages');
-    assert.strictEqual(pkgs.status, 200);
+    // 15. Task #4: Tourism Destinations, Categories & Whitelisted Sorting / Pagination Test
+    console.log('\n[15] Testing Destinations, Categories & Whitelisted Sorting / Pagination...');
+    const dests = await request('/api/tourism/destinations');
+    assert.strictEqual(dests.status, 200);
 
-    const bookingRes = await request('/api/tourism/bookings', {
+    const cats = await request('/api/tourism/categories');
+    assert.strictEqual(cats.status, 200);
+
+    const paginatedPkgs = await request('/api/tourism/packages?sortBy=priceMinor&sortOrder=asc&limit=5');
+    assert.strictEqual(paginatedPkgs.status, 200);
+    assert.ok(paginatedPkgs.body.packages);
+    assert.ok(paginatedPkgs.body.pagination);
+    console.log('  ✅ Destinations, Categories & Whitelisted Sorting/Pagination PASSED');
+
+    // 16. Task #4: Package CRUD Security (Customer Blocked, Admin Allowed)
+    console.log('\n[16] Testing Package CRUD Security & Authorization...');
+    const custPkgCreate = await request('/api/tourism/packages', {
       method: 'POST',
       headers: { Authorization: `Bearer ${customer1Token}` },
-      body: { packageId: pkgs.body.packages[0].id, travellerName: 'Customer One', email: email1, phone: '+96891111111', travellers: 2 }
+      body: { title: 'Unauthorized Package', destination: 'Oman', category: 'Culture', price: 100 }
     });
-    assert.strictEqual(bookingRes.status, 201);
-    bookingRef = bookingRes.body.reference;
-    console.log(`  ✅ Booking created cleanly: ${bookingRef}`);
+    assert.strictEqual(custPkgCreate.status, 403);
+    console.log('  ✅ Customer blocked from creating package (403)');
 
-    // 16. Payment & Webhook Regression Test
-    console.log('\n[16] Testing Payment & Webhook Regression...');
+    const adminPkgCreate = await request('/api/tourism/packages', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${adminToken}` },
+      body: {
+        title: `Salalah Monsoon Special ${Date.now()}`,
+        destination: 'Salalah',
+        category: 'Nature',
+        priceMinor: 150000, // 150 OMR
+        capacity: 5,
+        duration: '4 Days',
+        summary: 'Explore Khareef monsoon in Salalah',
+        inclusions: ['Hotel', 'Airport Transfer', 'Guided Tour']
+      }
+    });
+    assert.strictEqual(adminPkgCreate.status, 201);
+    const newPkgId = adminPkgCreate.body.package.id;
+    console.log(`  ✅ Admin created new tour package: ${adminPkgCreate.body.package.title} (ID: ${newPkgId})`);
+
+    // 17. Task #4: Server-Calculated Pricing & Client Override Rejection Test
+    console.log('\n[17] Testing Server-Authoritative Pricing Calculation...');
+    const tamperPriceBooking = await request('/api/tourism/bookings', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${customer1Token}` },
+      body: {
+        packageId: newPkgId,
+        travellerName: 'Customer One',
+        email: email1,
+        phone: '+96891111111',
+        travellers: 2,
+        amount: 1.000 // Tampered client price! Should be ignored and calculated as 150 * 2 = 300 OMR
+      }
+    });
+    assert.strictEqual(tamperPriceBooking.status, 201);
+    assert.strictEqual(tamperPriceBooking.body.amount, 300); // 150 * 2 = 300 OMR!
+    bookingRef = tamperPriceBooking.body.reference;
+    const bookingId1 = tamperPriceBooking.body.booking.id;
+    console.log(`  ✅ Client price tampering blocked: Server computed 300 OMR (ignored 1 OMR claim)`);
+
+    // 18. Task #4: Idempotency & Duplicate Request Prevention Test
+    console.log('\n[18] Testing Idempotency & Duplicate Replay Protection...');
+    const idemKey = `idem_${Date.now()}`;
+    const firstBooking = await request('/api/tourism/bookings', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${customer1Token}` },
+      body: { packageId: newPkgId, travellerName: 'Customer One', email: email1, phone: '+96891111111', travellers: 1, idempotencyKey: idemKey }
+    });
+    assert.strictEqual(firstBooking.status, 201);
+
+    const replayBooking = await request('/api/tourism/bookings', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${customer1Token}` },
+      body: { packageId: newPkgId, travellerName: 'Customer One', email: email1, phone: '+96891111111', travellers: 1, idempotencyKey: idemKey }
+    });
+    assert.strictEqual(replayBooking.status, 200);
+    assert.strictEqual(replayBooking.body.reference, firstBooking.body.reference);
+    assert.strictEqual(replayBooking.body.isDuplicate, true);
+    console.log('  ✅ Idempotency check PASSED: Duplicate request returned existing booking');
+
+    // 19. Task #4: Capacity & Oversale Protection Test
+    console.log('\n[19] Testing Capacity & Oversale Protection...');
+    // Currently booked in newPkgId: 2 (from test 17) + 1 (from test 18) = 3 seats out of 5!
+    const oversaleBooking = await request('/api/tourism/bookings', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${customer2Token}` },
+      body: { packageId: newPkgId, travellerName: 'Customer Two', email: email2, phone: '+96892222222', travellers: 3 } // Needs 3, only 2 available!
+    });
+    assert.strictEqual(oversaleBooking.status, 400);
+    assert.ok(oversaleBooking.body.error.message.includes('Insufficient Capacity'));
+    console.log('  ✅ Capacity oversale blocked: Request for 3 seats rejected (only 2 left out of 5)');
+
+    // 20. Task #4: IDOR Protection on Tour Bookings Test
+    console.log('\n[20] Testing Customer Booking IDOR Isolation...');
+    const ownBookingGet = await request(`/api/tourism/bookings/${bookingRef}`, {
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(ownBookingGet.status, 200);
+
+    const idorBookingGet = await request(`/api/tourism/bookings/${bookingRef}`, {
+      headers: { Authorization: `Bearer ${customer2Token}` } // Customer 2 attempting to view Customer 1's booking!
+    });
+    assert.strictEqual(idorBookingGet.status, 403);
+    console.log('  ✅ IDOR Check PASSED: Customer 2 blocked from accessing Customer 1\'s booking (403)');
+
+    // 21. Task #4: Server-Controlled Booking State Transition Matrix & Legal Status Jump Test
+    console.log('\n[21] Testing Booking Status Transition Matrix...');
+    const illegalCustStatusJump = await request(`/api/tourism/bookings/${bookingRef}/status`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${customer1Token}` },
+      body: { status: 'CONFIRMED' }
+    });
+    assert.strictEqual(illegalCustStatusJump.status, 400);
+    console.log('  ✅ Customer illegal status jump to CONFIRMED blocked (400)');
+
+    const staffStatusTransition = await request(`/api/tourism/bookings/${bookingRef}/status`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${adminToken}` },
+      body: { status: 'CONFIRMED', note: 'Manual payment verification passed.' }
+    });
+    assert.strictEqual(staffStatusTransition.status, 200);
+    assert.strictEqual(staffStatusTransition.body.booking.status, 'CONFIRMED');
+    console.log('  ✅ Authorized staff status transition to CONFIRMED succeeded');
+
+    // 22. Task #4: Historical Package Price Snapshot Stability Test
+    console.log('\n[22] Testing Historical Booking Price Snapshot Stability...');
+    const priceUpdateRes = await request(`/api/tourism/packages/${newPkgId}`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${adminToken}` },
+      body: { priceMinor: 250000 } // Increase package price to 250 OMR!
+    });
+    assert.strictEqual(priceUpdateRes.status, 200);
+
+    const checkPastBooking = await request(`/api/tourism/bookings/${bookingRef}`, {
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(checkPastBooking.body.booking.amount, 300); // Must remain 300 OMR (original 150 * 2)!
+    console.log('  ✅ Historical booking price remained 300 OMR after package price update to 250 OMR');
+
+    // 23. Task #4: Booking Cancellation & Capacity Release Test
+    console.log('\n[23] Testing Booking Cancellation & Capacity Release...');
+    const cancelRes = await request(`/api/tourism/bookings/${bookingRef}/cancel`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${customer1Token}` },
+      body: { reason: 'Plans changed.' }
+    });
+    assert.strictEqual(cancelRes.status, 200);
+    assert.strictEqual(cancelRes.body.booking.status, 'CANCELLED');
+    console.log('  ✅ Booking cancelled successfully & capacity released');
+
+    // 24. Task #4: Staff Refund Request Workflow Test
+    console.log('\n[24] Testing Staff Refund Request Workflow...');
+    const refundRes = await request(`/api/tourism/bookings/${bookingRef}/refund`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${adminToken}` },
+      body: { reason: 'Full refund processed due to early cancellation.', amount: 300 }
+    });
+    assert.strictEqual(refundRes.status, 201);
+    assert.strictEqual(refundRes.body.refund.status, 'REFUND_REQUESTED');
+    console.log('  ✅ Staff refund request created cleanly');
+
+    // 25. Payment & Webhook Regression Test
+    console.log('\n[25] Testing Payment & Webhook Regression...');
     const orderRes = await request('/api/payments/create-order', {
       method: 'POST',
       headers: { Authorization: `Bearer ${customer1Token}` },
-      body: { bookingId: bookingRef, amount: bookingRes.body.amount, currency: 'OMR' }
+      body: { bookingId: bookingRef, amount: 300, currency: 'OMR' }
     });
     assert.strictEqual(orderRes.status, 200);
 
@@ -379,8 +528,8 @@ async function runTestSuite() {
     assert.strictEqual(webhookRes.status, 200);
     console.log('  ✅ Payment order & webhook signed completion regression test PASSED');
 
-    // 17. Production DB Rule Regression Test
-    console.log('\n[17] Testing Production DB Fallback Blocking Regression...');
+    // 26. Production DB Rule Regression Test
+    console.log('\n[26] Testing Production DB Fallback Blocking Regression...');
     process.env.DATABASE_MODE = 'mongodb';
     const readyProdRes = await request('/ready');
     assert.strictEqual(readyProdRes.status, 503);
@@ -388,11 +537,11 @@ async function runTestSuite() {
     console.log('  ✅ Production database readiness check PASSED (503 Service Unavailable when DB is offline)');
 
     console.log('\n================================================================');
-    console.log('🎉 ALL AUTOMATED TESTS PASSED SUCCESSFULLY! (17/17)');
+    console.log('🎉 ALL AUTOMATED TESTS PASSED SUCCESSFULLY! (26/26)');
     console.log('================================================================');
   } catch (err) {
     console.error('\n❌ Test Failure Details:', err);
-    process.exitCode = 1;
+    process.exit(1);
   } finally {
     if (server) server.close();
   }

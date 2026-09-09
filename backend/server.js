@@ -643,8 +643,9 @@ app.patch('/api/users/:id/role', authenticate, authorize('SUPER_ADMIN'), async (
   res.json({ success: true, user: sanitizeUser(updated) });
 });
 
-// Require Visa & Storage Services
+// Require Visa, Tourism & Storage Services
 const visaService = require('./services/visa');
+const tourismService = require('./services/tourism');
 const { storageService, FileSecurityService } = require('./services/storage');
 
 // Memory storage for file upload processing & signature verification
@@ -804,100 +805,187 @@ app.get('/api/documents/:id/download', authenticate, async (req, res) => {
 });
 
 // --- 5. TOURISM CATALOGUE & BOOKINGS ---
-app.get('/api/tourism/packages', async (req, res) => {
-  const { destination, category, q } = req.query || {};
-  let packages = await db.tourPackages.find({ published: true });
+// --- 5. TOURISM CATALOGUE & BOOKINGS (TASK #4 ENHANCED) ---
 
-  if (destination) packages = packages.filter(p => p.destination.toLowerCase() === destination.toLowerCase());
-  if (category) packages = packages.filter(p => p.category.toLowerCase() === category.toLowerCase());
-  if (q) packages = packages.filter(p => p.title.toLowerCase().includes(q.toLowerCase()) || p.summary.toLowerCase().includes(q.toLowerCase()));
-
-  res.json({ success: true, packages });
+// DESTINATIONS & CATEGORIES
+app.get('/api/tourism/destinations', async (req, res) => {
+  const destinations = await db.destinations.find({ active: true });
+  res.json({ success: true, destinations });
 });
 
-app.get('/api/packages', async (req, res) => {
-  const packages = await db.tourPackages.find({ published: true });
-  const legacy = packages.map(p => ({ ...p, price: p.priceMinor ? p.priceMinor / 1000 : p.price || 189, rating: p.rating || 4.8 }));
-  res.json({ success: true, packages: legacy });
+app.get('/api/tourism/categories', async (req, res) => {
+  const categories = await db.tourCategories.find({ active: true });
+  res.json({ success: true, categories });
 });
 
-app.get('/api/tourism/packages/:slug', async (req, res) => {
-  const pkg = await db.tourPackages.findOne({ slug: req.params.slug }) || await db.tourPackages.findById(req.params.slug);
-  if (!pkg) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Package not found.' } });
-  res.json({ success: true, package: pkg });
-});
-
-app.post('/api/tourism/bookings', submissionLimiter, async (req, res) => {
+// TOUR PACKAGES LISTING (FILTERING, SEARCH, WHITELISTED SORT, PAGINATION)
+app.get('/api/tourism/packages', optionalAuth, async (req, res) => {
   try {
-    const { packageId, travellerName, email, phone, travellers, travelDate, website } = req.body || {};
-    if (website) return res.json({ success: true, reference: 'JMT-B-SPAM' });
-
-    const count = parseInt(travellers, 10) || 1;
-    const selectedPkg = await db.tourPackages.findById(packageId) || await db.tourPackages.findOne({ slug: packageId });
-
-    if (!selectedPkg || !travellerName || !email || !phone) {
-      return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Please complete all required booking fields.' } });
-    }
-
-    const unitPrice = selectedPkg.priceMinor ? selectedPkg.priceMinor / 1000 : selectedPkg.price || 189;
-    const totalAmount = unitPrice * count;
-
-    const reference = `JMT-B-${Date.now().toString().slice(-7)}`;
-    const booking = await db.tourBookings.create({
-      bookingNumber: reference,
-      packageId: selectedPkg.id,
-      packageTitle: selectedPkg.title,
-      userId: req.user ? req.user.id : null,
-      travellerName,
-      email,
-      phone,
-      travellers: count,
-      travelDate: travelDate || '',
-      amount: totalAmount,
-      currency: selectedPkg.currency || 'OMR',
-      status: 'PAYMENT_PENDING'
-    });
-
-    res.status(201).json({
-      success: true,
-      reference,
-      status: booking.status,
-      amount: totalAmount,
-      currency: booking.currency,
-      message: 'Booking request created successfully.'
-    });
+    const userRole = req.user ? req.user.role : 'GUEST';
+    const result = await tourismService.listPackages({ ...req.query, userRole });
+    res.json({ success: true, ...result });
   } catch (err) {
     res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: err.message } });
   }
 });
 
-app.post('/api/bookings', submissionLimiter, async (req, res) => {
-  const pkgId = req.body.packageId;
-  const pkg = await db.tourPackages.findById(pkgId) || await db.tourPackages.findOne({ slug: pkgId }) || { id: 'pkg_dubai', title: 'Dubai Escape', currency: 'OMR', price: 189 };
-  const count = parseInt(req.body.travellers, 10) || 1;
-  const reference = `JMT-B-${Date.now().toString().slice(-7)}`;
-  
-  const booking = await db.tourBookings.create({
-    bookingNumber: reference,
-    packageId: pkg.id,
-    packageTitle: pkg.title,
-    travellerName: req.body.travellerName,
-    email: req.body.email,
-    phone: req.body.phone,
-    travellers: count,
-    amount: (pkg.priceMinor ? pkg.priceMinor / 1000 : pkg.price || 189) * count,
-    currency: pkg.currency || 'OMR',
-    status: 'Payment link pending'
-  });
-
-  res.status(201).json({ success: true, reference, status: booking.status, amount: booking.amount, currency: booking.currency, message: 'Reservation requested.' });
+// LEGACY PACKAGES ENDPOINT (BACKWARD COMPATIBILITY)
+app.get('/api/packages', async (req, res) => {
+  const result = await tourismService.listPackages({ userRole: 'GUEST', limit: 50 });
+  const legacy = result.packages.map(p => ({ ...p, price: p.priceMinor ? p.priceMinor / 1000 : p.price || 189, rating: p.rating || 4.8 }));
+  res.json({ success: true, packages: legacy });
 });
 
+// TOUR PACKAGE DETAILS BY SLUG/ID
+app.get('/api/tourism/packages/:slug', optionalAuth, async (req, res) => {
+  try {
+    const userRole = req.user ? req.user.role : 'GUEST';
+    const pkg = await tourismService.getPackage(req.params.slug, userRole);
+    res.json({ success: true, package: pkg });
+  } catch (err) {
+    res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: err.message } });
+  }
+});
+
+// CREATE TOUR PACKAGE (STAFF/ADMIN ONLY)
+app.post('/api/tourism/packages', authenticate, authorize('STAFF', 'ADMIN', 'SUPER_ADMIN'), async (req, res) => {
+  try {
+    const pkg = await tourismService.createPackage(req.body, req.user);
+    await logAudit(req, `Created tour package: ${pkg.title}`, 'TOUR_PACKAGE', pkg.id);
+    res.status(201).json({ success: true, package: pkg });
+  } catch (err) {
+    res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: err.message } });
+  }
+});
+
+// UPDATE TOUR PACKAGE (STAFF/ADMIN ONLY)
+app.patch('/api/tourism/packages/:id', authenticate, authorize('STAFF', 'ADMIN', 'SUPER_ADMIN'), async (req, res) => {
+  try {
+    const updated = await tourismService.updatePackage(req.params.id, req.body, req.user);
+    await logAudit(req, `Updated tour package: ${updated.title}`, 'TOUR_PACKAGE', updated.id);
+    res.json({ success: true, package: updated });
+  } catch (err) {
+    res.status(400).json({ success: false, error: { code: 'UPDATE_ERROR', message: err.message } });
+  }
+});
+
+// CREATE TOUR BOOKING (SERVER PRICING, CAPACITY CHECK, CONCURRENCY & IDEMPOTENCY)
+app.post('/api/tourism/bookings', optionalAuth, submissionLimiter, async (req, res) => {
+  try {
+    const { website } = req.body || {};
+    if (website) return res.json({ success: true, reference: 'JMT-B-SPAM' });
+
+    const result = await tourismService.createBooking(req.body, req.user);
+    const booking = result.booking;
+
+    if (result.isDuplicate) {
+      return res.status(200).json({
+        success: true,
+        reference: booking.bookingNumber,
+        status: booking.status,
+        amount: booking.amount,
+        currency: booking.currency,
+        message: 'Duplicate request detected. Returned existing booking.',
+        isDuplicate: true,
+        booking
+      });
+    }
+
+    await logAudit(req, `Created tour booking ${booking.bookingNumber}`, 'TOUR_BOOKING', booking.id || booking.bookingNumber);
+
+    res.status(201).json({
+      success: true,
+      reference: booking.bookingNumber,
+      status: booking.status,
+      amount: booking.amount,
+      currency: booking.currency,
+      message: 'Booking request created successfully.',
+      booking
+    });
+  } catch (err) {
+    const status = err.message.includes('Insufficient Capacity') || err.message.includes('Validation Error') || err.message.includes('Booking Denied') ? 400 : 500;
+    res.status(status).json({ success: false, error: { code: status === 400 ? 'VALIDATION_ERROR' : 'SERVER_ERROR', message: err.message } });
+  }
+});
+
+// LEGACY BOOKINGS ENDPOINT (BACKWARD COMPATIBILITY)
+app.post('/api/bookings', submissionLimiter, async (req, res) => {
+  try {
+    const result = await tourismService.createBooking(req.body, req.user);
+    const booking = result.booking;
+    res.status(201).json({
+      success: true,
+      reference: booking.bookingNumber,
+      status: booking.status,
+      amount: booking.amount,
+      currency: booking.currency,
+      message: 'Reservation requested.'
+    });
+  } catch (err) {
+    res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: err.message } });
+  }
+});
+
+// LIST TOUR BOOKINGS (IDOR ISOLATED)
 app.get('/api/tourism/bookings', authenticate, async (req, res) => {
   const isStaff = ['STAFF', 'ADMIN', 'SUPER_ADMIN'].includes(req.user.role);
   const filter = isStaff ? {} : { userId: req.user.id };
-  const bookings = await db.tourBookings.find(filter);
+  const rawBookings = await db.tourBookings.find(filter);
+  const bookings = rawBookings.map(b => tourismService.sanitizeBooking(b, req.user.role));
   res.json({ success: true, bookings });
+});
+
+// IDOR RESTRICTED TOUR BOOKING DETAIL VIEW
+app.get('/api/tourism/bookings/:id', authenticate, async (req, res) => {
+  const booking = await db.tourBookings.findById(req.params.id) || await db.tourBookings.findOne({ bookingNumber: req.params.id });
+  if (!booking) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Booking not found.' } });
+
+  const isStaff = ['STAFF', 'ADMIN', 'SUPER_ADMIN'].includes(req.user.role);
+  if (!isStaff && booking.userId !== req.user.id) {
+    await logAudit(req, 'SUSPICIOUS_IDOR_BOOKING_ATTEMPT', 'TOUR_BOOKING', req.params.id);
+    return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Access denied: You do not own this booking.' } });
+  }
+
+  const travellers = await db.bookingTravellers.find({ bookingId: booking.id });
+  const sanitized = tourismService.sanitizeBooking(booking, req.user.role);
+
+  res.json({ success: true, booking: sanitized, travellers });
+});
+
+// SERVER-CONTROLLED BOOKING STATE TRANSITION
+app.patch('/api/tourism/bookings/:id/status', authenticate, async (req, res) => {
+  try {
+    const { status, note } = req.body || {};
+    const updated = await tourismService.transitionBookingStatus(req.params.id, status, req.user, note);
+    await logAudit(req, `Changed booking status to ${status}`, 'TOUR_BOOKING', req.params.id);
+    res.json({ success: true, booking: tourismService.sanitizeBooking(updated, req.user.role) });
+  } catch (err) {
+    res.status(400).json({ success: false, error: { code: 'TRANSITION_ERROR', message: err.message } });
+  }
+});
+
+// BOOKING CANCELLATION & CAPACITY RELEASE
+app.post('/api/tourism/bookings/:id/cancel', authenticate, async (req, res) => {
+  try {
+    const { reason } = req.body || {};
+    const updated = await tourismService.cancelBooking(req.params.id, req.user, reason);
+    await logAudit(req, 'Cancelled tour booking', 'TOUR_BOOKING', req.params.id);
+    res.json({ success: true, booking: tourismService.sanitizeBooking(updated, req.user.role) });
+  } catch (err) {
+    res.status(400).json({ success: false, error: { code: 'CANCELLATION_ERROR', message: err.message } });
+  }
+});
+
+// REFUND REQUEST WORKFLOW (STAFF/ADMIN ONLY)
+app.post('/api/tourism/bookings/:id/refund', authenticate, authorize('STAFF', 'ADMIN', 'SUPER_ADMIN'), async (req, res) => {
+  try {
+    const { reason, amount } = req.body || {};
+    const refundRecord = await tourismService.requestRefund(req.params.id, req.user, reason, amount);
+    await logAudit(req, `Requested refund of ${refundRecord.amount} OMR`, 'REFUND', refundRecord.id);
+    res.status(201).json({ success: true, refund: refundRecord });
+  } catch (err) {
+    res.status(400).json({ success: false, error: { code: 'REFUND_ERROR', message: err.message } });
+  }
 });
 
 // --- 6. PAYMENTS & WEBHOOKS ---
