@@ -714,8 +714,104 @@ async function runTestSuite() {
     assert.strictEqual(custRefundAttempt.status, 403);
     console.log('  ✅ Customer refund attempt blocked (403)');
 
-    // 35. Task #5: Production DB Fallback Blocking Regression Test
-    console.log('\n[35] Testing Production DB Fallback Blocking Regression...');
+    // 35. Task #6: In-App Notifications Listing, Pagination & Unread Filtering Test
+    console.log('\n[35] Testing In-App Notifications Listing, Pagination & Unread Filtering...');
+    const notifListRes = await request('/api/notifications?unread=true&limit=10', {
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(notifListRes.status, 200);
+    assert.ok(Array.isArray(notifListRes.body.notifications));
+    assert.ok(notifListRes.body.pagination);
+    assert.ok(notifListRes.body.notifications.length > 0);
+    const targetNotifId = notifListRes.body.notifications[0].id;
+    console.log(`  ✅ In-app notifications listed cleanly (Unread count: ${notifListRes.body.unreadCount})`);
+
+    // 36. Task #6: In-App Notification Mark Read & IDOR Isolation Test
+    console.log('\n[36] Testing In-App Notification Mark Read & IDOR Isolation...');
+    const idorNotifRead = await request(`/api/notifications/${targetNotifId}/read`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${customer2Token}` } // Customer 2 trying to mark Customer 1's notification read!
+    });
+    assert.strictEqual(idorNotifRead.status, 403);
+    console.log('  ✅ IDOR Check PASSED: Customer 2 blocked from reading Customer 1\'s notification (403)');
+
+    const ownNotifRead = await request(`/api/notifications/${targetNotifId}/read`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(ownNotifRead.status, 200);
+    assert.strictEqual(ownNotifRead.body.notification.read, true);
+
+    const markAllRes = await request('/api/notifications/read-all', {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(markAllRes.status, 200);
+    console.log('  ✅ Notification mark read & mark-all-read PASSED');
+
+    // 37. Task #6: Email Template Rendering & HTML Escaping Test
+    console.log('\n[37] Testing Email Template Rendering & Dynamic Content XSS Escaping...');
+    const notificationService = require('./services/notification');
+    const templateOutput = notificationService.renderEmailTemplate('TEST_EVENT', {
+      title: 'XSS Test <script>alert(1)</script>',
+      message: 'Hello <img src=x onerror=alert(1)>',
+      recipientName: 'Attacker "or" 1=1'
+    });
+    assert.ok(!templateOutput.html.includes('<script>'));
+    assert.ok(templateOutput.html.includes('&lt;script&gt;'));
+    assert.ok(templateOutput.html.includes('&quot;or&quot;'));
+    console.log('  ✅ Template engine XSS HTML escaping verification PASSED');
+
+    // 38. Task #6: Notification Dispatch Idempotency Test
+    console.log('\n[38] Testing Notification Dispatch Idempotency...');
+    const duplicateEventKey = `notif_idem_${Date.now()}`;
+    const firstDispatch = await notificationService.dispatchEvent('VISA_APPROVED', {
+      user: customer1User,
+      email: email1,
+      reference: 'JMT-V-999999',
+      idempotencyKey: duplicateEventKey
+    });
+    assert.strictEqual(firstDispatch.success, true);
+
+    const secondDispatch = await notificationService.dispatchEvent('VISA_APPROVED', {
+      user: customer1User,
+      email: email1,
+      reference: 'JMT-V-999999',
+      idempotencyKey: duplicateEventKey
+    });
+    assert.strictEqual(secondDispatch.isDuplicate, true);
+    console.log('  ✅ Notification dispatch idempotency PASSED: Duplicate event key skipped dispatch');
+
+    // 39. Task #6: Notification Failure Isolation Test
+    console.log('\n[39] Testing Notification Failure Isolation (Transaction Non-Blocking)...');
+    // Notification error must never throw unhandled exception or crash caller
+    const failedDispatch = await notificationService.dispatchEvent('INVALID_EVENT_TRIGGER', {
+      userId: null,
+      email: null,
+      phone: null
+    });
+    assert.strictEqual(failedDispatch.success, true); // Handled safely without crashing
+    console.log('  ✅ Notification failure isolation PASSED: Errors caught safely without crashing transaction');
+
+    // 40. Task #6: Fail-Safe Provider Selection Test
+    console.log('\n[40] Testing Fail-Safe Provider Selection & Credentials Enforcement...');
+    process.env.EMAIL_PROVIDER = 'resend';
+    delete process.env.RESEND_API_KEY;
+    try {
+      delete require.cache[require.resolve('./services/notification')];
+      require('./services/notification');
+      assert.fail('Should have thrown provider config error');
+    } catch (err) {
+      assert.ok(err.message.includes('RESEND_API_KEY is missing') || err.message.includes('Config Error'));
+    } finally {
+      process.env.EMAIL_PROVIDER = 'mock';
+      delete require.cache[require.resolve('./services/notification')];
+      require('./services/notification');
+    }
+    console.log('  ✅ Fail-safe provider selection PASSED: Missing real provider credentials failed safely without silent mock fallback');
+
+    // 41. Task #6: Production DB Fallback Blocking Regression Test
+    console.log('\n[41] Testing Production DB Fallback Blocking Regression...');
     process.env.DATABASE_MODE = 'mongodb';
     const readyProdRes = await request('/ready');
     assert.strictEqual(readyProdRes.status, 503);
@@ -723,7 +819,7 @@ async function runTestSuite() {
     console.log('  ✅ Production database readiness check PASSED (503 Service Unavailable when DB is offline)');
 
     console.log('\n================================================================');
-    console.log('🎉 ALL AUTOMATED TESTS PASSED SUCCESSFULLY! (35/35)');
+    console.log('🎉 ALL AUTOMATED TESTS PASSED SUCCESSFULLY! (41/41)');
     console.log('================================================================');
   } catch (err) {
     console.error('\n❌ Test Failure Details:', err);

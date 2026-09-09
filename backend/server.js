@@ -1065,6 +1065,44 @@ app.post('/api/payments/:id/refund', authenticate, authorize('STAFF', 'ADMIN', '
   }
 });
 
+// --- 6.5 IN-APP NOTIFICATIONS (TASK #6 ENHANCED) ---
+
+// LIST IN-APP NOTIFICATIONS (IDOR ISOLATED, PAGINATED)
+app.get('/api/notifications', authenticate, async (req, res) => {
+  try {
+    const result = await notificationService.listInAppNotifications({
+      userId: req.user.id,
+      page: req.query.page,
+      limit: req.query.limit,
+      unreadOnly: req.query.unread
+    });
+    res.json({ success: true, ...result });
+  } catch (err) {
+    res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: err.message } });
+  }
+});
+
+// MARK INDIVIDUAL NOTIFICATION AS READ (IDOR ISOLATED)
+app.patch('/api/notifications/:id/read', authenticate, async (req, res) => {
+  try {
+    const updated = await notificationService.markAsRead(req.params.id, req.user.id);
+    res.json({ success: true, notification: updated });
+  } catch (err) {
+    const isForbidden = err.message.includes('Permission Denied');
+    res.status(isForbidden ? 403 : 400).json({ success: false, error: { code: isForbidden ? 'FORBIDDEN' : 'VALIDATION_ERROR', message: err.message } });
+  }
+});
+
+// MARK ALL NOTIFICATIONS AS READ
+app.patch('/api/notifications/read-all', authenticate, async (req, res) => {
+  try {
+    const result = await notificationService.markAllAsRead(req.user.id);
+    res.json({ success: true, message: 'All in-app notifications marked as read.', count: result.count });
+  } catch (err) {
+    res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: err.message } });
+  }
+});
+
 // --- 7. CHATBOT & SUPPORT TICKETS ---
 app.post('/api/chat', async (req, res) => {
   try {
