@@ -79,7 +79,15 @@ class NotificationService {
     const templates = {
       ACCOUNT_CREATED: {
         title: 'Welcome to JMT TRAVELS',
-        message: 'Your account has been created successfully. Explore visa services and holiday packages now.'
+        message: 'Your account has been created successfully. Please verify your email address to unlock full travel features.'
+      },
+      EMAIL_VERIFICATION: {
+        title: 'Verify Your Email Address',
+        message: `Please verify your email address for JMT TRAVELS. Your verification token: ${payload.token || 'N/A'}`
+      },
+      PASSWORD_RESET: {
+        title: 'Password Reset Request',
+        message: `A password reset was requested for your account. Reset token: ${payload.token || 'N/A'}. If you did not request this, please ignore this message.`
       },
       VISA_SUBMITTED: {
         title: 'Visa Application Received',
