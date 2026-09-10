@@ -118,50 +118,60 @@ class NotificationService {
    * JMT Travels Branded HTML Email Template Engine
    */
   renderEmailTemplate(templateName, data) {
-    const { title, message, recipientName, reference, buttonText, buttonUrl, detailKey, detailValue } = data;
+    const { title, message, recipientName, reference, buttonText, buttonUrl, detailKey, detailValue, locale } = data;
+    const isArabic = locale === 'ar';
 
     const safeTitle = escapeHTML(title);
     const safeMessage = escapeHTML(message);
-    const safeName = escapeHTML(recipientName || 'Valued Customer');
+    const safeName = escapeHTML(recipientName || (isArabic ? 'العميل العزيز' : 'Valued Customer'));
     const safeRef = escapeHTML(reference || '');
     const safeButtonText = escapeHTML(buttonText || '');
     const safeButtonUrl = escapeHTML(buttonUrl || '');
     const safeDetailKey = escapeHTML(detailKey || '');
     const safeDetailValue = escapeHTML(detailValue || '');
 
+    const dir = isArabic ? 'rtl' : 'ltr';
+    const align = isArabic ? 'right' : 'left';
+    const borderProp = isArabic ? 'border-right: 4px solid #1E2B6D;' : 'border-left: 4px solid #1E2B6D;';
+
+    const greeting = isArabic ? `مرحباً <strong>${safeName}</strong>،` : `Hello <strong>${safeName}</strong>,`;
+    const refLabel = isArabic ? 'رقم المرجع:' : 'Reference Number:';
+    const footerText1 = isArabic ? 'شركة جي إم تي للسفر والسياحة · مسقط، سلطنة عمان' : 'JMT Travel & Tourism LLC · Muscat, Sultanate of Oman';
+    const footerText2 = isArabic ? 'الهاتف: +968 7113 2424 · واتساب: +968 9760 8999 · البريد: support@jmttravels.com' : 'Phone: +968 7113 2424 · WhatsApp: +968 9760 8999 · Email: support@jmttravels.com';
+
     const htmlBody = `
       <!DOCTYPE html>
-      <html>
+      <html lang="${isArabic ? 'ar' : 'en'}" dir="${dir}">
       <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>${safeTitle}</title>
       </head>
-      <body style="margin: 0; padding: 0; background-color: #FAF8F4; font-family: 'Segoe UI', Arial, sans-serif; color: #334155;">
-        <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px; margin: 30px auto; background-color: #FFFFFF; border-radius: 8px; overflow: hidden; border: 1px solid #E2E8F0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
+      <body style="margin: 0; padding: 0; background-color: #FAF8F4; font-family: 'Segoe UI', Tahoma, Arial, sans-serif; color: #334155; direction: ${dir}; text-align: ${align};">
+        <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px; margin: 30px auto; background-color: #FFFFFF; border-radius: 8px; overflow: hidden; border: 1px solid #E2E8F0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); text-align: ${align};">
           <!-- Header -->
           <tr>
-            <td style="background-color: #1E2B6D; padding: 24px 32px; text-align: left;">
+            <td style="background-color: #1E2B6D; padding: 24px 32px; text-align: ${align};">
               <h1 style="color: #FFFFFF; margin: 0; font-size: 22px; font-weight: 700; letter-spacing: 0.5px;">JMT TRAVELS</h1>
-              <p style="color: #D97706; margin: 4px 0 0 0; font-size: 13px; font-weight: 600; text-transform: uppercase;">Visa &amp; Tour Services</p>
+              <p style="color: #D97706; margin: 4px 0 0 0; font-size: 13px; font-weight: 600; text-transform: uppercase;">${isArabic ? 'خدمات التأشيرات والسياحة' : 'Visa &amp; Tour Services'}</p>
             </td>
           </tr>
           <!-- Main Content -->
           <tr>
-            <td style="padding: 32px;">
-              <p style="font-size: 15px; margin-top: 0; color: #475569;">Hello <strong>${safeName}</strong>,</p>
+            <td style="padding: 32px; text-align: ${align};">
+              <p style="font-size: 15px; margin-top: 0; color: #475569;">${greeting}</p>
               <h2 style="color: #1E2B6D; font-size: 18px; margin: 16px 0 12px 0;">${safeTitle}</h2>
               <p style="font-size: 15px; line-height: 1.6; color: #334155; margin-bottom: 20px;">${safeMessage}</p>
-              ${safeRef ? `<div style="background-color: #F8FAFC; border-left: 4px solid #1E2B6D; padding: 12px 16px; margin: 20px 0; font-size: 14px;"><strong>Reference Number:</strong> <span style="font-family: monospace; font-weight: 600;">${safeRef}</span></div>` : ''}
+              ${safeRef ? `<div style="background-color: #F8FAFC; ${borderProp} padding: 12px 16px; margin: 20px 0; font-size: 14px;"><strong>${refLabel}</strong> <span dir="ltr" style="font-family: monospace; font-weight: 600; unicode-bidi: isolate; display: inline-block;">${safeRef}</span></div>` : ''}
               ${safeDetailKey ? `<div style="background-color: #FEF3C7; border: 1px solid #FDE68A; padding: 12px 16px; border-radius: 6px; margin: 16px 0; font-size: 14px; color: #92400E;"><strong>${safeDetailKey}:</strong> ${safeDetailValue}</div>` : ''}
-              ${safeButtonText && safeButtonUrl ? `<div style="margin: 28px 0; text-align: left;"><a href="${safeButtonUrl}" style="background-color: #1E2B6D; color: #FFFFFF; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-weight: 600; font-size: 14px; display: inline-block;">${safeButtonText}</a></div>` : ''}
+              ${safeButtonText && safeButtonUrl ? `<div style="margin: 28px 0; text-align: ${align};"><a href="${safeButtonUrl}" style="background-color: #1E2B6D; color: #FFFFFF; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-weight: 600; font-size: 14px; display: inline-block;">${safeButtonText}</a></div>` : ''}
             </td>
           </tr>
           <!-- Footer -->
           <tr>
             <td style="background-color: #F1F5F9; padding: 20px 32px; text-align: center; border-top: 1px solid #E2E8F0;">
-              <p style="margin: 0; font-size: 12px; color: #64748B;">JMT Travel &amp; Tourism LLC · Muscat, Sultanate of Oman</p>
-              <p style="margin: 4px 0 0 0; font-size: 12px; color: #64748B;">Phone: +968 7113 2424 · WhatsApp: +968 9760 8999 · Email: support@jmttravels.com</p>
+              <p style="margin: 0; font-size: 12px; color: #64748B;">${footerText1}</p>
+              <p style="margin: 4px 0 0 0; font-size: 12px; color: #64748B;">${footerText2}</p>
             </td>
           </tr>
         </table>

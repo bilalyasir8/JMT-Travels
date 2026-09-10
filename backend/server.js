@@ -21,6 +21,7 @@ const db = require('./db');
 const paymentService = require('./services/payment');
 const notificationService = require('./services/notification');
 const chatbotService = require('./services/chatbot');
+const i18nService = require('./services/i18n');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -324,6 +325,57 @@ async function optionalAuth(req, res, next) {
   next();
 }
 
+function i18nMiddleware(req, res, next) {
+  // Locale Priority Selection (PDF #7 Section 3)
+  // 1. Explicit request parameter / header (?lang=ar, ?locale=ar, X-App-Locale: ar)
+  // 2. Authenticated customer profile preference (req.user?.preferredLanguage)
+  // 3. Browser Accept-Language header
+  // 4. Application default ('en')
+  let requestedLocale = req.query.lang || req.query.locale || req.get('x-app-locale');
+
+  if (!requestedLocale && req.user?.preferredLanguage) {
+    requestedLocale = req.user.preferredLanguage;
+  }
+
+  if (!requestedLocale) {
+    const acceptLang = req.get('accept-language') || '';
+    if (acceptLang.toLowerCase().includes('ar')) {
+      requestedLocale = 'ar';
+    } else if (acceptLang.toLowerCase().includes('en')) {
+      requestedLocale = 'en';
+    }
+  }
+
+  if (requestedLocale && !i18nService.isSupportedLocale(requestedLocale)) {
+    return res.status(400).json({
+      success: false,
+      error: { code: 'INVALID_LOCALE', message: 'Unsupported locale requested. Supported locales are: en, ar.' }
+    });
+  }
+
+  req.locale = i18nService.normalizeLocale(requestedLocale);
+
+  let requestedCurrency = req.query.currency || req.get('x-app-currency');
+  if (!requestedCurrency && req.user?.preferredCurrency) {
+    requestedCurrency = req.user.preferredCurrency;
+  }
+
+  if (requestedCurrency && !i18nService.isSupportedCurrency(requestedCurrency)) {
+    return res.status(400).json({
+      success: false,
+      error: { code: 'INVALID_CURRENCY', message: 'Unsupported currency requested. Supported currencies are: OMR, AED, SAR, INR, USD.' }
+    });
+  }
+
+  req.currency = i18nService.normalizeCurrency(requestedCurrency);
+  req.isRTL = i18nService.isRTL(req.locale);
+  req.dir = i18nService.getDirection(req.locale);
+
+  next();
+}
+
+app.use('/api/', optionalAuth, i18nMiddleware);
+
 function authorize(...allowedRoles) {
   return (req, res, next) => {
     if (!req.user || !allowedRoles.includes(req.user.role)) {
@@ -615,6 +667,127 @@ app.post('/api/auth/logout', authenticate, async (req, res) => {
 // GET CURRENT USER PROFILE
 app.get('/api/auth/me', authenticate, async (req, res) => {
   res.json({ success: true, user: sanitizeUser(req.user) });
+});
+
+// UPDATE USER PREFERENCES (Language & Currency - Task #7)
+app.patch('/api/users/preferences', authenticate, async (req, res) => {
+  try {
+    const { preferredLanguage, preferredCurrency } = req.body || {};
+    const updates = {};
+
+    if (preferredLanguage) {
+      if (!i18nService.isSupportedLocale(preferredLanguage)) {
+        return res.status(400).json({
+          success: false,
+          error: { code: 'INVALID_LOCALE', message: 'Unsupported locale. Allowed: en, ar.' }
+        });
+      }
+      updates.preferredLanguage = preferredLanguage;
+    }
+
+    if (preferredCurrency) {
+      if (!i18nService.isSupportedCurrency(preferredCurrency)) {
+        return res.status(400).json({
+          success: false,
+          error: { code: 'INVALID_CURRENCY', message: 'Unsupported currency. Allowed: OMR, AED, SAR, INR, USD.' }
+        });
+      }
+      updates.preferredCurrency = preferredCurrency.toUpperCase();
+    }
+
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'VALIDATION_ERROR', message: 'At least one preference (preferredLanguage or preferredCurrency) must be specified.' }
+      });
+    }
+
+    const updatedUser = await db.users.update(req.user.id, updates);
+    await logAudit(req, 'UPDATE_PREFERENCES', 'USER', req.user.id, updates);
+
+    res.json({
+      success: true,
+      user: sanitizeUser(updatedUser),
+      message: 'User preferences updated successfully.'
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: err.message } });
+  }
+});
+
+// --- i18n & MULTI-CURRENCY ENDPOINTS (Task #7) ---
+app.get('/api/i18n/translations', (req, res) => {
+  const translations = i18nService.getTranslations(req.locale);
+  res.json({
+    success: true,
+    data: translations
+  });
+});
+
+app.get('/api/i18n/currencies', (req, res) => {
+  res.json({
+    success: true,
+    data: i18nService.getCurrencyConfigs()
+  });
+});
+
+app.post('/api/i18n/format-currency', (req, res) => {
+  const { amountMinor, currency, locale } = req.body || {};
+  
+  if (typeof amountMinor !== 'number') {
+    return res.status(400).json({
+      success: false,
+      error: { code: 'VALIDATION_ERROR', message: 'amountMinor (integer) is required.' }
+    });
+  }
+
+  const targetCurrency = currency ? currency.toUpperCase() : req.currency;
+  const targetLocale = locale ? locale.toLowerCase() : req.locale;
+
+  if (!i18nService.isSupportedCurrency(targetCurrency)) {
+    return res.status(400).json({
+      success: false,
+      error: { code: 'INVALID_CURRENCY', message: 'Unsupported currency requested.' }
+    });
+  }
+
+  if (!i18nService.isSupportedLocale(targetLocale)) {
+    return res.status(400).json({
+      success: false,
+      error: { code: 'INVALID_LOCALE', message: 'Unsupported locale requested.' }
+    });
+  }
+
+  const formatted = i18nService.formatCurrency(amountMinor, targetCurrency, targetLocale);
+
+  res.json({
+    success: true,
+    amountMinor,
+    currency: targetCurrency,
+    locale: targetLocale,
+    formatted
+  });
+});
+
+app.get('/api/i18n/fx-rates', (req, res) => {
+  const { base = 'OMR', quote = 'OMR', amountMinor = 1000 } = req.query;
+
+  if (!i18nService.isSupportedCurrency(base) || !i18nService.isSupportedCurrency(quote)) {
+    return res.status(400).json({
+      success: false,
+      error: { code: 'INVALID_CURRENCY', message: 'Unsupported base or quote currency.' }
+    });
+  }
+
+  const numericAmount = parseInt(amountMinor, 10) || 1000;
+  const conversion = i18nService.fxProvider.convert(numericAmount, base, quote);
+
+  res.json({
+    success: true,
+    status: 'PREPARED_ONLY',
+    notice: 'Display estimates only. Payment amounts remain server-authoritative in base currency.',
+    data: conversion
+  });
 });
 
 // MFA VERIFICATION ARCHITECTURE INTERFACE (PREPARED ONLY - Task #2 Section 13)

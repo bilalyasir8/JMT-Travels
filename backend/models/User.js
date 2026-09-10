@@ -28,7 +28,17 @@ const UserSchema = new mongoose.Schema({
   passwordChangedAt: Date,
   tokenInvalidatedBefore: Date,
   mfaEnabled: { type: Boolean, default: false },
-  mfaSecret: String
+  mfaSecret: String,
+  preferredLanguage: {
+    type: String,
+    enum: ['en', 'ar'],
+    default: 'en'
+  },
+  preferredCurrency: {
+    type: String,
+    enum: ['OMR', 'AED', 'SAR', 'INR', 'USD'],
+    default: 'OMR'
+  }
 }, {
   timestamps: true
 });

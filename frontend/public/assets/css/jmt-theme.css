@@ -32,9 +32,29 @@
 }
 
 [dir="rtl"] {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  --font-body: 'Tajawal', 'Cairo', 'Segoe UI', Tahoma, sans-serif;
   direction: rtl;
   text-align: right;
+}
+
+/* RTL Logical Utilities & Directional Isolation for Identifiers */
+.ltr-isolate, bdi {
+  unicode-bidi: isolate;
+  display: inline-block;
+  direction: ltr !important;
+}
+
+[dir="rtl"] .margin-start-auto {
+  margin-inline-start: auto;
+  margin-inline-end: 0;
+}
+
+[dir="rtl"] .padding-start {
+  padding-inline-start: 1rem;
+}
+
+[dir="rtl"] .border-start {
+  border-inline-start: 4px solid var(--primary);
 }
 
 *, *::before, *::after {

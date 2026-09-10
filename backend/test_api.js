@@ -818,8 +818,191 @@ async function runTestSuite() {
     delete process.env.DATABASE_MODE;
     console.log('  ✅ Production database readiness check PASSED (503 Service Unavailable when DB is offline)');
 
+    // =============================================================
+    // TASK #7 — ARABIC + RTL + MULTI-CURRENCY TEST SUITE
+    // =============================================================
+
+    // 42. Task #7: Language Whitelist & Priority Selection
+    console.log('\n[42] Testing Language Whitelist & Priority Selection...');
+    const i18nService = require('./services/i18n');
+    
+    // English Catalogue Lookup
+    const enTransRes = await request('/api/i18n/translations?lang=en');
+    assert.strictEqual(enTransRes.status, 200);
+    assert.strictEqual(enTransRes.body.data.locale, 'en');
+    assert.strictEqual(enTransRes.body.data.metadata.isRTL, false);
+
+    // Arabic Catalogue Lookup
+    const arTransRes = await request('/api/i18n/translations?lang=ar');
+    assert.strictEqual(arTransRes.status, 200);
+    assert.strictEqual(arTransRes.body.data.locale, 'ar');
+    assert.strictEqual(arTransRes.body.data.metadata.isRTL, true);
+    assert.strictEqual(arTransRes.body.data.translations['visa.services'], 'خدمات التأشيرات');
+
+    // Rejection of Unsupported Locale
+    const invalidLangRes = await request('/api/i18n/translations?lang=fr');
+    assert.strictEqual(invalidLangRes.status, 400);
+    assert.strictEqual(invalidLangRes.body.error.code, 'INVALID_LOCALE');
+    console.log('  ✅ Language whitelist & priority selection PASSED: English, Arabic supported & unsupported locale (fr) rejected (400)');
+
+    // 43. Task #7: RTL Directional Metadata & Mixed Identifier Isolation
+    console.log('\n[43] Testing RTL Directional Metadata & Mixed Identifier Isolation...');
+    assert.strictEqual(i18nService.isRTL('ar'), true);
+    assert.strictEqual(i18nService.isRTL('en'), false);
+    assert.strictEqual(i18nService.getDirection('ar'), 'rtl');
+    assert.strictEqual(i18nService.getDirection('en'), 'ltr');
+
+    const isolatedRef = i18nService.wrapDirectionalIsolation('JMT-V-2230683');
+    assert.ok(isolatedRef.includes('dir="ltr"'));
+    assert.ok(isolatedRef.includes('JMT-V-2230683'));
+    console.log('  ✅ RTL metadata & mixed identifier directional isolation PASSED');
+
+    // 44. Task #7: Translation Catalogue, Fallbacks & XSS Escaping
+    console.log('\n[44] Testing Translation Catalogue, Fallbacks & XSS Escaping...');
+    assert.strictEqual(i18nService.t('visa.services', 'ar'), 'خدمات التأشيرات');
+    assert.strictEqual(i18nService.t('visa.services', 'en'), 'Visa Services');
+    // Key fallback when missing
+    assert.strictEqual(i18nService.t('non_existent_key_123', 'ar'), 'non_existent_key_123');
+    // XSS Escaping in dynamic params
+    const escapedParam = i18nService.t('tourism.seats_remaining', 'en', { count: '<script>alert(1)</script>' });
+    assert.ok(!escapedParam.includes('<script>'));
+    assert.ok(escapedParam.includes('&lt;script&gt;'));
+    console.log('  ✅ Translation lookup, fallback & XSS escaping PASSED');
+
+    // 45. Task #7: Multi-Currency Formatting Engine & Precision
+    console.log('\n[45] Testing Multi-Currency Formatting Engine & Precision (OMR, AED, SAR, INR, USD)...');
+    // OMR: 3 decimals (189000 -> 189.000 OMR)
+    const omrFmtEn = i18nService.formatCurrency(189000, 'OMR', 'en');
+    assert.ok(omrFmtEn.includes('189.000'));
+
+    // AED: 2 decimals (125000 -> 1,250.00 AED)
+    const aedFmtEn = i18nService.formatCurrency(125000, 'AED', 'en');
+    assert.ok(aedFmtEn.includes('1,250.00'));
+
+    // SAR: 2 decimals (125000 -> 1,250.00 SAR)
+    const sarFmtEn = i18nService.formatCurrency(125000, 'SAR', 'en');
+    assert.ok(sarFmtEn.includes('1,250.00'));
+
+    // INR: 2 decimals (12500000 -> ₹1,25,000.00)
+    const inrFmtEn = i18nService.formatCurrency(12500000, 'INR', 'en');
+    assert.ok(inrFmtEn.includes('1,25,000.00'));
+
+    // USD: 2 decimals (125000 -> $1,250.00)
+    const usdFmtEn = i18nService.formatCurrency(125000, 'USD', 'en');
+    assert.strictEqual(usdFmtEn, '$1,250.00');
+
+    // Test API Endpoint format-currency
+    const fmtApiRes = await request('/api/i18n/format-currency', {
+      method: 'POST',
+      body: { amountMinor: 189000, currency: 'OMR', locale: 'ar' }
+    });
+    assert.strictEqual(fmtApiRes.status, 200);
+    assert.ok(fmtApiRes.body.formatted.includes('ر.ع.'));
+
+    // Test Invalid Currency Rejection
+    const invalidCurrRes = await request('/api/i18n/format-currency', {
+      method: 'POST',
+      body: { amountMinor: 100, currency: 'EUR', locale: 'en' }
+    });
+    assert.strictEqual(invalidCurrRes.status, 400);
+    assert.strictEqual(invalidCurrRes.body.error.code, 'INVALID_CURRENCY');
+    console.log('  ✅ Multi-currency formatting PASSED for OMR (3 decimals), AED/SAR/INR/USD (2 decimals) & invalid currency rejected');
+
+    // 46. Task #7: Multi-Currency Payment Safety (Server-Authoritative Enforcement)
+    console.log('\n[46] Testing Multi-Currency Payment Safety...');
+    // Verify client cannot submit modified converted amounts as payment
+    const pkg = await db.tourPackages.findOne({ published: true });
+    const booking = await db.tourBookings.create({
+      userId: customer1User.id,
+      packageId: pkg.id,
+      packageTitle: pkg.title,
+      numberOfTravellers: 1,
+      totalAmountMinor: pkg.priceMinor,
+      currency: 'OMR', // Server authoritative
+      status: 'PENDING_PAYMENT'
+    });
+
+    const paymentOrderRes = await request('/api/payments/create-order', {
+      method: 'POST',
+      headers: { authorization: `Bearer ${customer1Token}` },
+      body: {
+        bookingId: booking.id,
+        amountMinor: 100, // Fraudulent client attempt
+        currency: 'USD'   // Fraudulent currency attempt
+      }
+    });
+
+    // Server must enforce booking's authoritative totalAmountMinor & currency (OMR)
+    assert.strictEqual(paymentOrderRes.status, 201);
+    assert.strictEqual(paymentOrderRes.body.payment.amountMinor, pkg.priceMinor);
+    assert.strictEqual(paymentOrderRes.body.payment.currency, 'OMR');
+    console.log('  ✅ Multi-currency payment safety PASSED: Server enforced 189.000 OMR (ignored client 1 USD claim)');
+
+    // 47. Task #7: FX Provider Abstraction (PREPARED ONLY)
+    console.log('\n[47] Testing FX Provider Abstraction Interface (PREPARED ONLY)...');
+    const fxRes = await request('/api/i18n/fx-rates?base=OMR&quote=AED&amountMinor=100000');
+    assert.strictEqual(fxRes.status, 200);
+    assert.strictEqual(fxRes.body.status, 'PREPARED_ONLY');
+    assert.strictEqual(fxRes.body.data.isEstimateOnly, true);
+    assert.strictEqual(fxRes.body.data.exchangeRate, 9.54);
+    assert.strictEqual(fxRes.body.data.estimatedConvertedAmountMinor, 95400);
+    console.log('  ✅ FX provider abstraction PASSED: Static mock rate returned, clearly labeled PREPARED ONLY for display estimates');
+
+    // 48. Task #7: User Preferences Persistence (Language & Currency)
+    console.log('\n[48] Testing User Preferences Persistence (Language & Currency)...');
+    // Save preferences
+    const updatePrefRes = await request('/api/users/preferences', {
+      method: 'PATCH',
+      headers: { authorization: `Bearer ${customer1Token}` },
+      body: { preferredLanguage: 'ar', preferredCurrency: 'USD' }
+    });
+    assert.strictEqual(updatePrefRes.status, 200);
+    assert.strictEqual(updatePrefRes.body.user.preferredLanguage, 'ar');
+    assert.strictEqual(updatePrefRes.body.user.preferredCurrency, 'USD');
+
+    // Verify /api/auth/me returns updated preferences
+    const meRes = await request('/api/auth/me', {
+      headers: { authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(meRes.status, 200);
+    assert.strictEqual(meRes.body.user.preferredLanguage, 'ar');
+    assert.strictEqual(meRes.body.user.preferredCurrency, 'USD');
+
+    // Rejection of invalid preferences
+    const invalidPrefRes = await request('/api/users/preferences', {
+      method: 'PATCH',
+      headers: { authorization: `Bearer ${customer1Token}` },
+      body: { preferredLanguage: 'de' }
+    });
+    assert.strictEqual(invalidPrefRes.status, 400);
+    assert.strictEqual(invalidPrefRes.body.error.code, 'INVALID_LOCALE');
+
+    // Unauthenticated rejection
+    const unauthPrefRes = await request('/api/users/preferences', {
+      method: 'PATCH',
+      body: { preferredLanguage: 'ar' }
+    });
+    assert.strictEqual(unauthPrefRes.status, 401);
+    console.log('  ✅ User preferences persistence PASSED: Saved language (ar) & currency (USD), invalid values rejected (400)');
+
+    // 49. Task #7: Email Localization & RTL Template Rendering
+    console.log('\n[49] Testing Email Localization & RTL Template Rendering...');
+    const notifSvc = require('./services/notification');
+    const localizedEmail = notifSvc.renderEmailTemplate('TEST', {
+      title: 'تمت الموافقة على طلب التأشيرة',
+      message: 'تمت الموافقة على طلب التأشيرة الخاص بك بنجاح.',
+      recipientName: 'علي بن أحمد',
+      reference: 'JMT-V-998877',
+      locale: 'ar'
+    });
+    assert.ok(localizedEmail.html.includes('dir="rtl"'));
+    assert.ok(localizedEmail.html.includes('lang="ar"'));
+    assert.ok(localizedEmail.html.includes('text-align: right'));
+    assert.ok(localizedEmail.html.includes('JMT-V-998877'));
+    console.log('  ✅ Email localization & RTL template rendering PASSED');
+
     console.log('\n================================================================');
-    console.log('🎉 ALL AUTOMATED TESTS PASSED SUCCESSFULLY! (41/41)');
+    console.log('🎉 ALL AUTOMATED TESTS PASSED SUCCESSFULLY! (49/49)');
     console.log('================================================================');
   } catch (err) {
     console.error('\n❌ Test Failure Details:', err);
