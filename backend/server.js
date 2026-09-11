@@ -21,6 +21,7 @@ const db = require('./db');
 const paymentService = require('./services/payment');
 const notificationService = require('./services/notification');
 const chatbotService = require('./services/chatbot');
+const chatTools = require('./services/chatTools');
 const i18nService = require('./services/i18n');
 
 const app = express();
@@ -64,7 +65,7 @@ app.use(express.static(path.join(__dirname, '../frontend/public')));
 // -------------------------------------------------------------
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 150,
+  max: 500,
   standardHeaders: true,
   legacyHeaders: false
 });
@@ -2054,6 +2055,252 @@ app.get('/api/admin/audit-logs', authenticate, authorize('ADMIN', 'SUPER_ADMIN')
       logs: logs.slice(startIndex, startIndex + limit),
       pagination: { total, page, limit, totalPages }
     });
+  } catch (err) {
+    res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: err.message } });
+  }
+});
+
+// -------------------------------------------------------------
+// TASK #9: JMT AI CHATBOT & CUSTOMER SUPPORT SYSTEM ROUTES
+// -------------------------------------------------------------
+const chatLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 40,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: { code: 'RATE_LIMITED', message: 'Too many chat requests. Please wait 15 minutes.' } }
+});
+
+// 1. Create or retrieve active conversation for authenticated customer
+app.post('/api/chat/conversations', authenticate, i18nMiddleware, async (req, res) => {
+  try {
+    const { title, channel = 'WEB', language } = req.body || {};
+    const normLang = language || req.locale || req.user?.preferredLanguage || 'en';
+
+    let conversation = await db.chatConversations.findOne({
+      customerId: req.user.id,
+      status: 'ACTIVE'
+    });
+
+    if (!conversation) {
+      conversation = await db.chatConversations.create({
+        customerId: req.user.id,
+        title: title || 'Support Chat',
+        channel: channel || 'WEB',
+        language: normLang,
+        status: 'ACTIVE',
+        escalationState: 'AI_ACTIVE'
+      });
+
+      const isAr = normLang === 'ar';
+      const welcomeText = isAr
+        ? 'مرحباً! أنا مساعد JMT الرقمي. كيف يمكنني مساعدتك اليوم؟'
+        : 'Hello! I am JMT Travels AI Assistant. How can I help you today?';
+
+      await db.chatMessages.create({
+        conversationId: conversation.id,
+        sender: 'AI',
+        text: welcomeText,
+        language: normLang
+      });
+    }
+
+    res.status(201).json({ success: true, conversation });
+  } catch (err) {
+    res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: err.message } });
+  }
+});
+
+// 2. List authenticated customer's own conversations (IDOR protected)
+app.get('/api/chat/conversations', authenticate, async (req, res) => {
+  try {
+    const conversations = await db.chatConversations.find({ customerId: req.user.id });
+    res.json({ success: true, conversations });
+  } catch (err) {
+    res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: err.message } });
+  }
+});
+
+// 3. Get single conversation details with messages (IDOR protected)
+app.get('/api/chat/conversations/:id', authenticate, async (req, res) => {
+  try {
+    const conversation = await db.chatConversations.findById(req.params.id);
+    if (!conversation) {
+      return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Chat conversation not found.' } });
+    }
+
+    const isStaff = ['ADMIN', 'SUPER_ADMIN', 'STAFF'].includes(req.user.role);
+    if (conversation.customerId !== req.user.id && !isStaff) {
+      return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Access denied to this conversation.' } });
+    }
+
+    const messages = await db.chatMessages.find({ conversationId: conversation.id });
+    messages.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+
+    res.json({ success: true, conversation, messages });
+  } catch (err) {
+    res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: err.message } });
+  }
+});
+
+// 4. Send message to AI chatbot in a conversation (IDOR & Rate Limited)
+app.post('/api/chat/conversations/:id/messages', chatLimiter, authenticate, i18nMiddleware, async (req, res) => {
+  try {
+    const conversation = await db.chatConversations.findById(req.params.id);
+    if (!conversation) {
+      return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Chat conversation not found.' } });
+    }
+
+    const isStaff = ['ADMIN', 'SUPER_ADMIN', 'STAFF'].includes(req.user.role);
+    if (conversation.customerId !== req.user.id && !isStaff) {
+      return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Access denied to this conversation.' } });
+    }
+
+    const { text, language } = req.body || {};
+    if (!text || !text.trim()) {
+      return res.status(400).json({ success: false, error: { code: 'INVALID_INPUT', message: 'Message text is required.' } });
+    }
+
+    const msgLang = language || req.locale || conversation.language || 'en';
+
+    const userMessage = await db.chatMessages.create({
+      conversationId: conversation.id,
+      sender: 'CUSTOMER',
+      text: text.trim(),
+      language: msgLang
+    });
+
+    await db.chatConversations.update(conversation.id, { lastMessageAt: new Date().toISOString() });
+
+    const result = await chatbotService.processMessage({
+      message: text,
+      conversationId: conversation.id,
+      user: req.user,
+      locale: msgLang
+    });
+
+    const aiMessage = await db.chatMessages.create({
+      conversationId: conversation.id,
+      sender: 'AI',
+      text: result.reply,
+      language: msgLang,
+      metadata: { quickReplies: result.quickReplies, ticketNumber: result.ticketNumber }
+    });
+
+    if (result.escalationState) {
+      await db.chatConversations.update(conversation.id, { escalationState: result.escalationState });
+    }
+
+    res.json({
+      success: true,
+      userMessage,
+      aiResponse: aiMessage,
+      escalationState: result.escalationState || conversation.escalationState,
+      quickReplies: result.quickReplies
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: err.message } });
+  }
+});
+
+// 5. Explicit Escalate Conversation to Human Support Desk
+app.post('/api/chat/conversations/:id/escalate', authenticate, i18nMiddleware, async (req, res) => {
+  try {
+    const conversation = await db.chatConversations.findById(req.params.id);
+    if (!conversation) {
+      return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Chat conversation not found.' } });
+    }
+
+    const isStaff = ['ADMIN', 'SUPER_ADMIN', 'STAFF'].includes(req.user.role);
+    if (conversation.customerId !== req.user.id && !isStaff) {
+      return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Access denied to this conversation.' } });
+    }
+
+    const { reason } = req.body || {};
+    const escResult = await chatTools.escalateToHuman(req.user, conversation.id, reason || 'Customer requested human agent escalation.');
+
+    const sysMessage = await db.chatMessages.create({
+      conversationId: conversation.id,
+      sender: 'SYSTEM',
+      text: req.locale === 'ar'
+        ? `تم تصعيد المحادثة إلى فريق الدعم. رقم التذكرة المرتبطة: ${escResult.ticket ? escResult.ticket.ticketNumber : 'N/A'}`
+        : `Conversation escalated to customer support. Linked Ticket #: ${escResult.ticket ? escResult.ticket.ticketNumber : 'N/A'}`,
+      language: req.locale || 'en'
+    });
+
+    const updatedConv = await db.chatConversations.findById(conversation.id);
+    res.json({
+      success: true,
+      conversation: updatedConv,
+      ticket: escResult.ticket,
+      systemMessage: sysMessage
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: err.message } });
+  }
+});
+
+// 6. Admin/Staff: List Conversations (Active / Escalated)
+app.get('/api/admin/chat/conversations', authenticate, async (req, res) => {
+  try {
+    const isStaff = ['ADMIN', 'SUPER_ADMIN', 'STAFF'].includes(req.user.role);
+    if (!isStaff) {
+      return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Admin / Staff access required.' } });
+    }
+
+    const { status, escalationState } = req.query;
+    const filter = {};
+    if (status) filter.status = status;
+    if (escalationState) filter.escalationState = escalationState;
+
+    const conversations = await db.chatConversations.find(filter);
+    res.json({ success: true, conversations });
+  } catch (err) {
+    res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: err.message } });
+  }
+});
+
+// 7. Admin/Staff: Reply to Customer Conversation
+app.post('/api/admin/chat/conversations/:id/reply', authenticate, async (req, res) => {
+  try {
+    const isStaff = ['ADMIN', 'SUPER_ADMIN', 'STAFF'].includes(req.user.role);
+    if (!isStaff) {
+      return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Admin / Staff access required.' } });
+    }
+
+    const conversation = await db.chatConversations.findById(req.params.id);
+    if (!conversation) {
+      return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Chat conversation not found.' } });
+    }
+
+    const { text } = req.body || {};
+    if (!text || !text.trim()) {
+      return res.status(400).json({ success: false, error: { code: 'INVALID_INPUT', message: 'Reply text is required.' } });
+    }
+
+    const staffMsg = await db.chatMessages.create({
+      conversationId: conversation.id,
+      sender: 'STAFF',
+      text: text.trim(),
+      language: conversation.language || 'en'
+    });
+
+    await db.chatConversations.update(conversation.id, {
+      escalationState: 'STAFF_ACTIVE',
+      assignedStaffId: req.user.id,
+      lastMessageAt: new Date().toISOString()
+    });
+
+    const customer = await db.users.findById(conversation.customerId);
+    if (customer) {
+      await notificationService.dispatchEvent('SUPPORT_TICKET_UPDATED', {
+        user: customer,
+        reference: conversation.id
+      });
+    }
+
+    const updatedConv = await db.chatConversations.findById(conversation.id);
+    res.json({ success: true, message: staffMsg, conversation: updatedConv });
   } catch (err) {
     res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: err.message } });
   }

@@ -43,11 +43,17 @@
 | `POST` | `/api/payments/create-order` | Create provider payment order | Bearer JWT |
 | `POST` | `/api/payments/webhook` | Process gateway webhook signature | Public |
 
-## 6. Chatbot, Support & Contact
+## 6. Chatbot & Customer Support System Endpoints (Task #9)
 
 | Method | Endpoint | Description | Auth Required |
 | :--- | :--- | :--- | :--- |
-| `POST` | `/api/chat` | Chatbot query processing | Public |
+| `POST` | `/api/chat/conversations` | Create or get active customer chat conversation | Bearer JWT |
+| `GET` | `/api/chat/conversations` | List authenticated customer's conversations (IDOR isolated) | Bearer JWT |
+| `GET` | `/api/chat/conversations/:id` | View chat conversation & messages (IDOR isolated) | Bearer JWT |
+| `POST` | `/api/chat/conversations/:id/messages` | Send customer message to AI Chatbot (Rate Limited) | Bearer JWT |
+| `POST` | `/api/chat/conversations/:id/escalate` | Escalate conversation to human support & create ticket | Bearer JWT |
+| `GET` | `/api/admin/chat/conversations` | Staff list active/escalated customer conversations | Staff/Admin |
+| `POST` | `/api/admin/chat/conversations/:id/reply` | Staff reply to chat conversation & update state | Staff/Admin |
 | `POST` | `/api/support/tickets` | Create support ticket | Optional |
 | `GET` | `/api/support/tickets` | View support ticket threads | Bearer JWT |
 | `POST` | `/api/feedback` | Submit website contact form | Public |
