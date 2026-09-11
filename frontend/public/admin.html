@@ -7,15 +7,24 @@
   <title>JMT Admin Operations Console</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/assets/css/jmt-theme.css">
   <style>
-    body { background: #0B132B; color: #E2E8F0; }
+    body { background: #0B132B; color: #E2E8F0; font-family: 'Plus Jakarta Sans', 'Segoe UI', sans-serif; }
+    [dir="rtl"] body { font-family: 'Tajawal', 'Cairo', sans-serif; }
     .admin-card { background: #1C2541; border: 1px solid #3A506B; border-radius: 12px; padding: 24px; margin-bottom: 24px; }
     .table-admin { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 16px; }
     .table-admin th { text-align: left; padding: 12px; border-bottom: 2px solid #3A506B; color: #5BC0BE; }
+    [dir="rtl"] .table-admin th { text-align: right; }
     .table-admin td { padding: 12px; border-bottom: 1px solid #3A506B; }
     .select-status { background: #0B132B; color: #FFFFFF; border: 1px solid #3A506B; padding: 6px 10px; border-radius: 6px; }
+    .admin-nav-btn { background: transparent; border: 1px solid #3A506B; color: #E2E8F0; padding: 8px 16px; border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer; transition: all 0.2s; }
+    .admin-nav-btn.active, .admin-nav-btn:hover { background: #5BC0BE; color: #0B132B; border-color: #5BC0BE; }
+    .badge { padding: 4px 8px; border-radius: 6px; font-weight: 700; font-size: 11px; display: inline-block; }
+    .badge-success { background: #16A34A; color: #FFFFFF; }
+    .badge-warning { background: #D97706; color: #FFFFFF; }
+    .badge-info { background: #1E2B6D; color: #FFFFFF; }
+    .badge-danger { background: #DC2626; color: #FFFFFF; }
   </style>
 </head>
 <body>
@@ -34,14 +43,14 @@
       <p style="color:#94A3B8; font-size:13px; margin-bottom:24px;">Enter administrator credentials or staff key.</p>
       
       <div style="margin-bottom:16px;">
-        <label style="display:block; font-size:12px; margin-bottom:6px; font-weight:700;">Email Address / Staff Key</label>
-        <input type="text" id="admin-email" class="chat-input" style="width:100%; width:-webkit-fill-available;" required value="admin@jmttravels.com">
+        <label style="display:block; font-size:12px; margin-bottom:6px; font-weight:700;">Email Address</label>
+        <input type="text" id="admin-email" class="chat-input" style="width:100%; width:-webkit-fill-available; padding:10px; border-radius:6px; border:1px solid #3A506B; background:#0B132B; color:#FFF;" required value="admin@jmttravels.com">
       </div>
       <div style="margin-bottom:24px;">
         <label style="display:block; font-size:12px; margin-bottom:6px; font-weight:700;">Password</label>
-        <input type="password" id="admin-password" class="chat-input" style="width:100%; width:-webkit-fill-available;" required value="JMTAdmin2026!">
+        <input type="password" id="admin-password" class="chat-input" style="width:100%; width:-webkit-fill-available; padding:10px; border-radius:6px; border:1px solid #3A506B; background:#0B132B; color:#FFF;" required value="JMTAdmin2026!">
       </div>
-      <button type="submit" class="btn btn-primary" style="width:100%; padding:12px;">Open Staff Console</button>
+      <button type="submit" class="btn btn-primary" style="width:100%; padding:12px; background:#5BC0BE; color:#0B132B; border:none; font-weight:700; border-radius:6px; cursor:pointer;">Open Staff Console</button>
       <div id="admin-login-error" style="margin-top:16px; color:#FF6B6B; font-size:13px; font-weight:700;"></div>
     </form>
   </div>
@@ -54,35 +63,108 @@
         <img src="/assets/logo.png" alt="JMT" style="height:36px;">
         <strong style="font-size:18px; color:#FFFFFF;">JMT Admin Operations Console</strong>
       </div>
-      <div>
-        <span id="admin-user-display" style="margin-right:16px; font-size:14px; color:#5BC0BE;">Staff User</span>
-        <button onclick="logoutAdmin()" class="btn btn-sm btn-outline" style="color:#FFFFFF; border-color:#3A506B;">Sign Out</button>
+      <div style="display:flex; align-items:center; gap:16px;">
+        <span id="admin-user-display" style="font-size:14px; color:#5BC0BE;">Staff User</span>
+        <button onclick="toggleRTL()" class="admin-nav-btn" style="padding:4px 10px; font-size:11px;">RTL / Arabic</button>
+        <button onclick="logoutAdmin()" class="btn btn-sm btn-outline" style="color:#FFFFFF; border:1px solid #3A506B; background:transparent; padding:6px 12px; border-radius:6px; cursor:pointer;">Sign Out</button>
       </div>
     </header>
 
+    <!-- MODULE NAVIGATION BAR -->
+    <nav style="background:#0B132B; border-bottom:1px solid #3A506B; padding:12px 32px; display:flex; gap:10px; flex-wrap:wrap;">
+      <button onclick="switchTab('overview')" class="admin-nav-btn active" id="tab-overview">Overview</button>
+      <button onclick="switchTab('customers')" class="admin-nav-btn" id="tab-customers">Customers</button>
+      <button onclick="switchTab('visas')" class="admin-nav-btn" id="tab-visas">Visa Applications</button>
+      <button onclick="switchTab('documents')" class="admin-nav-btn" id="tab-documents">Documents</button>
+      <button onclick="switchTab('packages')" class="admin-nav-btn" id="tab-packages">Tour Packages</button>
+      <button onclick="switchTab('bookings')" class="admin-nav-btn" id="tab-bookings">Bookings</button>
+      <button onclick="switchTab('payments')" class="admin-nav-btn" id="tab-payments">Payments</button>
+      <button onclick="switchTab('support')" class="admin-nav-btn" id="tab-support">Support</button>
+      <button onclick="switchTab('audit')" class="admin-nav-btn" id="tab-audit">Audit Logs</button>
+    </nav>
+
     <!-- CONTENT BODY -->
     <div class="shell" style="padding: 32px 20px;">
-      <!-- METRICS GRID -->
-      <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:16px; margin-bottom:32px;" id="admin-metrics">
-        <!-- Rendered dynamically -->
+      <!-- TAB 1: OVERVIEW -->
+      <div id="section-overview" class="admin-tab-section">
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:16px; margin-bottom:32px;" id="admin-metrics">
+          <!-- Rendered dynamically -->
+        </div>
+
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:24px;">
+          <div class="admin-card">
+            <h3 style="color:#FFFFFF; font-size:18px; margin-bottom:12px;">Recent Visa Applications</h3>
+            <div id="overview-visas-list">Loading...</div>
+          </div>
+          <div class="admin-card">
+            <h3 style="color:#FFFFFF; font-size:18px; margin-bottom:12px;">Recent Tour Bookings</h3>
+            <div id="overview-bookings-list">Loading...</div>
+          </div>
+        </div>
       </div>
 
-      <!-- VISA APPLICATIONS SECTION -->
-      <div class="admin-card">
-        <h2 style="color:#FFFFFF; font-size:20px; margin-bottom:16px;">Visa Applications Management</h2>
-        <div id="admin-visas-table-container">Loading visa applications...</div>
+      <!-- TAB 2: CUSTOMERS -->
+      <div id="section-customers" class="admin-tab-section" style="display:none;">
+        <div class="admin-card">
+          <h2 style="color:#FFFFFF; font-size:20px; margin-bottom:16px;">User &amp; Customer Management</h2>
+          <div id="customers-table-container">Loading customers...</div>
+        </div>
       </div>
 
-      <!-- TOUR BOOKINGS SECTION -->
-      <div class="admin-card">
-        <h2 style="color:#FFFFFF; font-size:20px; margin-bottom:16px;">Tour Reservations &amp; Bookings</h2>
-        <div id="admin-bookings-table-container">Loading bookings...</div>
+      <!-- TAB 3: VISAS -->
+      <div id="section-visas" class="admin-tab-section" style="display:none;">
+        <div class="admin-card">
+          <h2 style="color:#FFFFFF; font-size:20px; margin-bottom:16px;">Visa Applications Management</h2>
+          <div id="visas-table-container">Loading applications...</div>
+        </div>
       </div>
 
-      <!-- PAYMENTS SECTION -->
-      <div class="admin-card">
-        <h2 style="color:#FFFFFF; font-size:20px; margin-bottom:16px;">Payment Transactions &amp; Audit Logs</h2>
-        <div id="admin-payments-table-container">Loading transactions...</div>
+      <!-- TAB 4: DOCUMENTS -->
+      <div id="section-documents" class="admin-tab-section" style="display:none;">
+        <div class="admin-card">
+          <h2 style="color:#FFFFFF; font-size:20px; margin-bottom:16px;">Document Management &amp; Review</h2>
+          <div id="documents-table-container">Loading documents...</div>
+        </div>
+      </div>
+
+      <!-- TAB 5: TOUR PACKAGES -->
+      <div id="section-packages" class="admin-tab-section" style="display:none;">
+        <div class="admin-card">
+          <h2 style="color:#FFFFFF; font-size:20px; margin-bottom:16px;">Tour Packages &amp; Catalogue</h2>
+          <div id="packages-table-container">Loading packages...</div>
+        </div>
+      </div>
+
+      <!-- TAB 6: BOOKINGS -->
+      <div id="section-bookings" class="admin-tab-section" style="display:none;">
+        <div class="admin-card">
+          <h2 style="color:#FFFFFF; font-size:20px; margin-bottom:16px;">Tour Reservations &amp; Bookings</h2>
+          <div id="bookings-table-container">Loading bookings...</div>
+        </div>
+      </div>
+
+      <!-- TAB 7: PAYMENTS -->
+      <div id="section-payments" class="admin-tab-section" style="display:none;">
+        <div class="admin-card">
+          <h2 style="color:#FFFFFF; font-size:20px; margin-bottom:16px;">Payment Transactions &amp; Refunds</h2>
+          <div id="payments-table-container">Loading transactions...</div>
+        </div>
+      </div>
+
+      <!-- TAB 8: SUPPORT -->
+      <div id="section-support" class="admin-tab-section" style="display:none;">
+        <div class="admin-card">
+          <h2 style="color:#FFFFFF; font-size:20px; margin-bottom:16px;">Customer Support Tickets &amp; Contact Inquiries</h2>
+          <div id="support-table-container">Loading tickets...</div>
+        </div>
+      </div>
+
+      <!-- TAB 9: AUDIT LOGS -->
+      <div id="section-audit" class="admin-tab-section" style="display:none;">
+        <div class="admin-card">
+          <h2 style="color:#FFFFFF; font-size:20px; margin-bottom:16px;">Immutable System Audit Logs</h2>
+          <div id="audit-table-container">Loading audit logs...</div>
+        </div>
       </div>
     </div>
   </div>
@@ -116,121 +198,295 @@
       document.getElementById('admin-login-view').style.display = 'none';
       document.getElementById('admin-workspace-view').style.display = 'block';
       if (user) document.getElementById('admin-user-display').textContent = `${user.name} (${user.role})`;
-      loadAdminDashboard();
+      loadDashboardOverview();
     }
 
-    async function loadAdminDashboard() {
+    function switchTab(tabName) {
+      document.querySelectorAll('.admin-nav-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.admin-tab-section').forEach(sec => sec.style.display = 'none');
+
+      const tabBtn = document.getElementById(`tab-${tabName}`);
+      const secDiv = document.getElementById(`section-${tabName}`);
+      if (tabBtn) tabBtn.classList.add('active');
+      if (secDiv) secDiv.style.display = 'block';
+
+      if (tabName === 'overview') loadDashboardOverview();
+      else if (tabName === 'customers') loadCustomers();
+      else if (tabName === 'visas') loadVisas();
+      else if (tabName === 'documents') loadDocuments();
+      else if (tabName === 'packages') loadPackages();
+      else if (tabName === 'bookings') loadBookings();
+      else if (tabName === 'payments') loadPayments();
+      else if (tabName === 'support') loadSupport();
+      else if (tabName === 'audit') loadAuditLogs();
+    }
+
+    function toggleRTL() {
+      const current = document.documentElement.getAttribute('dir');
+      if (current === 'rtl') {
+        document.documentElement.setAttribute('dir', 'ltr');
+        document.documentElement.setAttribute('lang', 'en');
+      } else {
+        document.documentElement.setAttribute('dir', 'rtl');
+        document.documentElement.setAttribute('lang', 'ar');
+      }
+    }
+
+    async function loadDashboardOverview() {
       try {
-        const overview = await api('/api/admin/overview');
+        const overview = await api('/api/admin/dashboard');
         if (overview.metrics) {
           const m = overview.metrics;
           document.getElementById('admin-metrics').innerHTML = `
             <div class="admin-card" style="margin:0; padding:16px;">
               <small style="color:#94A3B8;">Customers</small>
-              <h3 style="font-size:28px; color:#5BC0BE; margin-top:4px;">${m.customers}</h3>
+              <h3 style="font-size:26px; color:#5BC0BE; margin-top:4px;">${m.customers.total}</h3>
             </div>
             <div class="admin-card" style="margin:0; padding:16px;">
               <small style="color:#94A3B8;">Visa Applications</small>
-              <h3 style="font-size:28px; color:#5BC0BE; margin-top:4px;">${m.visaApplications}</h3>
+              <h3 style="font-size:26px; color:#5BC0BE; margin-top:4px;">${m.visa.total}</h3>
             </div>
             <div class="admin-card" style="margin:0; padding:16px;">
               <small style="color:#94A3B8;">Open Visas</small>
-              <h3 style="font-size:28px; color:#FFD166; margin-top:4px;">${m.openVisaApplications}</h3>
+              <h3 style="font-size:26px; color:#FFD166; margin-top:4px;">${m.visa.underReview + m.visa.submitted}</h3>
             </div>
             <div class="admin-card" style="margin:0; padding:16px;">
-              <small style="color:#94A3B8;">Reservations</small>
-              <h3 style="font-size:28px; color:#5BC0BE; margin-top:4px;">${m.reservations}</h3>
+              <small style="color:#94A3B8;">Bookings</small>
+              <h3 style="font-size:26px; color:#5BC0BE; margin-top:4px;">${m.bookings.total}</h3>
+            </div>
+            <div class="admin-card" style="margin:0; padding:16px;">
+              <small style="color:#94A3B8;">Payments Paid</small>
+              <h3 style="font-size:26px; color:#00F5D4; margin-top:4px;">${m.payments.paid}</h3>
             </div>
           `;
         }
 
-        const [visasRes, bookingsRes, paymentsRes] = await Promise.all([
-          api('/api/admin/visa-applications'),
-          api('/api/admin/bookings'),
-          api('/api/admin/payments').catch(() => ({ payments: [] }))
-        ]);
+        const visas = overview.recentVisas || [];
+        document.getElementById('overview-visas-list').innerHTML = visas.map(v => `
+          <div style="border-bottom:1px solid #3A506B; padding:8px 0; font-size:13px;">
+            <b><span class="ltr-isolate">${v.applicationNumber || v.id}</span></b> - ${v.fullName} (<span class="badge badge-info">${v.status}</span>)
+          </div>
+        `).join('') || '<p>No applications.</p>';
 
-        // Visas table
-        const visas = visasRes.applications || [];
-        document.getElementById('admin-visas-table-container').innerHTML = visas.length === 0 ? '<p>No applications.</p>' : `
+        const bookings = overview.recentBookings || [];
+        document.getElementById('overview-bookings-list').innerHTML = bookings.map(b => `
+          <div style="border-bottom:1px solid #3A506B; padding:8px 0; font-size:13px;">
+            <b><span class="ltr-isolate">${b.bookingNumber || b.id}</span></b> - ${b.travellerName} (<span class="badge badge-success">${b.status}</span>)
+          </div>
+        `).join('') || '<p>No bookings.</p>';
+      } catch (err) {
+        console.error('Failed to load overview:', err);
+      }
+    }
+
+    async function loadCustomers() {
+      try {
+        const res = await api('/api/admin/users');
+        const users = res.users || [];
+        document.getElementById('customers-table-container').innerHTML = `
           <table class="table-admin">
-            <thead>
-              <tr><th>Reference</th><th>Applicant</th><th>Destination</th><th>Status</th><th>Actions</th></tr>
-            </thead>
+            <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Action</th></tr></thead>
+            <tbody>
+              ${users.map(u => `
+                <tr>
+                  <td><b>${u.name}</b></td>
+                  <td>${u.email}</td>
+                  <td><span class="badge badge-info">${u.role}</span></td>
+                  <td><span class="badge ${u.status==='ACTIVE'?'badge-success':'badge-warning'}">${u.status}</span></td>
+                  <td>
+                    ${u.status==='ACTIVE' ? `<button onclick="updateUserStatus('${u.id}','SUSPENDED')" class="btn btn-sm" style="background:#DC2626; color:#FFF; border:none; padding:4px 8px; border-radius:4px; cursor:pointer;">Suspend</button>` : `<button onclick="updateUserStatus('${u.id}','ACTIVE')" class="btn btn-sm" style="background:#16A34A; color:#FFF; border:none; padding:4px 8px; border-radius:4px; cursor:pointer;">Reactivate</button>`}
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        `;
+      } catch (err) {
+        document.getElementById('customers-table-container').textContent = err.message;
+      }
+    }
+
+    async function updateUserStatus(id, status) {
+      if (!confirm(`Are you sure you want to change user status to ${status}?`)) return;
+      try {
+        const res = await api(`/api/admin/users/${id}/status`, 'PATCH', { status });
+        if (!res.success) throw new Error(res.error?.message || 'Failed');
+        alert(res.message);
+        loadCustomers();
+      } catch (err) { alert(err.message); }
+    }
+
+    async function loadVisas() {
+      try {
+        const visasRes = await api('/api/admin/visa-applications');
+        const visas = visasRes.applications || [];
+        document.getElementById('visas-table-container').innerHTML = `
+          <table class="table-admin">
+            <thead><tr><th>Reference</th><th>Applicant</th><th>Destination</th><th>Status</th><th>Actions</th></tr></thead>
             <tbody>
               ${visas.map(v => `
                 <tr>
-                  <td><b>${v.applicationNumber || v.id}</b></td>
+                  <td><b><span class="ltr-isolate">${v.applicationNumber || v.id}</span></b></td>
                   <td>${v.fullName} (${v.email})</td>
                   <td>${v.destination} (${v.visaType})</td>
                   <td>
                     <select class="select-status" onchange="updateVisaStatus('${v.id}', this.value)">
-                      ${['DRAFT','SUBMITTED','PAYMENT_PENDING','PAYMENT_COMPLETED','DOCUMENT_REVIEW','PROCESSING','APPROVED','REJECTED','CANCELLED'].map(s => `
+                      ${['DRAFT','SUBMITTED','PAYMENT_PENDING','DOCUMENT_REVIEW','PROCESSING','APPROVED','REJECTED','CANCELLED'].map(s => `
                         <option value="${s}" ${v.status === s ? 'selected' : ''}>${s}</option>
                       `).join('')}
                     </select>
                   </td>
-                  <td><button onclick="alert('Viewing application timeline for ${v.applicationNumber}')" class="btn btn-sm btn-outline">View Details</button></td>
+                  <td><button onclick="alert('Viewing application timeline for ${v.applicationNumber}')" class="btn btn-sm btn-outline" style="color:#FFF;">View Details</button></td>
                 </tr>
               `).join('')}
             </tbody>
           </table>
         `;
-
-        // Bookings table
-        const bookings = bookingsRes.bookings || [];
-        document.getElementById('admin-bookings-table-container').innerHTML = bookings.length === 0 ? '<p>No bookings.</p>' : `
-          <table class="table-admin">
-            <thead>
-              <tr><th>Reference</th><th>Lead Traveler</th><th>Package</th><th>Amount</th><th>Status</th></tr>
-            </thead>
-            <tbody>
-              ${bookings.map(b => `
-                <tr>
-                  <td><b>${b.bookingNumber || b.id}</b></td>
-                  <td>${b.travellerName} (${b.email})</td>
-                  <td>${b.packageTitle}</td>
-                  <td>${b.currency} ${b.amount}</td>
-                  <td><span class="badge badge-primary">${b.status}</span></td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        `;
-
-        // Payments table
-        const payments = paymentsRes.payments || [];
-        document.getElementById('admin-payments-table-container').innerHTML = payments.length === 0 ? '<p>No payment records.</p>' : `
-          <table class="table-admin">
-            <thead>
-              <tr><th>Transaction ID</th><th>Provider</th><th>Amount</th><th>Status</th></tr>
-            </thead>
-            <tbody>
-              ${payments.map(p => `
-                <tr>
-                  <td>${p.providerOrderId}</td>
-                  <td>${p.provider}</td>
-                  <td>${p.currency} ${p.amount}</td>
-                  <td><span class="badge badge-success">${p.status}</span></td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        `;
-
-      } catch (err) {
-        console.error('Failed to load admin dashboard:', err);
-      }
+      } catch (err) { document.getElementById('visas-table-container').textContent = err.message; }
     }
 
     async function updateVisaStatus(id, status) {
       try {
         await api(`/api/visa/applications/${id}/status`, 'PATCH', { status });
         alert('Visa status updated to ' + status);
-        loadAdminDashboard();
-      } catch (err) {
-        alert('Failed to update status: ' + err.message);
-      }
+        loadVisas();
+      } catch (err) { alert('Failed: ' + err.message); }
+    }
+
+    async function loadDocuments() {
+      try {
+        const res = await api('/api/admin/documents');
+        const docs = res.documents || [];
+        document.getElementById('documents-table-container').innerHTML = `
+          <table class="table-admin">
+            <thead><tr><th>Document ID</th><th>Application</th><th>Type</th><th>File Name</th><th>Status</th></tr></thead>
+            <tbody>
+              ${docs.map(d => `
+                <tr>
+                  <td><b><span class="ltr-isolate">${d.documentId || d.id}</span></b></td>
+                  <td><span class="ltr-isolate">${d.applicationId}</span></td>
+                  <td>${d.documentType}</td>
+                  <td>${d.originalName}</td>
+                  <td><span class="badge badge-info">${d.status}</span></td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        `;
+      } catch (err) { document.getElementById('documents-table-container').textContent = err.message; }
+    }
+
+    async function loadPackages() {
+      try {
+        const res = await api('/api/admin/tour-packages');
+        const pkgs = res.packages || [];
+        document.getElementById('packages-table-container').innerHTML = `
+          <table class="table-admin">
+            <thead><tr><th>Title</th><th>Destination</th><th>Duration</th><th>Price (Minor)</th><th>Status</th></tr></thead>
+            <tbody>
+              ${pkgs.map(p => `
+                <tr>
+                  <td><b>${p.title}</b></td>
+                  <td>${p.destination}</td>
+                  <td>${p.duration}</td>
+                  <td>${p.currency} ${p.priceMinor}</td>
+                  <td><span class="badge ${p.published?'badge-success':'badge-warning'}">${p.published?'Published':'Draft'}</span></td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        `;
+      } catch (err) { document.getElementById('packages-table-container').textContent = err.message; }
+    }
+
+    async function loadBookings() {
+      try {
+        const res = await api('/api/admin/bookings');
+        const bookings = res.bookings || [];
+        document.getElementById('bookings-table-container').innerHTML = `
+          <table class="table-admin">
+            <thead><tr><th>Reference</th><th>Lead Traveler</th><th>Package</th><th>Amount</th><th>Status</th></tr></thead>
+            <tbody>
+              ${bookings.map(b => `
+                <tr>
+                  <td><b><span class="ltr-isolate">${b.bookingNumber || b.id}</span></b></td>
+                  <td>${b.travellerName} (${b.email})</td>
+                  <td>${b.packageTitle}</td>
+                  <td>${b.currency} ${b.totalAmountMinor ? (b.totalAmountMinor/1000).toFixed(3) : b.amount}</td>
+                  <td><span class="badge badge-primary">${b.status}</span></td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        `;
+      } catch (err) { document.getElementById('bookings-table-container').textContent = err.message; }
+    }
+
+    async function loadPayments() {
+      try {
+        const res = await api('/api/admin/payments');
+        const payments = res.payments || [];
+        document.getElementById('payments-table-container').innerHTML = `
+          <table class="table-admin">
+            <thead><tr><th>Transaction Reference</th><th>Provider</th><th>Amount</th><th>Status</th></tr></thead>
+            <tbody>
+              ${payments.map(p => `
+                <tr>
+                  <td><b><span class="ltr-isolate">${p.paymentNumber || p.id}</span></b></td>
+                  <td>${p.provider}</td>
+                  <td>${p.currency} ${p.amountMinor}</td>
+                  <td><span class="badge badge-success">${p.status}</span></td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        `;
+      } catch (err) { document.getElementById('payments-table-container').textContent = err.message; }
+    }
+
+    async function loadSupport() {
+      try {
+        const res = await api('/api/admin/support/tickets');
+        const tickets = res.tickets || [];
+        document.getElementById('support-table-container').innerHTML = `
+          <table class="table-admin">
+            <thead><tr><th>Ticket Ref</th><th>Customer Email</th><th>Subject</th><th>Status</th></tr></thead>
+            <tbody>
+              ${tickets.map(t => `
+                <tr>
+                  <td><b><span class="ltr-isolate">${t.ticketNumber || t.id}</span></b></td>
+                  <td>${t.userEmail}</td>
+                  <td>${t.subject}</td>
+                  <td><span class="badge badge-warning">${t.status}</span></td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        `;
+      } catch (err) { document.getElementById('support-table-container').textContent = err.message; }
+    }
+
+    async function loadAuditLogs() {
+      try {
+        const res = await api('/api/admin/audit-logs');
+        const logs = res.logs || [];
+        document.getElementById('audit-table-container').innerHTML = `
+          <table class="table-admin">
+            <thead><tr><th>Timestamp</th><th>Actor ID</th><th>Role</th><th>Action</th><th>Entity</th></tr></thead>
+            <tbody>
+              ${logs.slice(0, 30).map(l => `
+                <tr>
+                  <td>${new Date(l.createdAt || l.timestamp).toLocaleString()}</td>
+                  <td><b>${l.actorId}</b></td>
+                  <td><span class="badge badge-info">${l.actorRole}</span></td>
+                  <td>${l.action}</td>
+                  <td>${l.entityType} (${l.entityId || 'N/A'})</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        `;
+      } catch (err) { document.getElementById('audit-table-container').textContent = err.message; }
     }
 
     function logoutAdmin() {

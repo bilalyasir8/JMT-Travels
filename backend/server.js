@@ -1361,45 +1361,702 @@ app.get('/api/track/:reference', async (req, res) => {
   });
 });
 
-// --- 10. ADMIN METRICS & REPORTING (PROTECTED STAFF ONLY) ---
-app.get('/api/admin/overview', authenticate, authorize('STAFF', 'ADMIN', 'SUPER_ADMIN'), async (req, res) => {
-  const applications = await db.visaApplications.find();
-  const bookings = await db.tourBookings.find();
-  const tickets = await db.supportTickets.find();
-  const users = await db.users.find();
+// --- 10. TASK #8 — ADMIN & OPERATIONS SYSTEM ---
 
-  res.json({
-    success: true,
-    metrics: {
-      customers: users.length,
-      visaApplications: applications.length,
-      openVisaApplications: applications.filter(a => !['APPROVED', 'REJECTED', 'Approved', 'Rejected'].includes(a.status)).length,
-      reservations: bookings.length,
-      paymentPending: bookings.filter(b => b.status.includes('PENDING') || b.status.includes('pending')).length,
-      supportItems: tickets.filter(t => t.status === 'OPEN').length
-    },
-    recent: { applications: applications.slice(0, 6), bookings: bookings.slice(0, 6) }
-  });
+// Helper: Sanitize search regex terms to prevent Regex / Injection vulnerabilities
+function escapeRegex(text) {
+  if (!text || typeof text !== 'string') return '';
+  return text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
+}
+
+// 10.1 OPERATIONAL DASHBOARD / OVERVIEW METRICS API
+app.get(['/api/admin/dashboard', '/api/admin/overview'], authenticate, authorize('STAFF', 'ADMIN', 'SUPER_ADMIN'), async (req, res) => {
+  try {
+    const users = await db.users.find();
+    const visas = await db.visaApplications.find();
+    const packages = await db.tourPackages.find();
+    const destinations = await db.destinations.find();
+    const categories = await db.tourCategories.find();
+    const bookings = await db.tourBookings.find();
+    const payments = await db.payments.find();
+    const refunds = await db.refunds.find();
+    const tickets = await db.supportTickets.find();
+    const inquiries = await db.contactInquiries.find();
+    const notifications = await db.notifications.find();
+
+    const metrics = {
+      customers: {
+        total: users.length,
+        active: users.filter(u => u.status === 'ACTIVE').length,
+        unverified: users.filter(u => u.status === 'UNVERIFIED').length,
+        suspended: users.filter(u => u.status === 'SUSPENDED').length,
+        disabled: users.filter(u => u.status === 'DISABLED').length
+      },
+      visa: {
+        total: visas.length,
+        draft: visas.filter(v => v.status === 'DRAFT').length,
+        submitted: visas.filter(v => v.status === 'SUBMITTED').length,
+        underReview: visas.filter(v => ['DOCUMENT_REVIEW', 'UNDER_REVIEW'].includes(v.status)).length,
+        additionalDocsRequired: visas.filter(v => v.status === 'ADDITIONAL_DOCUMENTS_REQUIRED').length,
+        processing: visas.filter(v => v.status === 'PROCESSING').length,
+        approved: visas.filter(v => v.status === 'APPROVED').length,
+        rejected: visas.filter(v => v.status === 'REJECTED').length,
+        cancelled: visas.filter(v => v.status === 'CANCELLED').length
+      },
+      tourism: {
+        totalPackages: packages.length,
+        publishedPackages: packages.filter(p => p.published).length,
+        activePackages: packages.filter(p => p.active !== false).length,
+        destinations: destinations.length,
+        categories: categories.length
+      },
+      bookings: {
+        total: bookings.length,
+        pending: bookings.filter(b => b.status === 'PENDING_PAYMENT').length,
+        confirmed: bookings.filter(b => b.status === 'CONFIRMED').length,
+        cancelled: bookings.filter(b => b.status === 'CANCELLED').length,
+        completed: bookings.filter(b => b.status === 'COMPLETED').length
+      },
+      payments: {
+        total: payments.length,
+        initiated: payments.filter(p => p.status === 'INITIATED').length,
+        pending: payments.filter(p => p.status === 'PENDING').length,
+        paid: payments.filter(p => p.status === 'PAID').length,
+        failed: payments.filter(p => p.status === 'FAILED').length,
+        refunded: payments.filter(p => p.status === 'REFUNDED').length,
+        partiallyRefunded: payments.filter(p => p.status === 'PARTIALLY_REFUNDED').length
+      },
+      refunds: {
+        total: refunds.length,
+        completed: refunds.filter(r => r.status === 'COMPLETED').length
+      },
+      support: {
+        total: tickets.length,
+        open: tickets.filter(t => t.status === 'OPEN').length,
+        pending: tickets.filter(t => t.status === 'IN_PROGRESS').length,
+        recentlyUpdated: tickets.slice(-5)
+      },
+      contact: {
+        total: inquiries.length,
+        unresolved: inquiries.filter(c => !c.resolved).length
+      },
+      notifications: {
+        total: notifications.length,
+        failed: notifications.filter(n => n.status === 'FAILED').length,
+        pending: notifications.filter(n => n.status === 'PENDING').length
+      }
+    };
+
+    res.json({
+      success: true,
+      metrics,
+      recentBookings: bookings.slice(-5).reverse(),
+      recentVisas: visas.slice(-5).reverse()
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: err.message } });
+  }
 });
 
+// 10.2 USER & CUSTOMER MANAGEMENT API
+app.get('/api/admin/users', authenticate, authorize('ADMIN', 'SUPER_ADMIN'), async (req, res) => {
+  try {
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 20));
+    const role = req.query.role;
+    const status = req.query.status;
+    const search = (req.query.search || '').trim();
+
+    let allUsers = await db.users.find();
+
+    if (role && ['CUSTOMER', 'STAFF', 'ADMIN', 'SUPER_ADMIN'].includes(role)) {
+      allUsers = allUsers.filter(u => u.role === role);
+    }
+
+    if (status && ['ACTIVE', 'UNVERIFIED', 'SUSPENDED', 'DISABLED'].includes(status)) {
+      allUsers = allUsers.filter(u => u.status === status);
+    }
+
+    if (search) {
+      const rx = new RegExp(escapeRegex(search), 'i');
+      allUsers = allUsers.filter(u => rx.test(u.name) || rx.test(u.email) || rx.test(u.phone || ''));
+    }
+
+    const total = allUsers.length;
+    const totalPages = Math.ceil(total / limit) || 1;
+    const startIndex = (page - 1) * limit;
+    const paginatedUsers = allUsers.slice(startIndex, startIndex + limit).map(u => sanitizeUser(u));
+
+    res.json({
+      success: true,
+      users: paginatedUsers,
+      pagination: { total, page, limit, totalPages }
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: err.message } });
+  }
+});
+
+app.get('/api/admin/users/:id', authenticate, authorize('ADMIN', 'SUPER_ADMIN'), async (req, res) => {
+  try {
+    const user = await db.users.findById(req.params.id);
+    if (!user) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'User not found.' } });
+
+    const profile = await db.customerProfiles.findOne({ userId: user.id });
+    const visas = await db.visaApplications.find({ userId: user.id });
+    const bookings = await db.tourBookings.find({ userId: user.id });
+    const payments = await db.payments.find({ userId: user.id });
+
+    res.json({
+      success: true,
+      user: sanitizeUser(user),
+      profile: profile || null,
+      activitySummary: {
+        visaCount: visas.length,
+        bookingCount: bookings.length,
+        paymentCount: payments.length
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: err.message } });
+  }
+});
+
+app.patch('/api/admin/users/:id/status', authenticate, authorize('ADMIN', 'SUPER_ADMIN'), async (req, res) => {
+  try {
+    const { status, reason } = req.body || {};
+    const validStatuses = ['ACTIVE', 'SUSPENDED', 'DISABLED'];
+    if (!status || !validStatuses.includes(status)) {
+      return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Valid status (ACTIVE, SUSPENDED, DISABLED) is required.' } });
+    }
+
+    const user = await db.users.findById(req.params.id);
+    if (!user) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'User not found.' } });
+
+    // Protect SUPER_ADMIN accounts from non-SUPER_ADMIN modifications
+    if (user.role === 'SUPER_ADMIN' && req.user.role !== 'SUPER_ADMIN') {
+      return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Only SUPER_ADMIN can modify a SUPER_ADMIN account.' } });
+    }
+
+    const updates = { status };
+    if (status === 'SUSPENDED' || status === 'DISABLED') {
+      updates.tokenInvalidatedBefore = new Date(); // Revoke active sessions immediately
+    }
+
+    const updatedUser = await db.users.update(user.id, updates);
+    await logAudit(req, `USER_STATUS_CHANGE_${status}`, 'USER', user.id, { reason });
+
+    res.json({
+      success: true,
+      user: sanitizeUser(updatedUser),
+      message: `User status changed to ${status}.`
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: err.message } });
+  }
+});
+
+// 10.3 VISA OPERATIONS API (STAFF/ADMIN/SUPER_ADMIN)
 app.get('/api/admin/visa-applications', authenticate, authorize('STAFF', 'ADMIN', 'SUPER_ADMIN'), async (req, res) => {
-  const applications = await db.visaApplications.find();
-  res.json({ success: true, applications });
+  try {
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 20));
+    const status = req.query.status;
+    const visaServiceId = req.query.visaServiceId;
+    const search = (req.query.search || '').trim();
+
+    let apps = await db.visaApplications.find();
+
+    if (status) apps = apps.filter(a => a.status === status);
+    if (visaServiceId) apps = apps.filter(a => a.visaServiceId === visaServiceId);
+    if (search) {
+      const rx = new RegExp(escapeRegex(search), 'i');
+      apps = apps.filter(a => rx.test(a.applicationNumber || '') || rx.test(a.fullName || '') || rx.test(a.email || ''));
+    }
+
+    const total = apps.length;
+    const totalPages = Math.ceil(total / limit) || 1;
+    const startIndex = (page - 1) * limit;
+    const paginatedApps = apps.slice(startIndex, startIndex + limit).map(a => visaService.sanitizeApplication(a, req.user.role));
+
+    res.json({
+      success: true,
+      applications: paginatedApps,
+      pagination: { total, page, limit, totalPages }
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: err.message } });
+  }
 });
 
+app.post('/api/admin/visa-applications/:id/notes', authenticate, authorize('STAFF', 'ADMIN', 'SUPER_ADMIN'), async (req, res) => {
+  try {
+    const { note } = req.body || {};
+    if (!note || !note.trim()) {
+      return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Note text is required.' } });
+    }
+
+    const appRecord = await db.visaApplications.findById(req.params.id) || await db.visaApplications.findOne({ applicationNumber: req.params.id });
+    if (!appRecord) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Application not found.' } });
+
+    const internalNotes = appRecord.internalNotes || [];
+    internalNotes.push({
+      authorId: req.user.id,
+      authorName: req.user.name,
+      authorRole: req.user.role,
+      note: note.trim(),
+      timestamp: new Date().toISOString()
+    });
+
+    const updated = await db.visaApplications.update(appRecord.id, { internalNotes });
+    await logAudit(req, 'ADD_VISA_INTERNAL_NOTE', 'VISA_APPLICATION', appRecord.id);
+
+    res.json({ success: true, internalNotes: updated.internalNotes });
+  } catch (err) {
+    res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: err.message } });
+  }
+});
+
+// 10.4 DOCUMENT OPERATIONS API
+app.get('/api/admin/documents', authenticate, authorize('STAFF', 'ADMIN', 'SUPER_ADMIN'), async (req, res) => {
+  try {
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 20));
+    const status = req.query.status;
+
+    let docs = await db.visaDocuments.find();
+    if (status) docs = docs.filter(d => d.status === status);
+
+    const total = docs.length;
+    const totalPages = Math.ceil(total / limit) || 1;
+    const startIndex = (page - 1) * limit;
+    const paginatedDocs = docs.slice(startIndex, startIndex + limit).map(d => ({
+      id: d.id,
+      documentId: d.documentId,
+      applicationId: d.applicationId,
+      documentType: d.documentType,
+      originalName: d.originalName,
+      mimeType: d.mimeType,
+      fileSize: d.fileSize,
+      status: d.status,
+      uploadedAt: d.createdAt || d.uploadedAt
+    }));
+
+    res.json({
+      success: true,
+      documents: paginatedDocs,
+      pagination: { total, page, limit, totalPages }
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: err.message } });
+  }
+});
+
+// 10.5 TOURISM & TOUR PACKAGE MANAGEMENT API (ADMIN/SUPER_ADMIN WRITE)
+app.get('/api/admin/tour-packages', authenticate, authorize('STAFF', 'ADMIN', 'SUPER_ADMIN'), async (req, res) => {
+  try {
+    const packages = await db.tourPackages.find();
+    res.json({ success: true, packages });
+  } catch (err) {
+    res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: err.message } });
+  }
+});
+
+app.post('/api/admin/tour-packages', authenticate, authorize('ADMIN', 'SUPER_ADMIN'), async (req, res) => {
+  try {
+    const created = await tourismService.createPackage(req.body, req.user);
+    await logAudit(req, 'CREATE_TOUR_PACKAGE', 'TOUR_PACKAGE', created.id);
+    res.status(201).json({ success: true, package: created });
+  } catch (err) {
+    res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: err.message } });
+  }
+});
+
+app.patch('/api/admin/tour-packages/:id', authenticate, authorize('ADMIN', 'SUPER_ADMIN'), async (req, res) => {
+  try {
+    const updated = await tourismService.updatePackage(req.params.id, req.body, req.user);
+    await logAudit(req, 'UPDATE_TOUR_PACKAGE', 'TOUR_PACKAGE', updated.id);
+    res.json({ success: true, package: updated });
+  } catch (err) {
+    res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: err.message } });
+  }
+});
+
+app.post('/api/admin/destinations', authenticate, authorize('ADMIN', 'SUPER_ADMIN'), async (req, res) => {
+  try {
+    const { name, country, description, featured } = req.body || {};
+    if (!name || !country) {
+      return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Destination name and country are required.' } });
+    }
+
+    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    const dest = await db.destinations.create({
+      slug,
+      name: name.trim(),
+      country: country.trim(),
+      description: description || '',
+      featured: Boolean(featured),
+      published: true
+    });
+
+    await logAudit(req, 'CREATE_DESTINATION', 'DESTINATION', dest.id);
+    res.status(201).json({ success: true, destination: dest });
+  } catch (err) {
+    res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: err.message } });
+  }
+});
+
+app.post('/api/admin/categories', authenticate, authorize('ADMIN', 'SUPER_ADMIN'), async (req, res) => {
+  try {
+    const { name, description } = req.body || {};
+    if (!name) {
+      return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Category name is required.' } });
+    }
+
+    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    const cat = await db.tourCategories.create({
+      slug,
+      name: name.trim(),
+      description: description || '',
+      active: true
+    });
+
+    await logAudit(req, 'CREATE_TOUR_CATEGORY', 'TOUR_CATEGORY', cat.id);
+    res.status(201).json({ success: true, category: cat });
+  } catch (err) {
+    res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: err.message } });
+  }
+});
+
+// 10.6 BOOKING OPERATIONS API
 app.get('/api/admin/bookings', authenticate, authorize('STAFF', 'ADMIN', 'SUPER_ADMIN'), async (req, res) => {
-  const bookings = await db.tourBookings.find();
-  res.json({ success: true, bookings });
+  try {
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 20));
+    const status = req.query.status;
+    const search = (req.query.search || '').trim();
+
+    let bks = await db.tourBookings.find();
+    if (status) bks = bks.filter(b => b.status === status);
+    if (search) {
+      const rx = new RegExp(escapeRegex(search), 'i');
+      bks = bks.filter(b => rx.test(b.bookingNumber || '') || rx.test(b.travellerName || '') || rx.test(b.email || '') || rx.test(b.packageTitle || ''));
+    }
+
+    const total = bks.length;
+    const totalPages = Math.ceil(total / limit) || 1;
+    const startIndex = (page - 1) * limit;
+    const paginatedBookings = bks.slice(startIndex, startIndex + limit);
+
+    res.json({
+      success: true,
+      bookings: paginatedBookings,
+      pagination: { total, page, limit, totalPages }
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: err.message } });
+  }
 });
 
-app.get('/api/admin/payments', authenticate, authorize('ADMIN', 'SUPER_ADMIN'), async (req, res) => {
-  const payments = await db.payments.find();
-  res.json({ success: true, payments });
+app.get('/api/admin/bookings/:id', authenticate, authorize('STAFF', 'ADMIN', 'SUPER_ADMIN'), async (req, res) => {
+  try {
+    const booking = await db.tourBookings.findById(req.params.id) || await db.tourBookings.findOne({ bookingNumber: req.params.id });
+    if (!booking) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Booking record not found.' } });
+
+    const travellers = await db.bookingTravellers.find({ bookingId: booking.id });
+    const payments = await db.payments.find({ bookingId: booking.id });
+
+    res.json({
+      success: true,
+      booking,
+      travellers,
+      payments
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: err.message } });
+  }
 });
 
-app.get('/api/admin/audit-logs', authenticate, authorize('SUPER_ADMIN'), async (req, res) => {
-  const logs = await db.auditLogs.find();
-  res.json({ success: true, logs });
+app.patch('/api/admin/bookings/:id/status', authenticate, authorize('STAFF', 'ADMIN', 'SUPER_ADMIN'), async (req, res) => {
+  try {
+    const { status } = req.body || {};
+    const updated = await tourismService.transitionBookingStatus(req.params.id, status, req.user);
+    await logAudit(req, `CHANGED_BOOKING_STATUS_${status}`, 'TOUR_BOOKING', req.params.id);
+    res.json({ success: true, booking: updated });
+  } catch (err) {
+    res.status(400).json({ success: false, error: { code: 'TRANSITION_ERROR', message: err.message } });
+  }
+});
+
+// 10.7 PAYMENT & REFUND OPERATIONS API
+app.get('/api/admin/payments', authenticate, authorize('STAFF', 'ADMIN', 'SUPER_ADMIN'), async (req, res) => {
+  try {
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 20));
+    const status = req.query.status;
+    const provider = req.query.provider;
+    const currency = req.query.currency;
+    const search = (req.query.search || '').trim();
+
+    let pymts = await db.payments.find();
+
+    if (status) pymts = pymts.filter(p => p.status === status);
+    if (provider) pymts = pymts.filter(p => p.provider === provider);
+    if (currency) pymts = pymts.filter(p => p.currency === currency);
+    if (search) {
+      const rx = new RegExp(escapeRegex(search), 'i');
+      pymts = pymts.filter(p => rx.test(p.paymentNumber || '') || rx.test(p.providerOrderId || '') || rx.test(p.userId || ''));
+    }
+
+    const total = pymts.length;
+    const totalPages = Math.ceil(total / limit) || 1;
+    const startIndex = (page - 1) * limit;
+    const paginatedPayments = pymts.slice(startIndex, startIndex + limit).map(p => paymentService.sanitizePayment(p, req.user.role));
+
+    res.json({
+      success: true,
+      payments: paginatedPayments,
+      pagination: { total, page, limit, totalPages }
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: err.message } });
+  }
+});
+
+app.get('/api/admin/refunds', authenticate, authorize('STAFF', 'ADMIN', 'SUPER_ADMIN'), async (req, res) => {
+  try {
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 20));
+
+    const refunds = await db.refunds.find();
+    const total = refunds.length;
+    const totalPages = Math.ceil(total / limit) || 1;
+    const startIndex = (page - 1) * limit;
+
+    res.json({
+      success: true,
+      refunds: refunds.slice(startIndex, startIndex + limit),
+      pagination: { total, page, limit, totalPages }
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: err.message } });
+  }
+});
+
+// 10.8 SUPPORT TICKETS & CONTACT INQUIRIES OPERATIONS API
+app.get('/api/admin/support/tickets', authenticate, authorize('STAFF', 'ADMIN', 'SUPER_ADMIN'), async (req, res) => {
+  try {
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 20));
+    const status = req.query.status;
+    const search = (req.query.search || '').trim();
+
+    let tkts = await db.supportTickets.find();
+    if (status) tkts = tkts.filter(t => t.status === status);
+    if (search) {
+      const rx = new RegExp(escapeRegex(search), 'i');
+      tkts = tkts.filter(t => rx.test(t.ticketNumber || '') || rx.test(t.subject || '') || rx.test(t.userEmail || ''));
+    }
+
+    const total = tkts.length;
+    const totalPages = Math.ceil(total / limit) || 1;
+    const startIndex = (page - 1) * limit;
+
+    res.json({
+      success: true,
+      tickets: tkts.slice(startIndex, startIndex + limit),
+      pagination: { total, page, limit, totalPages }
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: err.message } });
+  }
+});
+
+app.get('/api/admin/support/tickets/:id', authenticate, authorize('STAFF', 'ADMIN', 'SUPER_ADMIN'), async (req, res) => {
+  try {
+    const ticket = await db.supportTickets.findById(req.params.id) || await db.supportTickets.findOne({ ticketNumber: req.params.id });
+    if (!ticket) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Support ticket not found.' } });
+
+    const messages = await db.chatMessages.find({ conversationId: ticket.conversationId || ticket.id });
+
+    res.json({
+      success: true,
+      ticket,
+      messages
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: err.message } });
+  }
+});
+
+app.post('/api/admin/support/tickets/:id/reply', authenticate, authorize('STAFF', 'ADMIN', 'SUPER_ADMIN'), async (req, res) => {
+  try {
+    const { message, status } = req.body || {};
+    if (!message || !message.trim()) {
+      return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Reply message is required.' } });
+    }
+
+    const ticket = await db.supportTickets.findById(req.params.id) || await db.supportTickets.findOne({ ticketNumber: req.params.id });
+    if (!ticket) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Support ticket not found.' } });
+
+    const replyMsg = await db.chatMessages.create({
+      conversationId: ticket.conversationId || ticket.id,
+      sender: 'STAFF',
+      senderId: req.user.id,
+      senderName: req.user.name,
+      text: message.trim(),
+      timestamp: new Date().toISOString()
+    });
+
+    const updates = {
+      assignedStaffId: req.user.id,
+      assignedStaffName: req.user.name,
+      status: status || 'IN_PROGRESS',
+      updatedAt: new Date()
+    };
+
+    const updatedTicket = await db.supportTickets.update(ticket.id, updates);
+    await logAudit(req, 'STAFF_SUPPORT_REPLY', 'SUPPORT_TICKET', ticket.id);
+
+    // Trigger non-blocking notification dispatch to ticket customer
+    notificationService.dispatchEvent('SUPPORT_TICKET_REPLY', {
+      user: { id: ticket.userId, email: ticket.userEmail },
+      reference: ticket.ticketNumber,
+      title: `Support Ticket Updated: ${ticket.subject}`,
+      message: message.trim()
+    }).catch(() => {});
+
+    res.json({ success: true, ticket: updatedTicket, reply: replyMsg });
+  } catch (err) {
+    res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: err.message } });
+  }
+});
+
+app.get('/api/admin/contact-inquiries', authenticate, authorize('STAFF', 'ADMIN', 'SUPER_ADMIN'), async (req, res) => {
+  try {
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 20));
+
+    const inquiries = await db.contactInquiries.find();
+    const total = inquiries.length;
+    const totalPages = Math.ceil(total / limit) || 1;
+    const startIndex = (page - 1) * limit;
+
+    res.json({
+      success: true,
+      inquiries: inquiries.slice(startIndex, startIndex + limit),
+      pagination: { total, page, limit, totalPages }
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: err.message } });
+  }
+});
+
+app.patch('/api/admin/contact-inquiries/:id/resolve', authenticate, authorize('STAFF', 'ADMIN', 'SUPER_ADMIN'), async (req, res) => {
+  try {
+    const inquiry = await db.contactInquiries.findById(req.params.id);
+    if (!inquiry) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Inquiry not found.' } });
+
+    const updated = await db.contactInquiries.update(inquiry.id, { resolved: true, resolvedBy: req.user.id, resolvedAt: new Date() });
+    await logAudit(req, 'RESOLVE_CONTACT_INQUIRY', 'CONTACT_INQUIRY', inquiry.id);
+
+    res.json({ success: true, inquiry: updated });
+  } catch (err) {
+    res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: err.message } });
+  }
+});
+
+// 10.9 NOTIFICATION OPERATIONS & HEALTH MONITORING API (ADMIN/SUPER_ADMIN ONLY)
+app.get('/api/admin/notifications', authenticate, authorize('ADMIN', 'SUPER_ADMIN'), async (req, res) => {
+  try {
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 20));
+    const status = req.query.status;
+
+    let notifs = await db.notifications.find();
+    if (status) notifs = notifs.filter(n => n.status === status);
+
+    const total = notifs.length;
+    const totalPages = Math.ceil(total / limit) || 1;
+    const startIndex = (page - 1) * limit;
+
+    const safeNotifs = notifs.slice(startIndex, startIndex + limit).map(n => ({
+      id: n.id,
+      userId: n.userId,
+      channel: n.channel,
+      eventType: n.eventType,
+      status: n.status,
+      title: n.title,
+      createdAt: n.createdAt,
+      read: n.read
+    }));
+
+    res.json({
+      success: true,
+      notifications: safeNotifs,
+      pagination: { total, page, limit, totalPages }
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: err.message } });
+  }
+});
+
+app.post('/api/admin/notifications/:id/resend', authenticate, authorize('ADMIN', 'SUPER_ADMIN'), submissionLimiter, async (req, res) => {
+  try {
+    const notif = await db.notifications.findById(req.params.id);
+    if (!notif) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Notification log not found.' } });
+
+    await logAudit(req, 'ADMIN_RESEND_NOTIFICATION', 'NOTIFICATION', notif.id);
+
+    const dispatchResult = await notificationService.dispatchEvent(notif.eventType || 'GENERIC_ALERT', {
+      userId: notif.userId,
+      title: notif.title,
+      message: notif.message,
+      idempotencyKey: `resend_${notif.id}_${Date.now()}`
+    });
+
+    res.json({ success: true, message: 'Notification resend dispatched successfully.', dispatch: dispatchResult });
+  } catch (err) {
+    res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: err.message } });
+  }
+});
+
+// 10.10 IMMUTABLE AUDIT LOG SYSTEM API (ADMIN/SUPER_ADMIN ONLY)
+app.get('/api/admin/audit-logs', authenticate, authorize('ADMIN', 'SUPER_ADMIN'), async (req, res) => {
+  try {
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 20));
+
+    const actorRole = req.query.actorRole;
+    const action = req.query.action;
+    const entityType = req.query.entityType;
+    const search = (req.query.search || '').trim();
+
+    let logs = await db.auditLogs.find();
+
+    if (actorRole) logs = logs.filter(l => l.actorRole === actorRole);
+    if (action) logs = logs.filter(l => l.action === action);
+    if (entityType) logs = logs.filter(l => l.entityType === entityType);
+    if (search) {
+      const rx = new RegExp(escapeRegex(search), 'i');
+      logs = logs.filter(l => rx.test(l.action || '') || rx.test(l.actorId || '') || rx.test(l.entityId || ''));
+    }
+
+    // Sort descending by timestamp
+    logs.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+
+    const total = logs.length;
+    const totalPages = Math.ceil(total / limit) || 1;
+    const startIndex = (page - 1) * limit;
+
+    res.json({
+      success: true,
+      logs: logs.slice(startIndex, startIndex + limit),
+      pagination: { total, page, limit, totalPages }
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: err.message } });
+  }
 });
 
 // Global Database & Application Error Handling Middleware

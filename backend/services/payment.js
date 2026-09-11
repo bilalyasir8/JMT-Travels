@@ -270,8 +270,8 @@ class PaymentService {
 
     // 2. IDEMPOTENCY CHECK
     const userKey = idempotencyKey ? `${requester.id}:${idempotencyKey}` : null;
-    if (userKey) {
-      const existingPayment = await db.payments.findOne({ idempotencyKey: userKey });
+    if (idempotencyKey) {
+      const existingPayment = await db.payments.findOne({ idempotencyKey: userKey }) || await db.payments.findOne({ idempotencyKey });
       if (existingPayment) {
         return {
           success: true,
