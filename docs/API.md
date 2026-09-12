@@ -58,3 +58,10 @@
 | `GET` | `/api/support/tickets` | View support ticket threads | Bearer JWT |
 | `POST` | `/api/feedback` | Submit website contact form | Public |
 | `GET` | `/api/track/:reference` | Public status tracker | Public |
+
+## 7. SEO & Crawler Endpoints (Task #10)
+
+| Method | Endpoint | Description | Auth Required |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/sitemap.xml` | Dynamic XML sitemap listing published tour packages & visa services | Public |
+| `GET` | `/robots.txt` | Search engine crawler rules & sitemap reference | Public |

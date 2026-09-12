@@ -57,6 +57,74 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// -------------------------------------------------------------
+// DYNAMIC SEO ENDPOINTS (Task #10)
+// Must be registered BEFORE express.static to override static sitemap/robots files
+// -------------------------------------------------------------
+
+// Dynamic XML Sitemap Endpoint
+app.get('/sitemap.xml', async (req, res) => {
+  try {
+    const baseUrl = process.env.BASE_URL || 'https://jmttravels.com';
+    const allPackages = await db.tourPackages.find();
+    const packages = allPackages.filter(p => p.published !== false);
+    const visas = await db.visaServices.find();
+
+    const staticRoutes = [
+      { url: '/', priority: '1.0', changefreq: 'daily' },
+      { url: '/visa', priority: '0.9', changefreq: 'weekly' },
+      { url: '/tourism', priority: '0.9', changefreq: 'weekly' },
+      { url: '/contact', priority: '0.7', changefreq: 'monthly' },
+      { url: '/privacy', priority: '0.3', changefreq: 'monthly' },
+      { url: '/terms', priority: '0.3', changefreq: 'monthly' },
+      { url: '/refund-policy', priority: '0.3', changefreq: 'monthly' },
+      { url: '/cancellation-policy', priority: '0.3', changefreq: 'monthly' }
+    ];
+
+    let xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n`;
+
+    staticRoutes.forEach(r => {
+      xml += `  <url>\n    <loc>${baseUrl}${r.url}</loc>\n    <changefreq>${r.changefreq}</changefreq>\n    <priority>${r.priority}</priority>\n  </url>\n`;
+    });
+
+    packages.forEach(p => {
+      if (p.slug) {
+        xml += `  <url>\n    <loc>${baseUrl}/tourism/${p.slug}</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.8</priority>\n  </url>\n`;
+      }
+    });
+
+    visas.forEach(v => {
+      if (v.slug) {
+        xml += `  <url>\n    <loc>${baseUrl}/visa/${v.slug}</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.8</priority>\n  </url>\n`;
+      }
+    });
+
+    xml += `</urlset>`;
+
+    res.header('Content-Type', 'application/xml');
+    res.send(xml);
+  } catch (err) {
+    res.status(500).send('Error generating sitemap');
+  }
+});
+
+// Dynamic Robots.txt Endpoint
+app.get('/robots.txt', (req, res) => {
+  const baseUrl = process.env.BASE_URL || 'https://jmttravels.com';
+  const robotsText = `User-agent: *
+Disallow: /admin
+Disallow: /api/
+Disallow: /account
+Disallow: /visa-apply
+Disallow: /book
+Disallow: /documents/
+
+Sitemap: ${baseUrl}/sitemap.xml
+`;
+  res.header('Content-Type', 'text/plain');
+  res.send(robotsText);
+});
+
 // Serve static frontend files
 app.use(express.static(path.join(__dirname, '../frontend/public')));
 
@@ -2306,6 +2374,8 @@ app.post('/api/admin/chat/conversations/:id/reply', authenticate, async (req, re
   }
 });
 
+
+
 // Global Database & Application Error Handling Middleware
 app.use((err, req, res, next) => {
   if (err.code === 'DATABASE_UNAVAILABLE' || err.statusCode === 503) {
@@ -2327,12 +2397,51 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Fallback to index.html for SPA frontend routes
-app.get('*', (req, res) => {
+// Fallback to index.html for SPA frontend routes with dynamic SSR meta tag injection
+app.get('*', async (req, res) => {
   if (req.path.startsWith('/admin')) {
     return res.sendFile(path.join(__dirname, '../frontend/public/admin.html'));
   }
-  res.sendFile(path.join(__dirname, '../frontend/public/index.html'));
+
+  const indexPath = path.join(__dirname, '../frontend/public/index.html');
+  try {
+    let html = fs.readFileSync(indexPath, 'utf8');
+    const baseUrl = process.env.BASE_URL || 'https://jmttravels.com';
+
+    // Disallow private pages from search engine indexing
+    const privateRoutes = ['/account', '/visa-apply', '/book', '/documents'];
+    const isPrivate = privateRoutes.some(p => req.path.startsWith(p));
+
+    if (isPrivate) {
+      if (html.includes('</head>')) {
+        html = html.replace('</head>', '  <meta name="robots" content="noindex, nofollow">\n</head>');
+      }
+    }
+
+    if (req.path.startsWith('/tourism/')) {
+      const slug = req.path.replace('/tourism/', '').split('?')[0];
+      const allPkgs = await db.tourPackages.find();
+      const pkg = allPkgs.find(p => p.slug === slug);
+      if (pkg) {
+        html = html.replace(/<title>.*?<\/title>/, `<title>${pkg.title} | JMT Travels</title>`);
+        html = html.replace(/<meta name="description" content=".*?">/, `<meta name="description" content="${pkg.summary || pkg.title}">`);
+        html = html.replace(/href="https:\/\/jmttravels.com\/"/, `href="${baseUrl}/tourism/${pkg.slug}"`);
+      }
+    } else if (req.path.startsWith('/visa/')) {
+      const slug = req.path.replace('/visa/', '').split('?')[0];
+      const allVisas = await db.visaServices.find();
+      const service = allVisas.find(v => v.slug === slug);
+      if (service) {
+        html = html.replace(/<title>.*?<\/title>/, `<title>${service.country} ${service.visaType} Visa | JMT Travels</title>`);
+        html = html.replace(/<meta name="description" content=".*?">/, `<meta name="description" content="${service.overview || service.visaType}">`);
+        html = html.replace(/href="https:\/\/jmttravels.com\/"/, `href="${baseUrl}/visa/${service.slug}"`);
+      }
+    }
+
+    res.send(html);
+  } catch (err) {
+    res.sendFile(indexPath);
+  }
 });
 
 // Start Server if main module
