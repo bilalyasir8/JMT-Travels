@@ -12,4 +12,7 @@ const AuditLogSchema = new mongoose.Schema({
   timestamps: true
 });
 
+AuditLogSchema.index({ createdAt: -1 });
+AuditLogSchema.index({ actorId: 1, createdAt: -1 });
+
 module.exports = mongoose.models.AuditLog || mongoose.model('AuditLog', AuditLogSchema);

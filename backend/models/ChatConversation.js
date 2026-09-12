@@ -25,4 +25,6 @@ const ChatConversationSchema = new mongoose.Schema({
   timestamps: true
 });
 
+ChatConversationSchema.index({ userId: 1, status: 1, lastMessageAt: -1 });
+
 module.exports = mongoose.models.ChatConversation || mongoose.model('ChatConversation', ChatConversationSchema);

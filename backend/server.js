@@ -23,6 +23,8 @@ const notificationService = require('./services/notification');
 const chatbotService = require('./services/chatbot');
 const chatTools = require('./services/chatTools');
 const i18nService = require('./services/i18n');
+const cache = require('./services/cache');
+const zlib = require('./services/cache') && require('zlib');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -56,6 +58,94 @@ app.use(cors({
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// -------------------------------------------------------------
+// PERFORMANCE & SCALABILITY HARDENING (Task #11)
+// Compression, Cache Security, Slow Request Monitoring & Probes
+// -------------------------------------------------------------
+
+// Lightweight Response GZIP Compression Middleware
+app.use((req, res, next) => {
+  const acceptEncoding = req.headers['accept-encoding'] || '';
+  if (!acceptEncoding.includes('gzip')) {
+    return next();
+  }
+  const originalSend = res.send;
+  res.send = function (body) {
+    if (res.headersSent) {
+      return originalSend.call(this, body);
+    }
+    const contentType = res.getHeader('Content-Type') || '';
+    if (typeof body === 'string' || Buffer.isBuffer(body)) {
+      if (body.length > 1024 && (contentType.includes('text') || contentType.includes('json') || contentType.includes('javascript') || contentType.includes('xml'))) {
+        zlib.gzip(body, (err, compressed) => {
+          if (err || !compressed) {
+            return originalSend.call(this, body);
+          }
+          res.setHeader('Content-Encoding', 'gzip');
+          res.setHeader('Content-Length', compressed.length);
+          originalSend.call(this, compressed);
+        });
+        return;
+      }
+    }
+    return originalSend.call(this, body);
+  };
+  next();
+});
+
+// Slow Request Detection Middleware (>500ms)
+app.use((req, res, next) => {
+  const start = Date.now();
+  res.on('finish', () => {
+    const duration = Date.now() - start;
+    if (duration > 500) {
+      console.warn(`[SLOW REQUEST DETECTED] ${req.method} ${req.originalUrl || req.url} - ${duration}ms (Status: ${res.statusCode})`);
+    }
+  });
+  next();
+});
+
+// Cache-Control Security Policy Middleware
+app.use((req, res, next) => {
+  if (
+    req.path.startsWith('/api/admin') ||
+    req.path.startsWith('/api/account') ||
+    req.path.startsWith('/api/auth') ||
+    req.path.startsWith('/api/chat') ||
+    req.path.startsWith('/api/payments') ||
+    req.path.startsWith('/api/documents') ||
+    req.path.startsWith('/api/notifications') ||
+    req.path.startsWith('/documents/') ||
+    req.method !== 'GET'
+  ) {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+  }
+  next();
+});
+
+// Health & Readiness Probes
+app.get(['/health', '/api/health'], (req, res) => {
+  const dbStatus = db.getStatus();
+  res.json({
+    status: 'ok',
+    mode: dbStatus.mode,
+    mongoConnected: dbStatus.isConnected,
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString()
+  });
+});
+
+app.get(['/ready', '/api/ready'], (req, res) => {
+  const dbStatus = db.getStatus();
+  if (dbStatus.isConnected || !db.isProductionDBRequired()) {
+    res.json({ ready: true, status: 'READY', db: dbStatus });
+  } else {
+    res.status(503).json({ ready: false, status: 'NOT_READY', db: dbStatus });
+  }
+});
 
 // -------------------------------------------------------------
 // DYNAMIC SEO ENDPOINTS (Task #10)
@@ -898,8 +988,17 @@ const memoryUpload = multer({
 
 // --- 3. VISA SERVICES & APPLICATIONS (IDOR & STATE TRANSITION MATRIX ENFORCED) ---
 app.get('/api/visa/services', async (req, res) => {
+  const cacheKey = `visa:services:${req.locale}`;
+  const cached = cache.get(cacheKey);
+  if (cached) {
+    res.setHeader('Cache-Control', 'public, max-age=60');
+    return res.json(cached);
+  }
   const services = await db.visaServices.find({ published: true });
-  res.json({ success: true, services });
+  const response = { success: true, services };
+  cache.set(cacheKey, response, 60, ['visa']);
+  res.setHeader('Cache-Control', 'public, max-age=60');
+  res.json(response);
 });
 
 app.get('/api/visa/services/:slug', async (req, res) => {
@@ -1051,21 +1150,48 @@ app.get('/api/documents/:id/download', authenticate, async (req, res) => {
 
 // DESTINATIONS & CATEGORIES
 app.get('/api/tourism/destinations', async (req, res) => {
+  const cacheKey = `tourism:destinations:${req.locale}`;
+  const cached = cache.get(cacheKey);
+  if (cached) {
+    res.setHeader('Cache-Control', 'public, max-age=60');
+    return res.json(cached);
+  }
   const destinations = await db.destinations.find({ active: true });
-  res.json({ success: true, destinations });
+  const response = { success: true, destinations };
+  cache.set(cacheKey, response, 60, ['destinations']);
+  res.setHeader('Cache-Control', 'public, max-age=60');
+  res.json(response);
 });
 
 app.get('/api/tourism/categories', async (req, res) => {
+  const cacheKey = `tourism:categories:${req.locale}`;
+  const cached = cache.get(cacheKey);
+  if (cached) {
+    res.setHeader('Cache-Control', 'public, max-age=60');
+    return res.json(cached);
+  }
   const categories = await db.tourCategories.find({ active: true });
-  res.json({ success: true, categories });
+  const response = { success: true, categories };
+  cache.set(cacheKey, response, 60, ['categories']);
+  res.setHeader('Cache-Control', 'public, max-age=60');
+  res.json(response);
 });
 
 // TOUR PACKAGES LISTING (FILTERING, SEARCH, WHITELISTED SORT, PAGINATION)
 app.get('/api/tourism/packages', optionalAuth, async (req, res) => {
   try {
     const userRole = req.user ? req.user.role : 'GUEST';
+    const cacheKey = `tourism:packages:${req.locale}:${req.currency}:${userRole}:${JSON.stringify(req.query)}`;
+    const cached = cache.get(cacheKey);
+    if (cached) {
+      res.setHeader('Cache-Control', 'public, max-age=60');
+      return res.json(cached);
+    }
     const result = await tourismService.listPackages({ ...req.query, userRole });
-    res.json({ success: true, ...result });
+    const response = { success: true, ...result };
+    cache.set(cacheKey, response, 60, ['packages']);
+    res.setHeader('Cache-Control', 'public, max-age=60');
+    res.json(response);
   } catch (err) {
     res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: err.message } });
   }
@@ -1093,6 +1219,7 @@ app.get('/api/tourism/packages/:slug', optionalAuth, async (req, res) => {
 app.post('/api/tourism/packages', authenticate, authorize('STAFF', 'ADMIN', 'SUPER_ADMIN'), async (req, res) => {
   try {
     const pkg = await tourismService.createPackage(req.body, req.user);
+    cache.invalidateTags('packages', 'destinations', 'categories');
     await logAudit(req, `Created tour package: ${pkg.title}`, 'TOUR_PACKAGE', pkg.id);
     res.status(201).json({ success: true, package: pkg });
   } catch (err) {
@@ -1104,6 +1231,7 @@ app.post('/api/tourism/packages', authenticate, authorize('STAFF', 'ADMIN', 'SUP
 app.patch('/api/tourism/packages/:id', authenticate, authorize('STAFF', 'ADMIN', 'SUPER_ADMIN'), async (req, res) => {
   try {
     const updated = await tourismService.updatePackage(req.params.id, req.body, req.user);
+    cache.invalidateTags('packages', 'destinations', 'categories');
     await logAudit(req, `Updated tour package: ${updated.title}`, 'TOUR_PACKAGE', updated.id);
     res.json({ success: true, package: updated });
   } catch (err) {
@@ -1441,17 +1569,19 @@ function escapeRegex(text) {
 // 10.1 OPERATIONAL DASHBOARD / OVERVIEW METRICS API
 app.get(['/api/admin/dashboard', '/api/admin/overview'], authenticate, authorize('STAFF', 'ADMIN', 'SUPER_ADMIN'), async (req, res) => {
   try {
-    const users = await db.users.find();
-    const visas = await db.visaApplications.find();
-    const packages = await db.tourPackages.find();
-    const destinations = await db.destinations.find();
-    const categories = await db.tourCategories.find();
-    const bookings = await db.tourBookings.find();
-    const payments = await db.payments.find();
-    const refunds = await db.refunds.find();
-    const tickets = await db.supportTickets.find();
-    const inquiries = await db.contactInquiries.find();
-    const notifications = await db.notifications.find();
+    const [users, visas, packages, destinations, categories, bookings, payments, refunds, tickets, inquiries, notifications] = await Promise.all([
+      db.users.find({}, { projection: { status: 1 }, lean: true }),
+      db.visaApplications.find({}, { projection: { status: 1 }, lean: true }),
+      db.tourPackages.find({}, { projection: { published: 1, active: 1 }, lean: true }),
+      db.destinations.find({}, { projection: { id: 1 }, lean: true }),
+      db.tourCategories.find({}, { projection: { id: 1 }, lean: true }),
+      db.tourBookings.find({}, { projection: { status: 1 }, lean: true }),
+      db.payments.find({}, { projection: { status: 1 }, lean: true }),
+      db.refunds.find({}, { projection: { status: 1 }, lean: true }),
+      db.supportTickets.find({}, { projection: { status: 1 }, lean: true }),
+      db.contactInquiries.find({}, { projection: { id: 1 }, lean: true }),
+      db.notifications.find({}, { projection: { read: 1 }, lean: true })
+    ]);
 
     const metrics = {
       customers: {
@@ -2202,8 +2332,11 @@ app.get('/api/chat/conversations/:id', authenticate, async (req, res) => {
       return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Access denied to this conversation.' } });
     }
 
-    const messages = await db.chatMessages.find({ conversationId: conversation.id });
+    let messages = await db.chatMessages.find({ conversationId: conversation.id });
     messages.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+    if (messages.length > 20) {
+      messages = messages.slice(messages.length - 20);
+    }
 
     res.json({ success: true, conversation, messages });
   } catch (err) {

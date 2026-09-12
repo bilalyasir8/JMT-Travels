@@ -63,4 +63,6 @@ const TourBookingSchema = new mongoose.Schema({
   timestamps: true
 });
 
+TourBookingSchema.index({ userId: 1, createdAt: -1 });
+
 module.exports = mongoose.models.TourBooking || mongoose.model('TourBooking', TourBookingSchema);

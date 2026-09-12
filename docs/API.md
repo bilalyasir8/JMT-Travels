@@ -65,3 +65,14 @@
 | :--- | :--- | :--- | :--- |
 | `GET` | `/sitemap.xml` | Dynamic XML sitemap listing published tour packages & visa services | Public |
 | `GET` | `/robots.txt` | Search engine crawler rules & sitemap reference | Public |
+
+## 8. Performance, Monitoring & Health Endpoints (Task #11)
+
+| Method | Endpoint | Description | Auth Required | Cache Policy |
+| :--- | :--- | :--- | :--- | :--- |
+| `GET` | `/health` | Operational health probe (Status UP, mode, uptime) | Public | `no-store` |
+| `GET` | `/ready` | Readiness probe (Database & service readiness check) | Public | `no-store` |
+| `GET` | `/api/tourism/packages` | Cached public holiday packages catalogue | Public | `public, max-age=60` |
+| `GET` | `/api/visa/services` | Cached public visa services catalogue | Public | `public, max-age=60` |
+| `GET` | `/api/tourism/destinations` | Cached public destinations catalogue | Public | `public, max-age=60` |
+| `GET` | `/api/tourism/categories` | Cached public categories catalogue | Public | `public, max-age=60` |

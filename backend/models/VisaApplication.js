@@ -55,4 +55,6 @@ const VisaApplicationSchema = new mongoose.Schema({
   timestamps: true
 });
 
+VisaApplicationSchema.index({ userId: 1, createdAt: -1 });
+
 module.exports = mongoose.models.VisaApplication || mongoose.model('VisaApplication', VisaApplicationSchema);

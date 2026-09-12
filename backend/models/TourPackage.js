@@ -36,4 +36,7 @@ const TourPackageSchema = new mongoose.Schema({
   timestamps: true
 });
 
+TourPackageSchema.index({ published: 1, featured: 1 });
+TourPackageSchema.index({ published: 1, active: 1 });
+
 module.exports = mongoose.models.TourPackage || mongoose.model('TourPackage', TourPackageSchema);

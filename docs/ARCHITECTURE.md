@@ -53,3 +53,10 @@ Datastore Layer (db.js)
 - **Canonical URL Control**: Base URLs strictly use `process.env.BASE_URL || 'https://jmttravels.com'`. Dynamic Host headers are rejected as canonical sources to prevent Host header poisoning.
 - **Private Route Indexing Isolation**: Authenticated / customer-private routes (`/admin`, `/account`, `/visa-apply`, `/book`, `/documents/`) explicitly enforce `noindex, nofollow` meta tags and are disallowed in `robots.txt`.
 - **Keyboard Navigation & ARIA Rules**: All interactive elements display high-contrast focus rings (`:focus-visible`). Modal drawers support Esc key dismissal and return focus to triggering elements upon closing. Dynamic view transitions announce state changes to screen readers via `#a11y-announcer`.
+
+## 6. Performance Optimization & Scalability Principles (Task #11)
+- **In-Memory TTL Caching (`backend/services/cache.js`)**: Process-local LRU/TTL cache manager with tag-based invalidation for public catalogue endpoints (`packages`, `destinations`, `categories`, `visa services`).
+- **Cache Security & Header Isolation**: Public read-only endpoints set `Cache-Control: public, max-age=60`. Private and sensitive endpoints (`/account`, `/admin`, `/visa-apply`, `/book`, `/documents/`, `/payments`, `/chat`) strictly enforce `Cache-Control: no-store, no-cache, must-revalidate, proxy-revalidate`.
+- **Database Query Performance & Indexing**: Compound indexes on Mongoose models (`TourPackage`, `TourBooking`, `VisaApplication`, `Notification`, `ChatConversation`, `ChatMessage`, `AuditLog`), `Promise.all` concurrent execution for admin dashboard metrics, field projections, and `.lean()` execution.
+- **Payload & Network Optimization**: Built-in GZIP response compression middleware, image `loading="lazy"` attributes, and frontend in-flight GET request deduplication (`pendingRequests` Map).
+- **Production Monitoring & Health Probes**: Operational health probe (`GET /health`) and readiness probe (`GET /ready`), with automatic detection & logging of slow requests exceeding 500ms.

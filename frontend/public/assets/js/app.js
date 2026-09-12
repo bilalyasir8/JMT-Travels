@@ -12,7 +12,10 @@ const state = {
   activeConversationId: localStorage.getItem('jmt_chat_conv') || null
 };
 
-// API Fetch Helper
+// In-flight Request Deduplication Map (Task #11)
+const pendingRequests = new Map();
+
+// API Fetch Helper with Request Deduplication
 async function apiCall(endpoint, method = 'GET', data = null) {
   const headers = { 'Content-Type': 'application/json' };
   if (state.token) headers['Authorization'] = `Bearer ${state.token}`;
@@ -20,15 +23,32 @@ async function apiCall(endpoint, method = 'GET', data = null) {
   const config = { method, headers };
   if (data) config.body = JSON.stringify(data);
 
-  try {
-    const res = await fetch(endpoint, config);
-    const result = await res.json();
-    if (!res.ok) throw new Error(result.error?.message || 'API request failed');
-    return result;
-  } catch (err) {
-    console.error(`[API Error ${endpoint}]:`, err.message);
-    throw err;
+  const requestKey = `${method}:${endpoint}`;
+  if (method === 'GET' && pendingRequests.has(requestKey)) {
+    return pendingRequests.get(requestKey);
   }
+
+  const fetchPromise = (async () => {
+    try {
+      const res = await fetch(endpoint, config);
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error?.message || 'API request failed');
+      return result;
+    } catch (err) {
+      console.error(`[API Error ${endpoint}]:`, err.message);
+      throw err;
+    } finally {
+      if (method === 'GET') {
+        pendingRequests.delete(requestKey);
+      }
+    }
+  })();
+
+  if (method === 'GET') {
+    pendingRequests.set(requestKey, fetchPromise);
+  }
+
+  return fetchPromise;
 }
 
 // -------------------------------------------------------------
@@ -275,7 +295,7 @@ function renderHomePage(container) {
     }
     grid.innerHTML = res.packages.slice(0, 3).map(pkg => `
       <div class="card" style="padding: 0; overflow: hidden;">
-        <img src="${escapeHTML(pkg.image)}" alt="${escapeHTML(pkg.title)} Holiday Package" style="width: 100%; height: 200px; object-fit: cover;">
+        <img src="${escapeHTML(pkg.image)}" alt="${escapeHTML(pkg.title)} Holiday Package" loading="lazy" style="width: 100%; height: 200px; object-fit: cover;">
         <div style="padding: 20px;">
           <span class="badge badge-primary">${escapeHTML(pkg.category || 'Package')}</span>
           <h3 style="font-size: 18px; color: var(--primary); margin: 10px 0 6px;">${escapeHTML(pkg.title)}</h3>
@@ -473,7 +493,7 @@ async function renderTourismListPage(container) {
         <div class="card-grid">
           ${res.packages.map(p => `
             <div class="card" style="padding:0; overflow:hidden;">
-              <img src="${escapeHTML(p.image)}" alt="${escapeHTML(p.title)} Tour Package" style="width:100%; height:200px; object-fit:cover;">
+              <img src="${escapeHTML(p.image)}" alt="${escapeHTML(p.title)} Tour Package" loading="lazy" style="width:100%; height:200px; object-fit:cover;">
               <div style="padding: 20px;">
                 <span class="badge badge-primary">${escapeHTML(p.category)}</span>
                 <h2 style="font-size: 20px; color: var(--primary); margin: 10px 0 6px;">${escapeHTML(p.title)}</h2>
@@ -525,7 +545,7 @@ async function renderTourismDetailPage(container, slug) {
 
     container.innerHTML = `
       <div class="shell" style="padding: 60px 0; max-width: 900px;">
-        <img src="${escapeHTML(p.image)}" alt="${escapeHTML(p.title)}" style="width:100%; max-height:400px; object-fit:cover; border-radius: 16px; margin-bottom: 24px;">
+        <img src="${escapeHTML(p.image)}" alt="${escapeHTML(p.title)}" loading="lazy" style="width:100%; max-height:400px; object-fit:cover; border-radius: 16px; margin-bottom: 24px;">
         <span class="badge badge-primary">${escapeHTML(p.category)}</span>
         <h1 style="font-size: 36px; color: var(--primary); margin: 12px 0 8px;">${escapeHTML(p.title)}</h1>
         <p style="color: var(--text-muted); font-size: 16px; margin-bottom: 24px;">📍 ${escapeHTML(p.destination)} • ⏱️ ${escapeHTML(p.duration)}</p>
