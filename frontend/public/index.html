@@ -26,7 +26,7 @@
   <!-- Fonts & Icons -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
   <link rel="icon" type="image/png" href="/assets/logo.png">
 
   <!-- Centralized Design System CSS -->
@@ -59,43 +59,74 @@
   <!-- SCREEN READER LIVE ANNOUNCER REGION -->
   <div id="a11y-announcer" class="sr-only" aria-live="polite" aria-atomic="true"></div>
 
-  <!-- TOP INFORMATION BAR -->
-  <header>
-    <div class="top-bar">
-      <div class="shell">
-        <span>Trusted Oman travel, visa &amp; Umrah specialists for over 20+ years</span>
-        <div>
-          <a href="tel:+96871132424" aria-label="Call JMT Travels at +968 7113 2424">📞 +968 7113 2424</a> &nbsp;·&nbsp;
-          <a href="https://wa.me/96897608999" target="_blank" rel="noopener" aria-label="Chat on WhatsApp with JMT Travels">💬 WhatsApp</a>
-        </div>
+  <!-- TOP INFORMATION BAR (DARK BLUE THIN STRIP) -->
+  <div style="background: #07153B; color: #E2E8F0; font-size: 12px; padding: 7px 0; border-bottom: 1px solid rgba(255,255,255,0.1);">
+    <div class="shell" style="display: flex; justify-content: space-between; align-items: center;">
+      <div>Trusted Oman travel, visa &amp; Umrah specialists for over 20+ years</div>
+      <div style="display: flex; align-items: center; gap: 16px;">
+        <a href="tel:+96871132424" style="color: #FFFFFF; text-decoration: none; font-weight: 600;">📞 +968 7113 2424</a>
+        <a href="https://wa.me/96897608999" target="_blank" rel="noopener" style="color: #4ADE80; text-decoration: none; font-weight: 600;">💬 WhatsApp</a>
+        <a href="https://mail.google.com/mail/?view=cm&fs=1&to=info%40jmttravels.com" target="_blank" rel="noopener noreferrer" aria-label="Email JMT Travels via Gmail" title="Email JMT Travels via Gmail" style="color: #FFFFFF; text-decoration: none; font-weight: 600;" class="jmt-email-link">✉️ info@jmttravels.com</a>
       </div>
     </div>
+  </div>
 
-    <!-- MAIN HEADER NAVIGATION -->
-    <nav class="header-nav" aria-label="Main Navigation">
-      <div class="shell">
+  <!-- MAIN HEADER NAVIGATION -->
+  <header style="position:sticky; top:0; z-index:100; background:#FFFFFF; border-bottom:1px solid #E2E8F0; box-shadow: 0 2px 10px rgba(0,0,0,0.03);">
+    <nav class="header-nav" aria-label="Main Navigation" style="border:0; shadow:none;">
+      <div class="shell" style="height:76px; display:flex; align-items:center; justify-content:space-between; gap:20px;">
         <a class="brand-logo" href="/" onclick="event.preventDefault(); navigate('/')">
-          <img src="/assets/logo.png" alt="JMT TRAVELS Logo">
+          <img src="/assets/logo.png" alt="JMT TRAVELS Logo" style="height:44px; width:auto;">
           <span class="brand-title">
-            <b>JMT TRAVELS</b>
-            <small>DISCOVER · BOOK · TRAVEL</small>
+            <b style="font-size:20px; color:#0B286C; font-weight:800; tracking:-0.5px;">JMT TRAVELS</b>
+            <small style="color:#00A651; font-size:9px; font-weight:700; letter-spacing:1.2px;">JOURNEY MORE TOGETHER</small>
           </span>
         </a>
 
-        <ul class="nav-links" role="list">
-          <li><a href="/" onclick="event.preventDefault(); navigate('/')">Home</a></li>
-          <li><a href="/visa" onclick="event.preventDefault(); navigate('/visa')">Visa Services</a></li>
-          <li><a href="/tourism" onclick="event.preventDefault(); navigate('/tourism')">Tourism Packages</a></li>
-          <li><a href="/contact" onclick="event.preventDefault(); navigate('/contact')">Contact</a></li>
+        <ul class="nav-links" role="list" style="display:flex; gap:20px; list-style:none; margin:0; padding:0; align-items:center;">
+          <li><a href="/" onclick="event.preventDefault(); navigate('/')" class="nav-link-item" data-nav="home">Home</a></li>
+          <li><a href="/tourism" onclick="event.preventDefault(); navigate('/tourism')" class="nav-link-item" data-nav="tourism">Oman Tours</a></li>
+          <li><a href="/visa" onclick="event.preventDefault(); navigate('/visa')" class="nav-link-item" data-nav="visa">Oman Tourist Visa</a></li>
+          <li><a href="/visa?service=schengen" onclick="event.preventDefault(); navigate('/visa?service=schengen')" class="nav-link-item" data-nav="schengen">Schengen Visa</a></li>
+          <li><a href="/hotels" onclick="event.preventDefault(); navigate('/hotels')" class="nav-link-item" data-nav="hotels">Hotels</a></li>
+          <li><a href="/flights" onclick="event.preventDefault(); navigate('/flights')" class="nav-link-item" data-nav="flights">Flights</a></li>
         </ul>
 
-        <div class="nav-actions">
-          <button class="lang-toggle" onclick="toggleLanguage()" aria-label="Toggle language between English and Arabic">English | العربية</button>
-          <div id="nav-auth">
-            <a href="/login" onclick="event.preventDefault(); navigate('/login')" class="btn btn-outline">Login</a>
-            <a href="/register" onclick="event.preventDefault(); navigate('/register')" class="btn">Register</a>
+        <div class="nav-actions" style="display:flex; align-items:center; gap:14px;">
+          <button onclick="navigate('/tourism')" style="background:none; border:0; font-size:18px; cursor:pointer; color:#475569;" aria-label="Search site">🔍</button>
+          <button class="lang-toggle" onclick="toggleLanguage()" style="background:none; border:0; font-size:13px; font-weight:600; color:#334155; cursor:pointer;" aria-label="Toggle language">🌐 EN ▾</button>
+          <span style="font-size:13px; font-weight:600; color:#334155;">OMR ▾</span>
+          <div id="nav-auth" style="display:flex; align-items:center; gap:10px;">
+            <a href="/login" onclick="event.preventDefault(); navigate('/login')" style="color:#334155; font-weight:600; font-size:14px; text-decoration:none; margin-right:4px;">Sign In</a>
+            <a href="/register" onclick="event.preventDefault(); navigate('/register')" class="btn-create-account" style="background:#00A651; color:#FFFFFF; padding:10px 20px; border-radius:99px; font-weight:700; font-size:13px; text-decoration:none; display:inline-flex; align-items:center; gap:4px; box-shadow: 0 4px 12px rgba(0, 166, 81, 0.25); white-space:nowrap;">Create Account →</a>
+          </div>
+          <button class="mobile-menu-btn" onclick="toggleMobileMenu()" aria-label="Toggle Mobile Navigation Menu" aria-expanded="false" style="display:none; background:none; border:0; font-size:24px; cursor:pointer; color:#0B286C; padding:4px;">
+            ☰
+          </button>
+        </div>
+      </div>
+
+      <!-- MOBILE NAVIGATION DRAWER -->
+      <div id="mobile-nav-drawer" class="mobile-nav-drawer" style="display:none; background:#FFFFFF; border-top:1px solid #F1F5F9; border-bottom:1px solid #E2E8F0; padding:16px 24px 24px; box-shadow:0 10px 25px rgba(0,0,0,0.08);">
+        <ul class="mobile-nav-links" style="list-style:none; padding:0; margin:0 0 16px; display:flex; flex-direction:column; gap:10px;">
+          <li><a href="/" onclick="event.preventDefault(); toggleMobileMenu(); navigate('/')" class="nav-link-item" data-nav="home" style="font-size:15px; font-weight:600; color:#0B286C; text-decoration:none; display:block; padding:8px 0;">Home</a></li>
+          <li><a href="/tourism" onclick="event.preventDefault(); toggleMobileMenu(); navigate('/tourism')" class="nav-link-item" data-nav="tourism" style="font-size:15px; font-weight:600; color:#0B286C; text-decoration:none; display:block; padding:8px 0;">Oman Tours</a></li>
+          <li><a href="/visa" onclick="event.preventDefault(); toggleMobileMenu(); navigate('/visa')" class="nav-link-item" data-nav="visa" style="font-size:15px; font-weight:600; color:#0B286C; text-decoration:none; display:block; padding:8px 0;">Oman Tourist Visa</a></li>
+          <li><a href="/visa?service=schengen" onclick="event.preventDefault(); toggleMobileMenu(); navigate('/visa?service=schengen')" class="nav-link-item" data-nav="schengen" style="font-size:15px; font-weight:600; color:#0B286C; text-decoration:none; display:block; padding:8px 0;">Schengen Visa</a></li>
+          <li><a href="/hotels" onclick="event.preventDefault(); toggleMobileMenu(); navigate('/hotels')" class="nav-link-item" data-nav="hotels" style="font-size:15px; font-weight:600; color:#0B286C; text-decoration:none; display:block; padding:8px 0;">Hotels</a></li>
+          <li><a href="/flights" onclick="event.preventDefault(); toggleMobileMenu(); navigate('/flights')" class="nav-link-item" data-nav="flights" style="font-size:15px; font-weight:600; color:#0B286C; text-decoration:none; display:block; padding:8px 0;">Flights</a></li>
+        </ul>
+        <div style="border-top:1px solid #F1F5F9; padding-top:16px; display:flex; flex-direction:column; gap:12px;">
+          <div id="mobile-nav-auth" style="display:flex; gap:12px;">
+            <a href="/login" onclick="event.preventDefault(); toggleMobileMenu(); navigate('/login')" class="btn btn-outline" style="flex:1; text-align:center;">Sign In</a>
+            <a href="/register" onclick="event.preventDefault(); toggleMobileMenu(); navigate('/register')" class="btn" style="flex:1; text-align:center; background:#00A651; color:#FFF;">Register</a>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center; font-size:13px; color:#64748B; padding-top:4px;">
+            <button onclick="toggleLanguage()" style="background:none; border:0; color:#334155; font-weight:600; cursor:pointer;">🌐 EN ▾ Toggle Language</button>
+            <span style="font-weight:600; color:#334155;">Currency: OMR</span>
           </div>
         </div>
+      </div>
       </div>
     </nav>
   </header>
@@ -106,8 +137,13 @@
   </main>
 
   <!-- FLOATING CHATBOT WIDGET (TASK #9 & #10 ACCESSIBLE) -->
-  <button class="chatbot-trigger" id="chat-trigger" aria-expanded="false" aria-controls="chat-drawer" aria-label="Open JMT Assistant Chatbot">💬 JMT Assistant</button>
-  
+  <div style="position:fixed; bottom:24px; right:24px; z-index:999; display:flex; align-items:center; gap:12px;">
+    <div style="background:#FFFFFF; border-radius:99px; padding:8px 16px; box-shadow:0 10px 25px rgba(0,0,0,0.15); font-size:12px; font-weight:700; color:#0F172A; border:1px solid #E2E8F0;">
+      <span style="color:#64748B; font-weight:500;">Need help?</span><br><strong style="color:#00A651;">Chat with us</strong>
+    </div>
+    <button class="chatbot-trigger" id="chat-trigger" aria-expanded="false" aria-controls="chat-drawer" aria-label="Open JMT Assistant Chatbot" style="width:56px; height:56px; border-radius:50%; background:#00A651; color:#FFFFFF; border:0; font-size:24px; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 8px 20px rgba(0,166,81,0.4); position:static; right:auto; bottom:auto;">💬</button>
+  </div>
+
   <div class="chatbot-drawer" id="chat-drawer" role="dialog" aria-modal="true" aria-labelledby="chat-heading" tabindex="-1">
     <div class="chat-header">
       <div>
@@ -127,40 +163,117 @@
     </div>
   </div>
 
-  <!-- FOOTER -->
-  <footer class="footer-main">
-    <div class="shell">
-      <div class="footer-grid">
-        <div class="footer-col">
-          <img src="/assets/logo.png" alt="JMT TRAVELS" style="height:44px; margin-bottom:16px;">
-          <p style="font-size:14px; color:#CBD5E1; line-height:1.7;">Your trusted travel team in Oman for digital visas, flight ticketing, Umrah arrangements, and memorable holiday packages.</p>
-        </div>
-        <div class="footer-col">
-          <h2 style="font-size:16px; color:#FFFFFF; margin-bottom:16px;">Services</h2>
-          <ul>
-            <li><a href="/visa" onclick="event.preventDefault(); navigate('/visa')">Visa Services</a></li>
-            <li><a href="/tourism" onclick="event.preventDefault(); navigate('/tourism')">Tourism Packages</a></li>
-            <li><a href="/contact" onclick="event.preventDefault(); navigate('/contact')">Flight Assistance</a></li>
-          </ul>
-        </div>
-        <div class="footer-col">
-          <h2 style="font-size:16px; color:#FFFFFF; margin-bottom:16px;">Legal &amp; Support</h2>
-          <ul>
-            <li><a href="/privacy" onclick="event.preventDefault(); navigate('/privacy')">Privacy Policy</a></li>
-            <li><a href="/terms" onclick="event.preventDefault(); navigate('/terms')">Terms &amp; Conditions</a></li>
-            <li><a href="/refund-policy" onclick="event.preventDefault(); navigate('/refund-policy')">Refund Policy</a></li>
-            <li><a href="/cancellation-policy" onclick="event.preventDefault(); navigate('/cancellation-policy')">Cancellation Policy</a></li>
-          </ul>
-        </div>
-        <div class="footer-col">
-          <h2 style="font-size:16px; color:#FFFFFF; margin-bottom:16px;">Office</h2>
-          <p style="font-size:13px; color:#CBD5E1; margin-bottom:8px;">near Mazda R/A, next to Yahar Restaurant, 512, Oman</p>
-          <p style="font-size:13px; color:#CBD5E1;">Call: +968 7113 2424</p>
-          <a href="/admin" style="display:inline-block; margin-top:16px; font-size:11px; color:#94A3B8;">Staff Console</a>
-        </div>
+  <!-- PRE-FOOTER CTA SECTION -->
+  <section class="jmt-pre-footer-cta" style="background: linear-gradient(135deg, #0B286C 0%, #00A651 100%); color: #FFFFFF; padding: 60px 0; text-align: center; position: relative; overflow: hidden;">
+    <div class="shell" style="max-width: 900px; margin: 0 auto; position: relative; z-index: 2;">
+      <span style="display: inline-block; background: rgba(255,255,255,0.15); color: #FFFFFF; font-size: 12px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; padding: 6px 16px; border-radius: 99px; margin-bottom: 16px; backdrop-filter: blur(4px);">
+        Start Your Next Chapter
+      </span>
+      <h2 style="font-size: clamp(28px, 4vw, 42px); font-weight: 800; color: #FFFFFF !important; margin-bottom: 16px; line-height: 1.2;">
+        Ready to Experience Extraordinary Travel?
+      </h2>
+      <p style="font-size: 16px; color: rgba(255,255,255,0.9); margin-bottom: 32px; line-height: 1.6; max-width: 680px; margin-left: auto; margin-right: auto;">
+        Whether you are planning an Oman desert adventure, applying for a tourist or Schengen visa, or booking flights and luxury stays, JMT Travels is here for you.
+      </p>
+      <div style="display: flex; gap: 16px; justify-content: center; flex-wrap: wrap;">
+        <a href="/tourism" onclick="event.preventDefault(); navigate('/tourism')" class="jmt-btn-primary" style="background: #FFFFFF; color: #0B286C; font-weight: 800; padding: 14px 32px; font-size: 15px;">
+          Explore Oman Tours →
+        </a>
+        <a href="/visa" onclick="event.preventDefault(); navigate('/visa')" class="jmt-btn-secondary" style="border-color: #FFFFFF; color: #FFFFFF; font-weight: 800; padding: 14px 32px; font-size: 15px; background: rgba(255,255,255,0.1);">
+          Apply For Visa
+        </a>
       </div>
-      <div class="footer-bottom">
-        © <span id="footer-year"></span> JMT TRAVELS. All rights reserved.
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="jmt-footer">
+    <div class="shell">
+      <div class="jmt-footer-grid">
+
+        <!-- COL 1: BRAND LOGO & DESCRIPTION & SOCIALS -->
+        <div class="jmt-footer-column">
+          <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px;">
+            <img src="/assets/logo.png" alt="JMT TRAVELS Logo" style="height:44px; width:auto;">
+            <div>
+              <b style="color:#FFFFFF; font-size:19px; display:block; line-height:1.1; font-weight:800;">JMT TRAVELS</b>
+              <small style="color:#00A651; font-size:9px; font-weight:800; letter-spacing:1.5px;">JOURNEY MORE TOGETHER</small>
+            </div>
+          </div>
+          <p style="font-size:13.5px; line-height:1.7; color:#94A3B8; margin-bottom:24px;">
+            Your premier Oman-based travel agency offering seamless visa clearing, bespoke tour packages, luxury hotels, and international flight ticketing.
+          </p>
+          <div style="display:flex; gap:10px; align-items:center;">
+            <a href="https://www.facebook.com/jmttravel" target="_blank" rel="noopener noreferrer" class="jmt-social-button" aria-label="Facebook" title="JMT Travels on Facebook">
+              <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+            </a>
+            <a href="https://www.instagram.com/jmt_travel_and_tourism" target="_blank" rel="noopener noreferrer" class="jmt-social-button" aria-label="Instagram" title="JMT Travels on Instagram">
+              <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+            </a>
+            <a href="https://mail.google.com/mail/?view=cm&fs=1&to=info%40jmttravels.com" target="_blank" rel="noopener noreferrer" class="jmt-social-button" aria-label="Email JMT Travels via Gmail" title="Email JMT Travels via Gmail">
+              <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64l-6.545-4.91v9.272H1.636A1.636 1.636 0 0 1 0 19.366V5.457c0-2.023 2.309-3.178 3.927-1.964L12 9.545l8.073-6.052C21.69 2.28 24 3.434 24 5.457z"/></svg>
+            </a>
+          </div>
+        </div>
+
+        <!-- COL 2: EXPLORE -->
+        <div class="jmt-footer-column">
+          <h3 class="jmt-footer-heading">Explore</h3>
+          <ul class="jmt-footer-list">
+            <li><a href="/tourism" onclick="event.preventDefault(); navigate('/tourism')" class="jmt-footer-link">Oman Tours</a></li>
+            <li><a href="/tourism" onclick="event.preventDefault(); navigate('/tourism')" class="jmt-footer-link">Destinations</a></li>
+            <li><a href="/visa" onclick="event.preventDefault(); navigate('/visa')" class="jmt-footer-link">Visa Services</a></li>
+            <li><a href="/tourism" onclick="event.preventDefault(); navigate('/tourism')" class="jmt-footer-link">Tour Packages</a></li>
+            <li><a href="/hotels" onclick="event.preventDefault(); navigate('/hotels')" class="jmt-footer-link">Hotels</a></li>
+            <li><a href="/flights" onclick="event.preventDefault(); navigate('/flights')" class="jmt-footer-link">Flights</a></li>
+          </ul>
+        </div>
+
+        <!-- COL 3: COMPANY -->
+        <div class="jmt-footer-column">
+          <h3 class="jmt-footer-heading">Company</h3>
+          <ul class="jmt-footer-list">
+            <li><a href="/contact" onclick="event.preventDefault(); navigate('/contact')" class="jmt-footer-link">About Us</a></li>
+            <li><a href="/contact" onclick="event.preventDefault(); navigate('/contact')" class="jmt-footer-link">Contact Us</a></li>
+            <li><a href="/contact" onclick="event.preventDefault(); navigate('/contact')" class="jmt-footer-link">Careers</a></li>
+          </ul>
+        </div>
+
+        <!-- COL 4: SUPPORT -->
+        <div class="jmt-footer-column">
+          <h3 class="jmt-footer-heading">Support</h3>
+          <ul class="jmt-footer-list">
+            <li><a href="/contact" onclick="event.preventDefault(); navigate('/contact')" class="jmt-footer-link">Help Center</a></li>
+            <li><a href="/account" onclick="event.preventDefault(); navigate('/account')" class="jmt-footer-link">Track Booking</a></li>
+            <li><a href="/contact" onclick="event.preventDefault(); navigate('/contact')" class="jmt-footer-link">Customer Support</a></li>
+            <li><a href="#" onclick="event.preventDefault(); document.getElementById('chat-trigger').click();" class="jmt-footer-link">JMT Assistant</a></li>
+          </ul>
+        </div>
+
+        <!-- COL 5: CONTACT US -->
+        <div class="jmt-footer-column">
+          <h3 class="jmt-footer-heading">Contact Us</h3>
+          <div style="font-size:13.5px; color:#94A3B8; line-height:1.9;">
+            <p style="margin:0 0 8px; color:#E2E8F0;"><strong style="color:#00A651;">Phone:</strong> <a href="tel:+96871132424" style="color:#FFFFFF; text-decoration:none;">+968 7113 2424</a></p>
+            <p style="margin:0 0 8px; color:#E2E8F0;"><strong style="color:#00A651;">WhatsApp:</strong> <a href="https://wa.me/96897608999" target="_blank" rel="noopener" style="color:#FFFFFF; text-decoration:none;">+968 9760 8999</a></p>
+            <p style="margin:0 0 8px; color:#E2E8F0;"><a href="mailto:info@jmttravels.com" aria-label="Email JMT Travels" title="Email JMT Travels" class="jmt-email-link" style="color:#FFFFFF; text-decoration:none;"><strong style="color:#00A651;">Email:</strong> <span style="text-decoration:underline; font-weight:600;">info@jmttravels.com</span></a></p>
+            <p style="margin:0 0 12px; font-size:12.5px; line-height:1.5; color:#94A3B8;">near Mazda R/A, next to Yahar Restaurant, 512, Muscat, Oman</p>
+            <a href="/admin" style="display:inline-block; font-size:11.5px; color:#64748B; text-decoration:none; padding:4px 10px; border:1px solid #1E293B; border-radius:6px; background:#0F172A;">Staff Console →</a>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- FOOTER BOTTOM BAR -->
+      <div class="jmt-footer-bottom">
+        <div>© <span id="footer-year"></span> JMT Travels. All rights reserved.</div>
+        <div class="jmt-footer-legal-links">
+          <a href="/privacy" onclick="event.preventDefault(); navigate('/privacy')" class="jmt-footer-legal-link">Privacy Policy</a>
+          <a href="/terms" onclick="event.preventDefault(); navigate('/terms')" class="jmt-footer-legal-link">Terms &amp; Conditions</a>
+          <a href="/cancellation-policy" onclick="event.preventDefault(); navigate('/cancellation-policy')" class="jmt-footer-legal-link">Cancellation Policy</a>
+          <a href="/privacy" onclick="event.preventDefault(); navigate('/privacy')" class="jmt-footer-legal-link">Cookies</a>
+          <a href="/sitemap.xml" class="jmt-footer-legal-link">Sitemap</a>
+        </div>
       </div>
     </div>
   </footer>

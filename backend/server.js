@@ -385,6 +385,86 @@ async function seedInitialData() {
     });
   }
 
+  const omanServices = [
+    {
+      slug: 'oman-tourist-visa',
+      country: 'Oman',
+      visaType: 'Tourist',
+      validity: '30 Days / 10 Days',
+      processingTime: '24–48 Hours',
+      entryType: 'Single / Express',
+      priceMinor: 20000,
+      currency: 'OMR',
+      overview: "Explore Oman's mountains, beaches, deserts, forts, and cultural destinations with convenient visa assistance.",
+      eligibility: 'Valid passport with at least 6 months validity.',
+      requiredDocuments: ['Passport Copy', 'Passport Photo', 'Flight & Hotel Reservation'],
+      published: true
+    },
+    {
+      slug: 'oman-business-visa',
+      country: 'Oman',
+      visaType: 'Business',
+      validity: '21 Days / 1 Year',
+      processingTime: '24–48 Hours',
+      entryType: 'Single / Multiple',
+      priceMinor: 35000,
+      currency: 'OMR',
+      overview: 'Professional visa assistance for corporate delegations, commercial meetings, and trade conferences in Muscat.',
+      eligibility: 'Business invitation letter or commercial registration.',
+      requiredDocuments: ['Passport Copy', 'Company Invitation Letter', 'Passport Photo'],
+      published: true
+    },
+    {
+      slug: 'oman-family-visa',
+      country: 'Oman',
+      visaType: 'Family Visit',
+      validity: '30 Days / 3 Months',
+      processingTime: '48 Hours',
+      entryType: 'Single / Multiple',
+      priceMinor: 25000,
+      currency: 'OMR',
+      overview: 'Dedicated document clearing for visiting relatives, family reunions, and expatriate family entry to Oman.',
+      eligibility: 'Resident sponsor proof or family relation proof.',
+      requiredDocuments: ['Passport Copy', 'Sponsor Resident Card', 'Relationship Proof'],
+      published: true
+    },
+    {
+      slug: 'oman-work-visa',
+      country: 'Oman',
+      visaType: 'Work & Employment',
+      validity: '2 Years Resident',
+      processingTime: '3–5 Business Days',
+      entryType: 'Resident Work Permit',
+      priceMinor: 60000,
+      currency: 'OMR',
+      overview: 'End-to-end assistance with employment visa clearance, Ministry labor approvals, and residence permit processing.',
+      eligibility: 'Oman Ministry labor clearance approval & job offer contract.',
+      requiredDocuments: ['Passport Copy', 'Medical Fitness Certificate', 'Labor Approval'],
+      published: true
+    },
+    {
+      slug: 'oman-transit-visa',
+      country: 'Oman',
+      visaType: 'Transit',
+      validity: '72 Hours',
+      processingTime: '12–24 Hours',
+      entryType: 'Single Transit Entry',
+      priceMinor: 12000,
+      currency: 'OMR',
+      overview: 'Short stopover visa clearance for international travellers transiting through Muscat International Airport (MCT).',
+      eligibility: 'Confirmed onward flight ticket to third destination.',
+      requiredDocuments: ['Passport Copy', 'Onward Flight Ticket', 'Destination Visa (if required)'],
+      published: true
+    }
+  ];
+
+  for (const s of omanServices) {
+    const exists = await db.visaServices.findOne({ slug: s.slug });
+    if (!exists) {
+      await db.visaServices.create(s);
+    }
+  }
+
   // Seed Admin User
   const adminEmail = (process.env.ADMIN_EMAIL || 'admin@jmttravels.com').toLowerCase();
   const existingAdmin = await db.users.findOne({ email: adminEmail });
