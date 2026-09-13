@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 60" width="200" height="60">
+  <rect x="6" y="8" width="44" height="44" rx="8" fill="#D71921"/>
+  <text x="28" y="38" font-family="'Times New Roman', serif" font-weight="bold" font-size="26" fill="#FFFFFF" text-anchor="middle">إمارات</text>
+  <text x="58" y="34" font-family="'Times New Roman', Georgia, serif" font-weight="bold" font-size="22" fill="#D71921" letter-spacing="-0.5">Emirates</text>
+</svg>

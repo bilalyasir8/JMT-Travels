@@ -1,31 +1,57 @@
 /* JMT TRAVELS — Centralized Design Tokens & Visual Identity System */
 :root {
-  --primary: #1E2B6D;
-  --primary-dark: #0B286C;
-  --secondary: #16A34A;
-  --secondary-dark: #15803D;
+  /* Brand Primary Colors */
+  --jmt-green: #00A86B;
+  --jmt-green-hover: #00935D;
+  --jmt-navy: #082B52;
+  --jmt-blue: #0D3B66;
+  --jmt-blue-dark: #062746;
+
+  /* Global Website Background (#C1D4E4) */
+  --jmt-page-bg: #C1D4E4;
+  --jmt-bg: #C1D4E4;
+  --jmt-bg-alt: #B6CBDC;
+  --jmt-bg-light: #C9D9E8;
+  --jmt-card-bg: #F4F9FC;
+  --jmt-card-bg-solid: #F4F9FC;
+  --jmt-panel-bg: #F5FAFD;
+  --jmt-input-bg: #EAF3F9;
+  --jmt-input-hover: #E1EDF5;
+
+  /* Borders & Shadows */
+  --jmt-border: rgba(8, 43, 82, 0.08);
+  --jmt-border-strong: rgba(8, 43, 82, 0.14);
+  --jmt-shadow-soft: 0 8px 25px rgba(8, 43, 82, 0.06);
+  --jmt-shadow-float: 0 20px 50px rgba(8, 43, 82, 0.12);
+
+  /* Legacy Mapping for Full Compatibility */
+  --primary: #082B52;
+  --primary-dark: #062746;
+  --secondary: #00A86B;
+  --secondary-dark: #00935D;
   --accent-gold: #C9962E;
 
-  --background: #F8FAFC;
-  --surface: #FFFFFF;
-  --surface-alt: #FAF8F4;
+  --background: #C1D4E4;
+  --surface: #F4F9FC;
+  --surface-alt: #EAF3F9;
 
-  --text: #0F172A;
-  --text-muted: #64748B;
-  --border: #E2E8F0;
+  --text: #082B52;
+  --text-muted: #58718A;
+  --border: rgba(8, 43, 82, 0.08);
 
-  --success: #16A34A;
+  --success: #00A86B;
   --warning: #D97706;
   --error: #DC2626;
 
   --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 20px;
+  --radius-xl: 26px;
   --radius-pill: 9999px;
 
   --shadow-sm: 0 1px 3px rgba(0,0,0,0.05);
-  --shadow-md: 0 4px 16px -2px rgba(30, 43, 109, 0.08);
-  --shadow-lg: 0 12px 32px -4px rgba(30, 43, 109, 0.12);
+  --shadow-md: 0 4px 16px -2px rgba(8, 43, 82, 0.08);
+  --shadow-lg: 0 12px 32px -4px rgba(8, 43, 82, 0.12);
 
   --font-body: 'Plus Jakarta Sans', sans-serif;
   --transition: all 0.25s ease-in-out;
@@ -70,8 +96,8 @@ html {
 
 body {
   font-family: var(--font-body);
-  background-color: var(--background);
-  color: var(--text);
+  background-color: #C1D4E4;
+  color: #082B52;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
 }
@@ -744,44 +770,52 @@ body {
 }
 
 /* Floating Search Card */
+.jmt-home-search-card,
 .search-card-container {
-  background: #FFFFFF;
-  border-radius: 20px;
-  box-shadow: 0 20px 40px -10px rgba(11, 40, 108, 0.12);
-  padding: 24px 32px;
-  border: 1px solid #E2E8F0;
+  background: #F5FAFD;
+  border-radius: 24px;
+  box-shadow: 0 20px 50px rgba(7, 21, 59, 0.16);
+  padding: 24px 28px;
+  border: 1px solid rgba(11, 40, 108, 0.08);
+  position: relative;
+  overflow: hidden;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+.jmt-home-search-card::before,
+.search-card-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 5px;
+  background: linear-gradient(90deg, #0B286C 0%, #00A651 50%, #F59E0B 100%);
 }
 .search-tab-item {
   background: transparent;
   border: 0;
-  font-size: 15px;
-  font-weight: 600;
-  color: #64748B;
+  font-size: 14.5px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.85);
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding-bottom: 12px;
+  gap: 10px;
+  padding: 10px 22px;
+  border-radius: 99px;
   position: relative;
   white-space: nowrap;
-  transition: color 0.2s ease;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .search-tab-item:hover {
-  color: #0B286C;
+  color: #FFFFFF;
+  background: rgba(255, 255, 255, 0.15);
 }
 .search-tab-item.active {
-  color: #00A651;
-  font-weight: 700;
-}
-.search-tab-item.active::after {
-  content: '';
-  position: absolute;
-  bottom: -1px;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: #00A651;
-  border-radius: 99px;
+  color: #FFFFFF !important;
+  background: linear-gradient(135deg, #00A651 0%, #008740 100%) !important;
+  font-weight: 800;
+  box-shadow: 0 4px 16px rgba(0, 166, 81, 0.45);
 }
 
 /* Popular Destinations Grid (4 Cards + 1 Oman Card) */
@@ -1064,19 +1098,33 @@ form input:focus, form select:focus, form textarea:focus {
   box-shadow: 0 24px 60px rgba(7,21,59,.14) !important;
   border: 1px solid rgba(11,40,108,.10) !important;
 }
-.search-tab-item { font-weight: 800 !important; }
-.search-tab-item.active { color: var(--jmt-green) !important; }
+.search-tab-item {
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+.search-tab-item:hover {
+  color: #FFFFFF !important;
+}
+.search-tab-item.active {
+  color: #FFFFFF !important;
+  background: #00A86B !important;
+  font-weight: 700 !important;
+  box-shadow: 0 4px 14px rgba(0, 168, 107, 0.4) !important;
+}
 
 /* Homepage sections */
 #view-container section.shell,
 #view-container > .shell[style*="margin-bottom"] {
   max-width: 1320px !important;
 }
-#view-container h1, #view-container h2, #view-container h3 {
-  color: var(--jmt-blue) !important;
+#view-container h1:not(.jmt-dest-name),
+#view-container h2:not(.jmt-dest-name),
+#view-container h3:not(.jmt-dest-name) {
+  color: var(--jmt-navy, #082B52);
   letter-spacing: -.45px;
 }
-#view-container p { color: var(--jmt-muted); }
+#view-container p:not(.jmt-dest-sub) { color: var(--jmt-muted, #3F5C74); }
 
 /* Destination / package imagery */
 .dest-card-box, .destination-card { border-radius: 18px !important; }
@@ -1371,18 +1419,28 @@ html, body { max-width: 100%; overflow-x: hidden; }
 }
 
 .jmt-step-card {
-  background: #FFFFFF;
-  border: 1px solid #E1E8F2;
+  background: linear-gradient(135deg, #07153B 0%, #0B286C 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
   border-radius: 16px;
   padding: 24px 20px;
   position: relative;
-  box-shadow: 0 4px 16px rgba(11,40,108,0.04);
+  box-shadow: 0 12px 32px rgba(7, 21, 59, 0.22) !important;
 }
+
+.jmt-step-card h3 {
+  color: #FFFFFF !important;
+}
+
+.jmt-step-card p {
+  color: #D6E0F4 !important;
+}
+
 .jmt-step-num {
   font-size: 12px;
   font-weight: 800;
-  color: #00A651;
-  background: rgba(0, 166, 81, 0.1);
+  color: #00E676 !important;
+  background: rgba(0, 230, 118, 0.2) !important;
+  border: 1px solid rgba(0, 230, 118, 0.5) !important;
   padding: 4px 10px;
   border-radius: 99px;
   display: inline-block;
@@ -1705,23 +1763,25 @@ a[href^="mailto:"]:hover {
 }
 
 .jmt-flight-pill-btn {
-  background: #F1F5F9;
-  border: 1px solid #CBD5E1;
-  border-radius: 99px;
-  padding: 8px 16px;
-  font-size: 13px;
-  font-weight: 600;
-  color: #0F172A;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  transition: all 0.2s ease;
+  background: linear-gradient(135deg, #07153B 0%, #0B286C 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  border-radius: 99px !important;
+  padding: 8px 18px !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  color: #FFFFFF !important;
+  cursor: pointer !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  transition: all 0.2s ease !important;
+  box-shadow: 0 4px 12px rgba(7, 21, 59, 0.15) !important;
 }
 
 .jmt-flight-pill-btn:hover {
-  background: #E2E8F0;
-  border-color: #94A3B8;
+  background: linear-gradient(135deg, #0B286C 0%, #0F3895 100%) !important;
+  border-color: rgba(255, 255, 255, 0.4) !important;
+  color: #FFFFFF !important;
 }
 
 .jmt-flight-popover {
@@ -2052,26 +2112,68 @@ a[href^="mailto:"]:hover,
   position: relative;
   border-radius: 22px;
   overflow: hidden;
-  border: 1px solid rgba(226, 232, 240, 0.8);
-  box-shadow: 0 10px 30px rgba(11, 40, 108, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  box-shadow: 0 10px 30px rgba(7, 21, 59, 0.22) !important;
   transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  min-height: 420px;
-  padding: 30px 26px;
-  color: #FFFFFF;
-  background-color: #041946;
-  flex: 1 1 calc(33.333% - 28px);
+  min-height: 280px;
+  padding: 26px 24px;
+  color: #FFFFFF !important;
+  background: linear-gradient(135deg, #07153B 0%, #0B286C 100%) !important;
+  flex: 0 1 calc(33.333% - 24px);
   min-width: 300px;
-  max-width: 380px;
+}
+
+.jmt-oman-visa-card h3,
+.jmt-oman-visa-card h4 {
+  color: #FFFFFF !important;
+  font-weight: 800 !important;
+}
+
+.jmt-oman-visa-card p {
+  color: #D6E0F4 !important;
+  opacity: 1 !important;
+  line-height: 1.55 !important;
+}
+
+.jmt-oman-visa-card span {
+  color: #E2E8F0 !important;
+}
+
+.jmt-oman-visa-card .jmt-btn-primary,
+.jmt-oman-visa-card a.jmt-btn-primary {
+  background: #00A651 !important;
+  color: #FFFFFF !important;
+  font-weight: 800 !important;
+  text-decoration: none !important;
+  box-shadow: 0 4px 14px rgba(0, 166, 81, 0.4) !important;
+  display: block !important;
+  text-align: center !important;
+}
+
+.jmt-oman-visa-card .jmt-btn-primary:hover,
+.jmt-oman-visa-card a.jmt-btn-primary:hover {
+  background: #00935D !important;
+  color: #FFFFFF !important;
+}
+
+.jmt-oman-visa-card .jmt-btn-secondary,
+.jmt-oman-visa-card a.jmt-btn-secondary {
+  background: rgba(255, 255, 255, 0.16) !important;
+  color: #FFFFFF !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.45) !important;
+  text-decoration: none !important;
 }
 
 .jmt-oman-visa-card-bg {
   position: absolute;
   inset: 0;
-  background-position: center;
-  background-size: cover;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
   transition: transform 0.6s ease;
   z-index: 0;
 }
@@ -2082,9 +2184,9 @@ a[href^="mailto:"]:hover,
   inset: 0;
   background: linear-gradient(
     180deg,
-    rgba(4, 25, 70, 0.22) 0%,
-    rgba(4, 25, 70, 0.65) 48%,
-    rgba(3, 24, 62, 0.96) 100%
+    rgba(7, 21, 59, 0.3) 0%,
+    rgba(7, 21, 59, 0.72) 50%,
+    rgba(4, 18, 52, 0.96) 100%
   );
   z-index: 1;
   pointer-events: none;
@@ -2093,16 +2195,17 @@ a[href^="mailto:"]:hover,
 
 .jmt-oman-visa-card:hover {
   transform: translateY(-6px);
-  box-shadow: 0 20px 40px rgba(11, 40, 108, 0.25);
+  box-shadow: 0 20px 40px rgba(7, 21, 59, 0.25);
 }
 
 .jmt-oman-visa-card:hover .jmt-oman-visa-card-bg {
-  transform: scale(1.08);
+  transform: scale(1.05);
 }
 
-.jmt-oman-visa-card-content {
+.jmt-oman-visa-card-content,
+.jmt-oman-visa-card > div {
   position: relative;
-  z-index: 2;
+  z-index: 5 !important;
   height: 100%;
   display: flex;
   flex-direction: column;
@@ -2124,12 +2227,21 @@ a[href^="mailto:"]:hover,
 }
 
 .jmt-benefits-strip {
-  background: #FFFFFF;
-  border: 1px solid #E2E8F0;
+  background: linear-gradient(135deg, #07153B 0%, #0B286C 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
   border-radius: 20px;
   padding: 36px 30px;
   margin-bottom: 40px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 12px 32px rgba(7, 21, 59, 0.22) !important;
+}
+
+.jmt-benefits-strip h2,
+.jmt-benefits-strip h3 {
+  color: #FFFFFF !important;
+}
+
+.jmt-benefits-strip p {
+  color: #D6E0F4 !important;
 }
 
 .jmt-benefits-grid {
@@ -2148,8 +2260,8 @@ a[href^="mailto:"]:hover,
   width: 42px;
   height: 42px;
   border-radius: 12px;
-  background: #E6F6ED;
-  color: #00A651;
+  background: rgba(0, 230, 118, 0.2) !important;
+  color: #00E676 !important;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2159,14 +2271,22 @@ a[href^="mailto:"]:hover,
 }
 
 .jmt-disclaimer-box {
-  background: #F8FAFC;
-  border-left: 4px solid #00A651;
-  border-radius: 10px;
-  padding: 16px 20px;
+  background: linear-gradient(135deg, #07153B 0%, #0B286C 100%) !important;
+  border-left: 6px solid #00E676 !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.18) !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.18) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.18) !important;
+  border-radius: 14px;
+  padding: 20px 24px;
   margin-bottom: 40px;
-  font-size: 13.5px;
-  color: #475569;
-  line-height: 1.6;
+  font-size: 14px;
+  color: #D6E0F4 !important;
+  line-height: 1.65;
+  box-shadow: 0 12px 32px rgba(7, 21, 59, 0.22) !important;
+}
+
+.jmt-disclaimer-box > div:first-child {
+  color: #FFFFFF !important;
 }
 
 .jmt-oman-cta-section {
@@ -2239,4 +2359,3547 @@ a[href^="mailto:"]:hover,
     border-radius: 16px !important;
     max-height: 220px;
   }
+}
+
+/* =============================================================
+   FLIGHT RESULTS CARDS (PREMIUM TRAVEL MARKETPLACE)
+   ============================================================= */
+.jmt-flight-card-list {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.jmt-flight-result-card {
+  background: linear-gradient(135deg, #07153B 0%, #0B286C 100%) !important;
+  border-radius: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  box-shadow: 0 10px 30px rgba(7, 21, 59, 0.22) !important;
+  padding: 22px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  min-height: 120px;
+  transition: transform 250ms ease, box-shadow 250ms ease, border-color 250ms ease;
+  position: relative;
+  color: #FFFFFF !important;
+}
+
+.jmt-flight-result-card:hover {
+  transform: translateY(-4px) !important;
+  box-shadow: 0 18px 40px rgba(7, 21, 59, 0.35) !important;
+  border-color: rgba(0, 230, 118, 0.4) !important;
+}
+
+/* Airline Accent Borders */
+.jmt-flight-card-wy { border-inline-start: 6px solid #00E676 !important; }
+.jmt-flight-card-ov { border-inline-start: 6px solid #00E676 !important; }
+.jmt-flight-card-ek { border-inline-start: 6px solid #FF5252 !important; }
+.jmt-flight-card-qr { border-inline-start: 6px solid #E040FB !important; }
+.jmt-flight-card-6e { border-inline-start: 6px solid #448AFF !important; }
+.jmt-flight-card-ak { border-inline-start: 6px solid #FF5252 !important; }
+
+/* Airline Logo & Name Block */
+.jmt-airline-brand-block {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 260px;
+}
+
+.jmt-airline-logo-box {
+  width: 90px;
+  height: 54px;
+  border-radius: 14px;
+  background: #FFFFFF !important;
+  border: 1px solid rgba(255, 255, 255, 0.4) !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  flex-shrink: 0;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25) !important;
+}
+
+.jmt-airline-logo-box img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.jmt-airline-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.jmt-airline-title {
+  font-size: 19px;
+  font-weight: 800;
+  color: #FFFFFF !important;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.jmt-flight-code {
+  font-size: 13.5px;
+  color: #55D98A !important;
+  font-weight: 700;
+}
+
+.jmt-flight-baggage {
+  font-size: 12px;
+  color: #00E676 !important;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(0, 166, 81, 0.2);
+  border: 1px solid rgba(0, 230, 118, 0.4);
+  padding: 3px 10px;
+  border-radius: 99px;
+  width: fit-content;
+}
+
+/* Flight Schedule & Route Block */
+.jmt-flight-schedule-block {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  flex: 1;
+  max-width: 440px;
+  justify-content: center;
+}
+
+.jmt-flight-time-point {
+  text-align: center;
+}
+
+.jmt-time-val {
+  font-size: 28px;
+  font-weight: 800;
+  color: #FFFFFF !important;
+  line-height: 1.1;
+  letter-spacing: -0.5px;
+}
+
+.jmt-iata-val {
+  font-size: 15px;
+  font-weight: 800;
+  color: #E2E8F0 !important;
+  margin-top: 2px;
+}
+
+.jmt-city-val {
+  font-size: 12px;
+  color: #CBD5E1 !important;
+}
+
+.jmt-route-connector {
+  flex: 1;
+  text-align: center;
+  min-width: 110px;
+  max-width: 160px;
+}
+
+.jmt-route-duration {
+  font-size: 12px;
+  color: #CBD5E1 !important;
+  font-weight: 700;
+  margin-bottom: 3px;
+}
+
+.jmt-route-line-wrap {
+  position: relative;
+  height: 2px;
+  background: linear-gradient(90deg, rgba(0, 166, 81, 0.4) 0%, #00E676 50%, rgba(0, 166, 81, 0.4) 100%) !important;
+  margin: 6px 0;
+}
+
+.jmt-route-plane {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 12px;
+  color: #00E676 !important;
+  background: #07153B !important;
+  padding: 0 6px;
+  border-radius: 50%;
+}
+
+.jmt-route-stops {
+  font-size: 12px;
+  font-weight: 800;
+  margin-top: 3px;
+}
+
+.jmt-stops-nonstop {
+  color: #00E676 !important;
+  background: rgba(0, 230, 118, 0.18);
+  padding: 2px 8px;
+  border-radius: 99px;
+  border: 1px solid rgba(0, 230, 118, 0.4);
+  display: inline-block;
+}
+.jmt-stops-connecting {
+  color: #55D98A !important;
+  background: rgba(255, 255, 255, 0.12);
+  padding: 2px 8px;
+  border-radius: 99px;
+  display: inline-block;
+}
+
+/* Price & Booking CTAs Block */
+.jmt-flight-pricing-block {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-shrink: 0;
+}
+
+.jmt-flight-price-val {
+  font-size: 28px;
+  font-weight: 800;
+  color: #FFFFFF !important;
+  text-align: end;
+  line-height: 1.1;
+}
+
+.jmt-flight-price-unit {
+  font-size: 12px;
+  color: #CBD5E1 !important;
+  font-weight: 500;
+  display: block;
+}
+
+.jmt-flight-cta-group {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.jmt-btn-flight-email {
+  background: rgba(255, 255, 255, 0.16) !important;
+  color: #FFFFFF !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.6) !important;
+  font-weight: 800 !important;
+  font-size: 13.5px !important;
+  padding: 10px 18px !important;
+  border-radius: 99px !important;
+  text-decoration: none !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  transition: background 200ms ease, border-color 200ms ease, transform 200ms ease !important;
+  white-space: nowrap !important;
+}
+
+.jmt-btn-flight-email:hover {
+  background: #FFFFFF !important;
+  color: #07153B !important;
+  border-color: #FFFFFF !important;
+}
+
+.jmt-btn-flight-whatsapp {
+  background: #00A651 !important;
+  color: #FFFFFF !important;
+  font-weight: 800 !important;
+  font-size: 13.5px !important;
+  padding: 10px 20px !important;
+  border-radius: 99px !important;
+  text-decoration: none !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  box-shadow: 0 4px 14px rgba(0, 166, 81, 0.35) !important;
+  transition: background 200ms ease, transform 200ms ease !important;
+  white-space: nowrap !important;
+}
+
+.jmt-btn-flight-whatsapp:hover {
+  background: #008842 !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Responsive Flight Card Layout */
+@media (max-width: 1100px) {
+  .jmt-flight-result-card {
+    flex-wrap: wrap;
+    padding: 20px;
+  }
+  .jmt-flight-pricing-block {
+    width: 100%;
+    justify-content: space-between;
+    border-top: 1px solid #F1F5F9;
+    padding-top: 14px;
+    margin-top: 6px;
+  }
+}
+
+@media (max-width: 768px) {
+  .jmt-flight-result-card {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+  }
+  .jmt-airline-brand-block {
+    min-width: unset;
+  }
+  .jmt-flight-schedule-block {
+    max-width: 100%;
+    width: 100%;
+    justify-content: space-between;
+  }
+  .jmt-flight-pricing-block {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  .jmt-flight-price-val {
+    text-align: start;
+  }
+  .jmt-flight-cta-group {
+    flex-direction: column;
+    width: 100%;
+  }
+  .jmt-btn-flight-whatsapp,
+  .jmt-btn-flight-email {
+    justify-content: center;
+    width: 100%;
+  }
+}
+
+/* =============================================================
+   ACCOMMODATION SERVICES CATALOGUE CARDS
+   ============================================================= */
+.jmt-accommodation-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+}
+@media (max-width: 1024px) {
+  .jmt-accommodation-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 600px) {
+  .jmt-accommodation-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.jmt-catalog-card {
+  position: relative;
+  height: 380px;
+  border-radius: 22px;
+  overflow: hidden;
+  box-shadow: 0 10px 28px rgba(7, 21, 59, 0.12);
+  cursor: pointer;
+  background: #07153B;
+  transition: transform 300ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 300ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.jmt-catalog-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 18px 42px rgba(7, 21, 59, 0.22);
+}
+
+.jmt-catalog-card-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 500ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.jmt-catalog-card:hover .jmt-catalog-card-img {
+  transform: scale(1.06);
+}
+
+.jmt-catalog-card-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    rgba(7, 21, 59, 0.94) 0%,
+    rgba(7, 21, 59, 0.42) 55%,
+    rgba(7, 21, 59, 0.05) 100%
+  );
+  z-index: 1;
+  transition: opacity 300ms ease;
+}
+
+.jmt-catalog-card-content {
+  position: absolute;
+  bottom: 0;
+  inset-inline-start: 0;
+  inset-inline-end: 0;
+  padding: 28px 24px;
+  z-index: 2;
+  color: #FFFFFF;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.jmt-catalog-card-title {
+  font-size: clamp(20px, 2vw, 23px);
+  font-weight: 800;
+  color: #FFFFFF !important;
+  margin: 0 0 8px;
+  line-height: 1.2;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.jmt-catalog-card-sub {
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.92) !important;
+  margin: 0 0 20px;
+}
+
+.jmt-catalog-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.jmt-catalog-card-cta {
+  font-size: 14px;
+  font-weight: 700;
+  color: #FFFFFF !important;
+}
+
+.jmt-catalog-card-arrow {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #FFFFFF;
+  color: #07153B;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 16px;
+  transition: transform 250ms ease, background 250ms ease, color 250ms ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.jmt-catalog-card:hover .jmt-catalog-card-arrow {
+  transform: translateX(5px);
+  background: #00A651;
+  color: #FFFFFF;
+}
+
+[dir="rtl"] .jmt-catalog-card:hover .jmt-catalog-card-arrow {
+  transform: translateX(-5px);
+}
+
+/* =============================================================
+   JMT OMAN TOURS SEO EDITORIAL SECTION
+   ============================================================= */
+.jmt-seo-editorial-section {
+  margin-top: 60px;
+  background: #F4F9FC !important;
+  border-radius: 24px;
+  padding: 56px 40px;
+  border: 1px solid rgba(8, 43, 82, 0.10) !important;
+  box-shadow: 0 12px 32px rgba(8, 43, 82, 0.06) !important;
+  color: #07153B !important;
+}
+
+.jmt-editorial-header,
+.jmt-seo-header-block {
+  text-align: center;
+  max-width: 860px;
+  margin-inline: auto;
+  margin-bottom: 48px;
+}
+
+.jmt-editorial-title,
+.jmt-seo-main-title {
+  font-size: clamp(26px, 3.4vw, 38px);
+  font-weight: 800;
+  color: #07153B !important;
+  line-height: 1.25;
+  margin: 0 0 16px;
+  letter-spacing: -0.5px;
+}
+
+.jmt-editorial-lead,
+.jmt-seo-lead-text {
+  font-size: 16px;
+  color: #334155 !important;
+  line-height: 1.7;
+  margin: 0 0 12px;
+}
+
+.jmt-editorial-sub,
+.jmt-seo-subtext {
+  font-size: 15px;
+  color: #475569 !important;
+  line-height: 1.65;
+  margin: 0;
+}
+
+.jmt-seo-block {
+  margin-bottom: 44px;
+}
+
+.jmt-seo-block-title {
+  font-size: clamp(20px, 2.4vw, 24px);
+  font-weight: 800;
+  color: #0B286C;
+  margin: 0 0 14px;
+  line-height: 1.3;
+}
+
+.jmt-seo-paragraph {
+  font-size: 15px;
+  color: #334155;
+  line-height: 1.7;
+  margin: 0 0 14px;
+}
+
+.jmt-seo-inline-link {
+  color: #00A651;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transition: color 0.2s ease;
+}
+
+.jmt-seo-inline-link:hover {
+  color: #0B286C;
+}
+
+/* Numbered Highlights Editorial List */
+.jmt-seo-highlights-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.jmt-seo-highlight-card {
+  background: #FFFFFF;
+  border-radius: 18px;
+  padding: 24px;
+  border: 1px solid #E2E8F0;
+  box-shadow: 0 4px 12px rgba(7, 21, 59, 0.04);
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.jmt-seo-highlight-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 24px rgba(7, 21, 59, 0.08);
+}
+
+.jmt-seo-highlight-num {
+  font-size: 18px;
+  font-weight: 800;
+  color: #00A651;
+  background: rgba(0, 166, 81, 0.1);
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.jmt-seo-highlight-body h4 {
+  font-size: 17px;
+  font-weight: 800;
+  color: #07153B;
+  margin: 0 0 6px;
+}
+
+.jmt-seo-highlight-body p {
+  font-size: 14px;
+  color: #64748B;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* Custom Packages Cards Grid */
+.jmt-seo-custom-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.jmt-seo-custom-card {
+  background: #FFFFFF;
+  border-radius: 18px;
+  padding: 24px 20px;
+  border: 1px solid #E2E8F0;
+  border-inline-start: 4px solid #00A651;
+  box-shadow: 0 4px 12px rgba(7, 21, 59, 0.04);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.jmt-seo-custom-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 28px rgba(7, 21, 59, 0.09);
+}
+
+.jmt-seo-custom-card-tag {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 800;
+  color: #00A651;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+}
+
+.jmt-seo-custom-card-title {
+  font-size: 17px;
+  font-weight: 800;
+  color: #07153B;
+  margin: 0 0 8px;
+  line-height: 1.3;
+}
+
+.jmt-seo-custom-card-desc {
+  font-size: 13.5px;
+  color: #64748B;
+  line-height: 1.55;
+  margin: 0;
+}
+
+/* Final CTA Banner */
+.jmt-seo-cta-banner {
+  background: linear-gradient(135deg, #07153B 0%, #0B286C 100%);
+  border-radius: 20px;
+  padding: 44px 32px;
+  color: #FFFFFF;
+  text-align: center;
+  margin-top: 40px;
+  box-shadow: 0 12px 32px rgba(7, 21, 59, 0.15);
+}
+
+.jmt-seo-cta-title {
+  font-size: clamp(22px, 2.8vw, 28px);
+  font-weight: 800;
+  color: #FFFFFF !important;
+  margin: 0 0 10px;
+}
+
+.jmt-seo-cta-sub {
+  font-size: 15px;
+  color: #D6E0F4 !important;
+  margin: 0 0 24px;
+  max-width: 680px;
+  margin-inline: auto;
+  line-height: 1.6;
+}
+
+.jmt-seo-cta-buttons {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* Responsive Overrides */
+@media (max-width: 1024px) {
+  .jmt-seo-custom-cards-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .jmt-seo-highlights-grid {
+    grid-template-columns: 1fr;
+  }
+  .jmt-seo-highlight-card[style*="grid-column"] {
+    grid-column: span 1 !important;
+  }
+}
+
+@media (max-width: 600px) {
+  .jmt-seo-editorial-section {
+    padding: 36px 20px;
+    border-radius: 18px;
+  }
+  .jmt-seo-custom-cards-grid {
+    grid-template-columns: 1fr;
+  }
+  .jmt-seo-cta-buttons {
+    flex-direction: column;
+    width: 100%;
+  }
+  .jmt-seo-cta-buttons .jmt-btn-primary,
+  .jmt-seo-cta-buttons .jmt-btn-secondary {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* =============================================================
+   JMT HOTEL SEARCH PANEL & RESULTS EXPERIENCE
+   ============================================================= */
+.jmt-hotel-search-panel {
+  background: linear-gradient(135deg, #07153B 0%, #0B286C 50%, #153B8A 100%) !important;
+  border-radius: 24px;
+  padding: 32px 28px;
+  box-shadow: 0 16px 40px rgba(7, 21, 59, 0.25) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  margin-bottom: 40px;
+  color: #FFFFFF !important;
+}
+
+.jmt-hotel-search-panel .jmt-field-label {
+  color: #55D98A !important;
+  font-weight: 800 !important;
+}
+
+.jmt-hotel-search-panel .jmt-field-input {
+  color: #07153B !important;
+}
+
+.jmt-hotel-search-grid {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1fr 1.2fr auto;
+  gap: 16px;
+  align-items: center;
+}
+
+.jmt-hotel-dest-chips {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  margin-bottom: 36px;
+  scrollbar-width: thin;
+}
+
+.jmt-hotel-dest-chip {
+  background: #FFFFFF;
+  border: 1px solid #CBD5E1;
+  border-radius: 99px;
+  padding: 8px 18px;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #0B286C;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.jmt-hotel-dest-chip:hover,
+.jmt-hotel-dest-chip.active {
+  background: #00A651;
+  color: #FFFFFF;
+  border-color: #00A651;
+  box-shadow: 0 4px 12px rgba(0, 166, 81, 0.25);
+}
+
+.jmt-hotel-layout {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 32px;
+  align-items: start;
+  margin-bottom: 60px;
+}
+
+.jmt-hotel-filters-sidebar {
+  background: linear-gradient(135deg, #07153B 0%, #0B286C 100%) !important;
+  border-radius: 20px;
+  padding: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  box-shadow: 0 12px 32px rgba(7, 21, 59, 0.22) !important;
+  position: sticky;
+  top: 96px;
+  color: #FFFFFF !important;
+}
+
+.jmt-hotel-filters-sidebar h3 {
+  color: #FFFFFF !important;
+}
+
+.jmt-filter-group {
+  margin-bottom: 22px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15) !important;
+}
+
+.jmt-filter-group:last-child {
+  border-bottom: 0 !important;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.jmt-filter-title {
+  font-size: 15px;
+  font-weight: 800;
+  color: #FFFFFF !important;
+  margin: 0 0 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.jmt-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  color: #D6E0F4 !important;
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.jmt-checkbox-label:hover {
+  color: #FFFFFF !important;
+}
+
+.jmt-checkbox-label input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #00E676;
+  cursor: pointer;
+}
+
+.jmt-hotel-result-card {
+  background: linear-gradient(135deg, #07153B 0%, #0B286C 100%) !important;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  box-shadow: 0 12px 32px rgba(7, 21, 59, 0.22) !important;
+  overflow: hidden;
+  display: flex;
+  margin-bottom: 24px;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.jmt-hotel-result-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 40px rgba(7, 21, 59, 0.35) !important;
+}
+
+.jmt-hotel-card-media {
+  width: 300px;
+  position: relative;
+  flex-shrink: 0;
+  background: #07153B;
+}
+
+.jmt-hotel-card-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.jmt-hotel-card-badge {
+  position: absolute;
+  top: 14px;
+  inset-inline-start: 14px;
+  background: #00A651;
+  color: #FFFFFF;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 4px 12px;
+  border-radius: 99px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 4px 10px rgba(0, 166, 81, 0.3);
+}
+
+.jmt-hotel-card-content {
+  padding: 24px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.jmt-hotel-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 10px;
+}
+
+.jmt-hotel-card-title {
+  font-size: 21px;
+  font-weight: 800;
+  color: #FFFFFF !important;
+  margin: 0 0 6px;
+  line-height: 1.25;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.4);
+}
+
+.jmt-hotel-card-location {
+  font-size: 13.5px;
+  color: #D6E0F4 !important;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+}
+
+.jmt-hotel-card-rating {
+  text-align: end;
+  flex-shrink: 0;
+}
+
+.jmt-hotel-score-badge {
+  background: rgba(0, 166, 81, 0.25) !important;
+  border: 1px solid #00E676 !important;
+  color: #00E676 !important;
+  font-size: 14px;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: 8px;
+  display: inline-block;
+}
+
+.jmt-hotel-reviews-count {
+  font-size: 12px;
+  color: #D6E0F4 !important;
+  display: block;
+  margin-top: 4px;
+}
+
+.jmt-hotel-card-amenities {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 14px 0;
+}
+
+.jmt-hotel-amenity-tag {
+  background: rgba(255, 255, 255, 0.14) !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  color: #FFFFFF !important;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 6px;
+  backdrop-filter: blur(4px);
+}
+
+.jmt-hotel-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  border-top: 1px solid rgba(255, 255, 255, 0.15) !important;
+  padding-top: 16px;
+  margin-top: 12px;
+}
+
+.jmt-hotel-price-box {
+  color: #FFFFFF !important;
+}
+
+.jmt-hotel-price-val {
+  font-size: 24px;
+  font-weight: 800;
+  color: #00E676 !important;
+}
+
+.jmt-hotel-price-sub {
+  font-size: 12px;
+  color: #D6E0F4 !important;
+  display: block;
+}
+
+.jmt-hotel-actions {
+  display: flex;
+  gap: 10px;
+}
+
+@media (max-width: 1024px) {
+  .jmt-hotel-search-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .jmt-hotel-layout {
+    grid-template-columns: 1fr;
+  }
+  .jmt-hotel-filters-sidebar {
+    position: static;
+  }
+}
+
+@media (max-width: 640px) {
+  .jmt-hotel-search-grid {
+    grid-template-columns: 1fr;
+  }
+  .jmt-hotel-result-card {
+    flex-direction: column;
+  }
+  .jmt-hotel-card-media {
+    width: 100%;
+    height: 200px;
+  }
+  .jmt-hotel-card-footer {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+  }
+  .jmt-hotel-actions {
+    flex-direction: column;
+  }
+  .jmt-hotel-actions button,
+  .jmt-hotel-actions a {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+
+/* =============================================================
+   JMT PREMIUM VISA APPLICATION REDESIGN
+   ============================================================= */
+
+.jmt-visa-apply-container {
+  padding: 40px 20px 80px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.jmt-visa-apply-grid {
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  gap: 36px;
+  align-items: start;
+}
+
+@media (max-width: 1024px) {
+  .jmt-visa-apply-grid {
+    grid-template-columns: 1fr;
+    gap: 28px;
+  }
+}
+
+/* LEFT INFORMATION PANEL */
+.jmt-visa-info-panel {
+  background: linear-gradient(135deg, #07153B 0%, #0B286C 100%);
+  color: #FFFFFF;
+  border-radius: 24px;
+  padding: 32px 28px;
+  box-shadow: 0 12px 32px rgba(7, 21, 59, 0.15);
+}
+
+.jmt-visa-info-eyebrow {
+  display: inline-block;
+  background: rgba(0, 166, 81, 0.2);
+  color: #55D98A;
+  border: 1px solid rgba(0, 166, 81, 0.4);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  padding: 4px 12px;
+  border-radius: 99px;
+  margin-bottom: 14px;
+}
+
+.jmt-visa-info-title {
+  font-size: 26px;
+  font-weight: 800;
+  color: #FFFFFF !important;
+  line-height: 1.2;
+  margin: 0 0 8px;
+}
+
+.jmt-visa-info-sub {
+  font-size: 14.5px;
+  color: #55D98A;
+  font-weight: 700;
+  margin: 0 0 14px;
+}
+
+.jmt-visa-info-text {
+  font-size: 13.5px;
+  color: #D6E0F4;
+  line-height: 1.6;
+  margin: 0 0 20px;
+}
+
+.jmt-visa-poster-img {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  border-radius: 16px;
+  margin-bottom: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.jmt-visa-benefits-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 28px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.jmt-visa-benefit-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #E2E8F0;
+}
+
+.jmt-visa-benefit-icon {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(0, 166, 81, 0.25);
+  color: #00E676;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.jmt-visa-process-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.jmt-visa-step-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 13px;
+}
+
+.jmt-visa-step-item.active {
+  background: rgba(0, 166, 81, 0.18);
+  border-color: rgba(0, 166, 81, 0.45);
+}
+
+.jmt-visa-step-num {
+  font-size: 11px;
+  font-weight: 800;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+  color: #FFFFFF;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.jmt-visa-step-item.active .jmt-visa-step-num {
+  background: #00A651;
+  color: #FFFFFF;
+}
+
+/* RIGHT FORM CONTAINER CARD */
+.jmt-visa-form-card {
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 24px;
+  padding: 40px;
+  box-shadow: 0 10px 30px rgba(7, 21, 59, 0.05);
+}
+
+@media (max-width: 640px) {
+  .jmt-visa-form-card {
+    padding: 24px 18px;
+    border-radius: 18px;
+  }
+}
+
+.jmt-visa-form-header {
+  margin-bottom: 24px;
+  border-bottom: 1px solid #F1F5F9;
+  padding-bottom: 18px;
+}
+
+.jmt-visa-form-title {
+  font-size: 24px;
+  font-weight: 800;
+  color: #07153B;
+  margin: 0 0 6px;
+}
+
+.jmt-visa-form-sub {
+  font-size: 14px;
+  color: #64748B;
+  margin: 0 0 12px;
+  line-height: 1.5;
+}
+
+.jmt-visa-security-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  color: #00A651;
+  font-weight: 700;
+  background: #F0FDF4;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid #DCFCE7;
+}
+
+.jmt-visa-form-section-title {
+  font-size: 16px;
+  font-weight: 800;
+  color: #07153B;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.jmt-visa-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+@media (max-width: 640px) {
+  .jmt-visa-form-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+}
+
+.jmt-visa-field-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.jmt-visa-field-group.full-width {
+  grid-column: 1 / -1;
+}
+
+.jmt-visa-label {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #07153B;
+  margin-bottom: 6px;
+}
+
+.jmt-visa-input-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.jmt-visa-input-icon {
+  position: absolute;
+  inset-inline-start: 14px;
+  color: #0B286C;
+  font-size: 16px;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.jmt-visa-input {
+  width: 100%;
+  height: 54px;
+  border: 1px solid #CBD5E1;
+  border-radius: 12px;
+  padding-inline-start: 44px;
+  padding-inline-end: 16px;
+  font-size: 15px;
+  color: #07153B;
+  background: #FFFFFF;
+  outline: none;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.jmt-visa-input:focus {
+  border-color: #00A651;
+  box-shadow: 0 0 0 3px rgba(0, 166, 81, 0.12);
+}
+
+.jmt-visa-helper-text {
+  font-size: 12px;
+  color: #64748B;
+  margin-top: 4px;
+}
+
+/* READ-ONLY DESTINATION SELECTION PILL */
+.jmt-visa-dest-pill {
+  width: 100%;
+  height: 54px;
+  border: 1px solid #CBD5E1;
+  background: #F8FAFC;
+  border-radius: 12px;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 15px;
+  font-weight: 700;
+  color: #0B286C;
+}
+
+.jmt-visa-dest-badge {
+  background: #DCFCE7;
+  color: #15803D;
+  font-size: 11.5px;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: 6px;
+}
+
+/* SUBMIT BUTTON */
+.jmt-visa-submit-btn {
+  width: 100%;
+  height: 56px;
+  background: #00A651;
+  color: #FFFFFF;
+  border: 0;
+  border-radius: 14px;
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 166, 81, 0.25);
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.jmt-visa-submit-btn:hover {
+  background: #008F46;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(0, 166, 81, 0.35);
+}
+
+.jmt-visa-submit-btn:disabled {
+  background: #94A3B8;
+  box-shadow: none;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* SUCCESS CARD */
+.jmt-visa-success-card {
+  text-align: center;
+  padding: 20px 10px;
+}
+
+.jmt-visa-success-icon {
+  width: 64px;
+  height: 64px;
+  background: #DCFCE7;
+  color: #16A34A;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  font-weight: 800;
+  margin-bottom: 16px;
+}
+
+.jmt-visa-ref-box {
+  background: #F8FAFC;
+  border: 2px dashed #CBD5E1;
+  border-radius: 14px;
+  padding: 18px;
+  margin: 20px 0;
+}
+
+.jmt-visa-ref-label {
+  font-size: 12px;
+  font-weight: 800;
+  color: #64748B;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.jmt-visa-ref-val {
+  font-size: 24px;
+  font-weight: 800;
+  color: #0B286C;
+  letter-spacing: 1px;
+}
+
+.jmt-visa-next-steps {
+  text-align: start;
+  background: #F1F5F9;
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-bottom: 24px;
+}
+
+.jmt-visa-next-steps h4 {
+  font-size: 14px;
+  font-weight: 800;
+  color: #07153B;
+  margin: 0 0 8px;
+}
+
+.jmt-visa-next-steps ol {
+  margin: 0;
+  padding-inline-start: 18px;
+  font-size: 13.5px;
+  color: #475569;
+  line-height: 1.6;
+}
+
+
+/* =============================================================
+   JMT OMAN TOUR EDITORIAL & TRAVEL GUIDE SECTION REDESIGN
+   ============================================================= */
+
+.jmt-seo-editorial-section {
+  margin-top: 60px;
+  margin-bottom: 20px;
+  background: linear-gradient(135deg, #07153B 0%, #0B286C 100%) !important;
+  border-radius: 24px;
+  padding: 48px 36px;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  box-shadow: 0 16px 40px rgba(7, 21, 59, 0.22) !important;
+}
+
+/* SECTION HEADERS */
+.jmt-editorial-header {
+  text-align: center;
+  max-width: 900px;
+  margin: 0 auto 48px;
+}
+
+.jmt-editorial-eyebrow {
+  display: inline-block;
+  background: rgba(0, 230, 118, 0.2) !important;
+  color: #00E676 !important;
+  border: 1px solid rgba(0, 230, 118, 0.5) !important;
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  padding: 5px 14px;
+  border-radius: 99px;
+  margin-bottom: 16px;
+}
+
+.jmt-editorial-title {
+  font-size: clamp(30px, 4vw, 44px);
+  font-weight: 800;
+  color: #FFFFFF !important;
+  line-height: 1.2;
+  letter-spacing: -0.5px;
+  margin: 0 0 16px;
+}
+
+.jmt-editorial-lead {
+  font-size: clamp(15px, 2vw, 17px);
+  color: #D6E0F4 !important;
+  line-height: 1.7;
+  margin: 0 0 12px;
+}
+
+.jmt-editorial-sub {
+  font-size: 14.5px;
+  color: #D6E0F4 !important;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* BLOCK CONTAINERS */
+.jmt-editorial-block {
+  margin-bottom: 60px;
+}
+
+.jmt-block-title-box {
+  text-align: center;
+  max-width: 650px;
+  margin: 0 auto 36px;
+}
+
+.jmt-block-title {
+  font-size: clamp(24px, 3vw, 32px);
+  font-weight: 800;
+  color: #FFFFFF !important;
+  margin: 0 0 8px;
+  letter-spacing: -0.5px;
+}
+
+.jmt-block-sub {
+  font-size: 14.5px;
+  color: #D6E0F4 !important;
+  margin: 0;
+  line-height: 1.55;
+}
+
+/* WHY CHOOSE CARDS GRID */
+.jmt-why-choose-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+
+@media (max-width: 1024px) {
+  .jmt-why-choose-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 550px) {
+  .jmt-why-choose-grid { grid-template-columns: 1fr; }
+}
+
+.jmt-why-card {
+  background: rgba(255, 255, 255, 0.12) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  border-radius: 18px;
+  padding: 24px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2) !important;
+  backdrop-filter: blur(8px);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.jmt-why-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 14px 32px rgba(0, 230, 118, 0.2) !important;
+}
+
+.jmt-why-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.jmt-why-num {
+  font-size: 12px;
+  font-weight: 800;
+  color: #00E676 !important;
+  background: rgba(0, 230, 118, 0.2) !important;
+  padding: 4px 10px;
+  border-radius: 99px;
+  border: 1px solid rgba(0, 230, 118, 0.5) !important;
+}
+
+.jmt-why-card-title {
+  font-size: 17.5px;
+  font-weight: 800;
+  color: #FFFFFF !important;
+  margin: 0 0 8px;
+}
+
+.jmt-why-card-text {
+  font-size: 14px;
+  color: #D6E0F4 !important;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* TOP OMAN DESTINATION HIGHLIGHTS GRID */
+.jmt-dest-highlights-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+@media (max-width: 1024px) {
+  .jmt-dest-highlights-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 640px) {
+  .jmt-dest-highlights-grid { grid-template-columns: 1fr; }
+}
+
+.jmt-dest-card {
+  position: relative;
+  border-radius: 20px;
+  overflow: hidden;
+  height: 340px;
+  box-shadow: 0 8px 24px rgba(7, 21, 59, 0.12);
+  cursor: pointer;
+}
+
+.jmt-dest-card.featured {
+  grid-column: span 2;
+}
+
+@media (max-width: 1024px) {
+  .jmt-dest-card.featured { grid-column: span 1; }
+}
+
+.jmt-dest-card-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s ease;
+}
+
+.jmt-dest-card:hover .jmt-dest-card-img {
+  transform: scale(1.04);
+}
+
+.jmt-dest-card-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(7, 21, 59, 0.92) 0%, rgba(7, 21, 59, 0.45) 55%, rgba(7, 21, 59, 0.1) 100%);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 24px;
+}
+
+.jmt-dest-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.jmt-dest-badge {
+  background: #00A651;
+  color: #FFFFFF;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: 99px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.jmt-dest-card-bottom {
+  color: #FFFFFF;
+}
+
+.jmt-dest-card-title {
+  font-size: clamp(19px, 2.5vw, 24px);
+  font-weight: 800;
+  color: #FFFFFF !important;
+  margin: 0 0 6px;
+  line-height: 1.2;
+}
+
+.jmt-dest-card-desc {
+  font-size: 13.5px;
+  color: #E2E8F0 !important;
+  line-height: 1.5;
+  margin: 0 0 14px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.jmt-dest-cta-link {
+  color: #00E676;
+  font-weight: 700;
+  font-size: 13.5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* TOUR STYLES CARDS */
+.jmt-styles-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+
+@media (max-width: 1024px) {
+  .jmt-styles-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 550px) {
+  .jmt-styles-grid { grid-template-columns: 1fr; }
+}
+
+.jmt-style-card {
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 18px;
+  padding: 24px;
+  box-shadow: 0 4px 16px rgba(7, 21, 59, 0.04);
+  transition: all 0.25s ease;
+}
+
+.jmt-style-card:hover {
+  transform: translateY(-4px);
+  border-color: #00A651;
+  box-shadow: 0 10px 24px rgba(0, 166, 81, 0.12);
+}
+
+.jmt-style-tag {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 800;
+  color: #00A651;
+  background: #F0FDF4;
+  padding: 3px 10px;
+  border-radius: 6px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 12px;
+}
+
+.jmt-style-title {
+  font-size: 17px;
+  font-weight: 800;
+  color: #07153B;
+  margin: 0 0 8px;
+}
+
+.jmt-style-desc {
+  font-size: 13.5px;
+  color: #64748B;
+  line-height: 1.55;
+  margin: 0 0 14px;
+}
+
+/* WHY OMAN EDITORIAL SPLIT */
+.jmt-why-oman-split {
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 24px;
+  padding: 36px;
+  box-shadow: 0 6px 20px rgba(7, 21, 59, 0.04);
+  display: grid;
+  grid-template-columns: 0.9fr 1.1fr;
+  gap: 36px;
+  align-items: center;
+}
+
+@media (max-width: 900px) {
+  .jmt-why-oman-split {
+    grid-template-columns: 1fr;
+    padding: 24px;
+  }
+}
+
+.jmt-why-oman-img {
+  width: 100%;
+  height: 280px;
+  object-fit: cover;
+  border-radius: 18px;
+}
+
+.jmt-why-oman-content h3 {
+  font-size: 26px;
+  font-weight: 800;
+  color: #07153B;
+  margin: 0 0 14px;
+  line-height: 1.25;
+}
+
+.jmt-why-oman-content p {
+  font-size: 14.5px;
+  color: #475569;
+  line-height: 1.65;
+  margin: 0 0 12px;
+}
+
+.jmt-why-oman-tags {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 18px;
+}
+
+.jmt-why-tag {
+  background: #F1F5F9;
+  color: #0B286C;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 5px 12px;
+  border-radius: 99px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* SEO INLINE LINKS STYLING */
+.jmt-seo-inline-link {
+  color: #00A651;
+  font-weight: 700;
+  text-decoration: none;
+  border-bottom: 1.5px solid rgba(0, 166, 81, 0.3);
+  transition: all 0.2s ease;
+}
+
+.jmt-seo-inline-link:hover {
+  color: #0B286C;
+  border-color: #0B286C;
+}
+
+/* FINAL CTA BANNER */
+.jmt-oman-cta-banner {
+  background: linear-gradient(135deg, #07153B 0%, #0B286C 100%);
+  color: #FFFFFF;
+  border-radius: 24px;
+  padding: 48px 40px;
+  box-shadow: 0 12px 32px rgba(7, 21, 59, 0.15);
+  position: relative;
+  overflow: hidden;
+}
+
+.jmt-oman-cta-content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 28px;
+}
+
+.jmt-oman-cta-text {
+  max-width: 620px;
+}
+
+.jmt-oman-cta-title {
+  font-size: clamp(24px, 3vw, 32px);
+  font-weight: 800;
+  color: #FFFFFF !important;
+  margin: 0 0 10px;
+  line-height: 1.2;
+}
+
+.jmt-oman-cta-sub {
+  font-size: 15px;
+  color: #D6E0F4 !important;
+  margin: 0;
+  line-height: 1.6;
+}
+
+.jmt-oman-cta-btns {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+
+/* REGIONAL SHOWCASE CARDS CSS */
+.jmt-regional-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+@media (max-width: 1024px) {
+  .jmt-regional-grid { grid-template-columns: 1fr; }
+}
+
+.jmt-region-card {
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 6px 20px rgba(7, 21, 59, 0.05);
+  display: flex;
+  flex-direction: column;
+}
+
+.jmt-region-hero-img-wrap {
+  position: relative;
+  height: 220px;
+  overflow: hidden;
+}
+
+.jmt-region-hero-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s ease;
+}
+
+.jmt-region-card:hover .jmt-region-hero-img {
+  transform: scale(1.03);
+}
+
+.jmt-region-hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(7, 21, 59, 0.15) 0%, rgba(7, 21, 59, 0.85) 100%);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  color: #FFFFFF;
+}
+
+.jmt-region-tag {
+  font-size: 10.5px;
+  font-weight: 800;
+  color: #00E676;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.jmt-region-title {
+  font-size: 22px;
+  font-weight: 800;
+  color: #FFFFFF !important;
+  margin: 0 0 2px;
+}
+
+.jmt-region-sub {
+  font-size: 12.5px;
+  color: #D6E0F4 !important;
+  margin: 0;
+}
+
+.jmt-region-thumbs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  padding: 12px;
+  background: #F8FAFC;
+}
+
+.jmt-region-thumb-item {
+  position: relative;
+  border-radius: 10px;
+  overflow: hidden;
+  height: 70px;
+}
+
+.jmt-region-thumb-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.jmt-region-thumb-item span {
+  position: absolute;
+  bottom: 0;
+  inset-inline: 0;
+  background: rgba(7, 21, 59, 0.75);
+  color: #FFFFFF;
+  font-size: 9.5px;
+  font-weight: 700;
+  padding: 3px 4px;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* VISUAL STYLE CARDS BACKGROUND OVERRIDES */
+.jmt-style-card.visual-card {
+  position: relative;
+  background-size: cover;
+  background-position: center;
+  overflow: hidden;
+  border: 0;
+  color: #FFFFFF;
+  min-height: 220px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+/* =============================================================
+   OMAN VISA COMMON APPLICATION FLOW & CTA STYLES
+   ============================================================= */
+
+/* CTA Section Secondary Button Fix */
+.jmt-oman-cta-section .jmt-btn-secondary,
+.jmt-cta-btn-secondary {
+  background: transparent !important;
+  color: #FFFFFF !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.7) !important;
+  font-weight: 700;
+  padding: 14px 28px;
+  border-radius: 12px;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.jmt-oman-cta-section .jmt-btn-secondary:hover,
+.jmt-cta-btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.15) !important;
+  border-color: #FFFFFF !important;
+  color: #FFFFFF !important;
+  transform: translateY(-1px);
+}
+
+/* Wizard Header & Progress Bar */
+.jmt-visa-wizard-header {
+  background: linear-gradient(135deg, #07153B 0%, #0B286C 100%);
+  border-radius: 20px;
+  padding: 28px 32px;
+  color: #FFFFFF;
+  margin-bottom: 28px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  box-shadow: 0 10px 30px rgba(7, 21, 59, 0.12);
+}
+
+@media (max-width: 768px) {
+  .jmt-visa-wizard-header {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 22px 20px;
+  }
+}
+
+.jmt-visa-wizard-progress {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 28px;
+  padding: 14px 18px;
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 16px;
+  overflow-x: auto;
+}
+
+.jmt-visa-step-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 99px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #64748B;
+  background: transparent;
+  border: 1px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.jmt-visa-step-pill.active {
+  background: #00A651;
+  color: #FFFFFF;
+  border-color: #00A651;
+  box-shadow: 0 4px 12px rgba(0, 166, 81, 0.25);
+}
+
+.jmt-visa-step-pill.completed {
+  background: #F0FDF4;
+  color: #00A651;
+  border-color: #DCFCE7;
+}
+
+.jmt-visa-step-num {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(148, 163, 184, 0.2);
+  color: inherit;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.jmt-visa-step-pill.active .jmt-visa-step-num {
+  background: rgba(255, 255, 255, 0.25);
+  color: #FFFFFF;
+}
+
+.jmt-visa-step-pill.completed .jmt-visa-step-num {
+  background: #00A651;
+  color: #FFFFFF;
+}
+
+.jmt-visa-step-divider {
+  flex: 1;
+  height: 2px;
+  background: #E2E8F0;
+  min-width: 16px;
+}
+
+.jmt-visa-step-divider.completed {
+  background: #00A651;
+}
+
+/* Interactive Visa Type Selection Cards */
+.jmt-visa-select-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.jmt-visa-select-card {
+  position: relative;
+  background: #FFFFFF;
+  border: 2px solid #E2E8F0;
+  border-radius: 16px;
+  padding: 20px 18px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  text-align: start;
+}
+
+.jmt-visa-select-card:hover {
+  border-color: #00A651;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0, 166, 81, 0.12);
+}
+
+.jmt-visa-select-card.selected {
+  border-color: #00A651;
+  background: rgba(0, 166, 81, 0.04);
+  box-shadow: 0 6px 20px rgba(0, 166, 81, 0.15);
+}
+
+.jmt-visa-select-badge {
+  position: absolute;
+  top: 14px;
+  inset-inline-end: 14px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #00A651;
+  color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 800;
+  opacity: 0;
+  transform: scale(0.6);
+  transition: all 0.2s ease;
+}
+
+.jmt-visa-select-card.selected .jmt-visa-select-badge {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* Document Upload UI */
+.jmt-upload-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 18px;
+  margin-bottom: 24px;
+}
+
+.jmt-upload-box {
+  border: 2px dashed #CBD5E1;
+  border-radius: 16px;
+  padding: 24px 18px;
+  text-align: center;
+  background: #F8FAFC;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  position: relative;
+}
+
+.jmt-upload-box:hover,
+.jmt-upload-box.has-file {
+  border-color: #00A651;
+  background: #F0FDF4;
+}
+
+.jmt-upload-icon {
+  font-size: 32px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.jmt-upload-label {
+  font-weight: 700;
+  font-size: 14px;
+  color: #07153B;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.jmt-upload-sub {
+  font-size: 12px;
+  color: #64748B;
+  display: block;
+  margin-bottom: 12px;
+}
+
+.jmt-upload-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #FFFFFF;
+  border: 1px solid #CBD5E1;
+  color: #0B286C;
+  font-size: 12.5px;
+  font-weight: 700;
+  padding: 8px 16px;
+  border-radius: 99px;
+  transition: all 0.2s ease;
+}
+
+.jmt-upload-box:hover .jmt-upload-btn {
+  border-color: #00A651;
+  color: #00A651;
+}
+
+.jmt-upload-input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  width: 100%;
+  height: 100%;
+}
+
+/* Review Summary Card */
+.jmt-review-card {
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.jmt-review-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px 24px;
+}
+
+.jmt-review-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.jmt-review-label {
+  font-size: 12px;
+  color: #64748B;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.jmt-review-value {
+  font-size: 14.5px;
+  color: #07153B;
+  font-weight: 700;
+}
+
+/* =============================================================
+   SCHENGEN VISA PAGE & APPLICATION WIZARD STYLES
+   ============================================================= */
+
+/* Schengen Dest Grid & Chips */
+.jmt-schengen-dest-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(135px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.jmt-dest-chip {
+  background: #FFFFFF;
+  border: 1.5px solid #E2E8F0;
+  border-radius: 14px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  font-size: 13.5px;
+  color: #07153B;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(7, 21, 59, 0.03);
+}
+
+.jmt-dest-chip:hover {
+  border-color: #00A651;
+  background: rgba(0, 166, 81, 0.04);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 166, 81, 0.12);
+}
+
+.jmt-dest-chip.selected {
+  border-color: #00A651;
+  background: #F0FDF4;
+  color: #00A651;
+}
+
+/* Gulf Residence Country Cards */
+.jmt-gulf-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
+.jmt-gulf-card {
+  background: #FFFFFF;
+  border: 1.5px solid #E2E8F0;
+  border-radius: 16px;
+  padding: 16px;
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.jmt-gulf-card:hover {
+  border-color: #0B286C;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(11, 40, 108, 0.1);
+}
+
+.jmt-gulf-flag {
+  font-size: 28px;
+  display: block;
+  margin-bottom: 6px;
+}
+
+.jmt-gulf-name {
+  font-size: 14px;
+  font-weight: 800;
+  color: #07153B;
+  display: block;
+}
+
+.jmt-gulf-sub {
+  font-size: 11.5px;
+  color: #64748B;
+  display: block;
+  margin-top: 2px;
+}
+
+/* Schengen Multi-Country Selection Tags */
+.jmt-country-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.jmt-country-tag {
+  background: #F1F5F9;
+  border: 1px solid #CBD5E1;
+  border-radius: 99px;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.jmt-country-tag:hover {
+  border-color: #00A651;
+  color: #00A651;
+}
+
+.jmt-country-tag.active {
+  background: #00A651;
+  border-color: #00A651;
+  color: #FFFFFF;
+}
+
+/* =============================================================
+   HOMEPAGE PREMIUM REDESIGN STYLES
+   ============================================================= */
+
+/* Floating Search Container - Clean White Outer Container Card */
+.jmt-home-search-card,
+.search-card-container {
+  background: #FFFFFF !important;
+  border-radius: 24px !important;
+  border: 1px solid rgba(11, 40, 108, 0.12) !important;
+  box-shadow: 0 20px 50px rgba(7, 21, 59, 0.08), 0 4px 12px rgba(0, 0, 0, 0.03) !important;
+  padding: 24px 28px !important;
+  transition: box-shadow 0.3s ease !important;
+  color: #07153B !important;
+}
+
+/* Service Navigation Tabs */
+.jmt-search-tabs-row {
+  display: flex;
+  gap: 8px;
+  background: #07153B !important;
+  padding: 6px !important;
+  border-radius: 14px !important;
+  margin-bottom: 20px !important;
+  overflow-x: auto;
+  scrollbar-width: none;
+  border: 1px solid rgba(7, 21, 59, 0.15) !important;
+}
+.jmt-search-tabs-row::-webkit-scrollbar {
+  display: none;
+}
+
+.search-tab-item {
+  color: #D6E0F4 !important;
+  background: transparent !important;
+  border: 0 !important;
+  padding: 9px 18px !important;
+  font-weight: 700 !important;
+  font-size: 13.5px !important;
+  border-radius: 10px !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+}
+.search-tab-item:hover {
+  color: #FFFFFF !important;
+  background: rgba(255, 255, 255, 0.12) !important;
+}
+.search-tab-item.active {
+  background: linear-gradient(135deg, #0B286C 0%, #103B9B 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25) !important;
+}
+
+/* Segmented Search Field Bar */
+.jmt-segmented-search-bar {
+  display: grid !important;
+  grid-template-columns: 1.3fr 1fr 1fr auto !important;
+  background: transparent !important;
+  border: 0 !important;
+  padding: 0 !important;
+  gap: 12px !important;
+  align-items: stretch !important;
+  box-shadow: none !important;
+  width: 100% !important;
+}
+
+@media (max-width: 900px) {
+  .jmt-segmented-search-bar {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+}
+
+/* Inner Input Field Boxes - Dark Blue Background with White Font Across All Sections */
+.jmt-search-segmented-field,
+.jmt-search-field-box {
+  height: 60px !important;
+  min-height: 60px !important;
+  max-height: 60px !important;
+  padding: 10px 18px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  gap: 2px !important;
+  position: relative !important;
+  background: linear-gradient(135deg, #07153B 0%, #0B286C 100%) !important;
+  border-radius: 14px !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  box-shadow: 0 4px 14px rgba(7, 21, 59, 0.15) !important;
+  transition: all 0.25s ease !important;
+  color: #FFFFFF !important;
+  box-sizing: border-box !important;
+}
+.jmt-search-segmented-field:hover,
+.jmt-search-field-box:hover {
+  background: linear-gradient(135deg, #0B286C 0%, #0F3895 100%) !important;
+  border-color: rgba(255, 255, 255, 0.35) !important;
+  box-shadow: 0 6px 18px rgba(7, 21, 59, 0.25) !important;
+}
+.jmt-search-segmented-field:focus-within,
+.jmt-search-field-box:focus-within {
+  background: linear-gradient(135deg, #07153B 0%, #0B286C 100%) !important;
+  border-color: #00E676 !important;
+  box-shadow: 0 0 0 3.5px rgba(0, 230, 118, 0.3) !important;
+  z-index: 2 !important;
+}
+
+.jmt-segmented-label,
+.jmt-field-label {
+  font-size: 10.5px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.9px !important;
+  color: #00E676 !important;
+  text-transform: uppercase !important;
+  margin-bottom: 1px !important;
+  display: block !important;
+  line-height: 1.1 !important;
+}
+
+/* Fix input elements inside field boxes to prevent white background on focus/autofill */
+.jmt-search-segmented-field input,
+.jmt-search-field-box input,
+.jmt-segmented-input,
+.jmt-field-input {
+  border: 0 !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  width: 100% !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  color: #FFFFFF !important;
+  outline: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  color-scheme: dark !important;
+  box-shadow: none !important;
+  line-height: 1.3 !important;
+}
+
+.jmt-search-segmented-field input:focus,
+.jmt-search-field-box input:focus,
+.jmt-segmented-input:focus,
+.jmt-field-input:focus {
+  background: transparent !important;
+  background-color: transparent !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Webkit autofill override for Chrome/Edge/Safari */
+.jmt-search-segmented-field input:-webkit-autofill,
+.jmt-search-segmented-field input:-webkit-autofill:hover,
+.jmt-search-segmented-field input:-webkit-autofill:focus,
+.jmt-search-field-box input:-webkit-autofill,
+.jmt-search-field-box input:-webkit-autofill:hover,
+.jmt-search-field-box input:-webkit-autofill:focus,
+.jmt-segmented-input:-webkit-autofill,
+.jmt-field-input:-webkit-autofill {
+  -webkit-text-fill-color: #FFFFFF !important;
+  -webkit-box-shadow: 0 0 0px 1000px #07153B inset !important;
+  transition: background-color 5000s ease-in-out 0s !important;
+}
+
+.jmt-segmented-input::placeholder,
+.jmt-field-input::placeholder {
+  color: rgba(255, 255, 255, 0.7) !important;
+  font-weight: 500 !important;
+}
+
+/* Flight Fields Grid Layout */
+.jmt-flight-fields-grid {
+  display: grid !important;
+  grid-template-columns: 1.4fr auto 1.4fr 1fr 1fr auto !important;
+  gap: 10px !important;
+  align-items: stretch !important;
+  width: 100% !important;
+}
+
+@media (max-width: 1024px) {
+  .jmt-flight-fields-grid {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+}
+
+#travellers-display-val {
+  color: #FFFFFF !important;
+  font-weight: 700 !important;
+  font-size: 14px !important;
+  line-height: 1.3 !important;
+}
+
+/* Swap Airport Button - Exact Height Alignment */
+.jmt-swap-btn {
+  background: #07153B !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  color: #FFFFFF !important;
+  width: 44px !important;
+  height: 60px !important;
+  min-height: 60px !important;
+  max-height: 60px !important;
+  border-radius: 14px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 18px !important;
+  cursor: pointer !important;
+  transition: all 0.25s ease !important;
+  box-shadow: 0 4px 12px rgba(7, 21, 59, 0.2) !important;
+  box-sizing: border-box !important;
+}
+.jmt-swap-btn:hover {
+  background: #00A651 !important;
+  border-color: #00A651 !important;
+  transform: rotate(180deg) !important;
+}
+
+/* Minimal Uniform Search CTA Buttons Across All 4 Sections */
+.search-submit-btn {
+  background: #00A651 !important;
+  color: #FFFFFF !important;
+  border: 0 !important;
+  padding: 0 28px !important;
+  height: 60px !important;
+  min-height: 60px !important;
+  max-height: 60px !important;
+  border-radius: 14px !important;
+  font-size: 15px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.3px !important;
+  cursor: pointer !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  box-shadow: 0 4px 14px rgba(0, 166, 81, 0.35) !important;
+  transition: all 0.25s ease !important;
+  white-space: nowrap !important;
+  box-sizing: border-box !important;
+}
+.search-submit-btn:hover {
+  background: #009347 !important;
+  transform: translateY(-1.5px) !important;
+  box-shadow: 0 6px 18px rgba(0, 166, 81, 0.45) !important;
+}
+.search-submit-btn:active {
+  transform: translateY(0) !important;
+}
+
+/* Dark Mode Overrides for Search Card */
+[data-theme="dark"] .jmt-home-search-card,
+[data-theme="dark"] .search-card-container {
+  background: #131B2E;
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+}
+[data-theme="dark"] .jmt-search-tabs-row {
+  background: #0A0F1D;
+  border-color: rgba(255, 255, 255, 0.08);
+}
+[data-theme="dark"] .jmt-segmented-search-bar {
+  background: #1A2338;
+  border-color: rgba(255, 255, 255, 0.12);
+}
+[data-theme="dark"] .jmt-search-segmented-field {
+  background: #131B2E;
+  border-color: rgba(255, 255, 255, 0.1);
+}
+[data-theme="dark"] .jmt-segmented-label {
+  color: #60A5FA;
+}
+[data-theme="dark"] .jmt-segmented-input {
+  color: #F8FAFC;
+}
+[data-theme="dark"] #travellers-display-val {
+  color: #F8FAFC !important;
+}
+
+/* Unified Trust Benefits Strip */
+.jmt-unified-trust-strip {
+  background: linear-gradient(135deg, #07153B 0%, #0B286C 100%) !important;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  box-shadow: 0 12px 32px rgba(7, 21, 59, 0.22) !important;
+  padding: 22px 28px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+.jmt-trust-col {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 4px 12px;
+  transition: transform 0.25s ease;
+}
+.jmt-trust-col:not(:last-child) {
+  border-right: 1px solid rgba(255, 255, 255, 0.15) !important;
+}
+.jmt-trust-col:hover {
+  transform: translateY(-2px);
+}
+.jmt-trust-col:hover .jmt-trust-icon-box {
+  background: #00A651 !important;
+  color: #FFFFFF !important;
+}
+.jmt-trust-icon-box {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: rgba(0, 230, 118, 0.2) !important;
+  color: #00E676 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+.jmt-trust-title {
+  font-size: 14px;
+  color: #FFFFFF !important;
+  font-weight: 800;
+  margin: 0 0 2px;
+  line-height: 1.2;
+}
+.jmt-trust-desc {
+  font-size: 12px;
+  color: #D6E0F4 !important;
+  margin: 0;
+  line-height: 1.35;
+}
+
+/* Section Header Eyebrows & Accents */
+.jmt-section-eyebrow {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  color: #00A651;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.jmt-section-eyebrow::before {
+  content: '';
+  display: inline-block;
+  width: 16px;
+  height: 2px;
+  background: #00A651;
+  border-radius: 2px;
+}
+
+/* Popular Destinations Rich Cards */
+.jmt-destinations-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+.jmt-dest-rich-card {
+  position: relative;
+  border-radius: 20px;
+  overflow: hidden;
+  height: 270px;
+  box-shadow: 0 8px 24px rgba(7, 21, 59, 0.08);
+  cursor: pointer;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.jmt-dest-rich-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s ease;
+}
+.jmt-dest-rich-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 36px rgba(7, 21, 59, 0.16);
+}
+.jmt-dest-rich-card:hover img {
+  transform: scale(1.05);
+}
+.jmt-dest-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(3, 20, 40, 0.85) 0%, rgba(3, 20, 40, 0.35) 55%, transparent 100%) !important;
+  padding: 24px !important;
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: flex-end !important;
+  color: #FFFFFF !important;
+  z-index: 2;
+}
+.jmt-dest-name {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0 0 4px;
+  color: #FFFFFF !important;
+  line-height: 1.2;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+.jmt-dest-sub {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.9) !important;
+  margin: 0;
+  font-weight: 400;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+.jmt-dest-explore-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  background: #00A86B !important;
+  border: 0 !important;
+  color: #FFFFFF !important;
+  padding: 8px 18px !important;
+  border-radius: 999px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  box-shadow: 0 4px 12px rgba(0, 168, 107, 0.35) !important;
+  transition: all 0.25s ease !important;
+  white-space: nowrap !important;
+}
+.jmt-dest-explore-btn:hover,
+.jmt-dest-rich-card:hover .jmt-dest-explore-btn {
+  background: #00935D !important;
+  border-color: transparent !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 16px rgba(0, 168, 107, 0.45) !important;
+}
+
+/* View All Link Animation */
+.jmt-view-all-link {
+  color: #00A651;
+  font-weight: 800;
+  text-decoration: none;
+  font-size: 14.5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: color 0.2s ease;
+}
+.jmt-view-all-link span {
+  transition: transform 0.2s ease;
+}
+.jmt-view-all-link:hover {
+  color: #009347;
+}
+.jmt-view-all-link:hover span {
+  transform: translateX(4px);
+}
+
+/* Responsive Overrides */
+@media (max-width: 1024px) {
+  .jmt-segmented-search-bar {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    padding: 8px;
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+  }
+  .jmt-search-segmented-field {
+    background: #F8FAFC;
+    border: 1px solid #E2E8F0 !important;
+    border-radius: 14px;
+  }
+  .search-submit-btn {
+    grid-column: span 2;
+    height: 48px;
+  }
+  .jmt-unified-trust-strip {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    padding: 20px;
+  }
+  .jmt-trust-col:not(:last-child) {
+    border-right: 0;
+  }
+  .jmt-destinations-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .jmt-home-search-card {
+    padding: 18px 16px;
+    border-radius: 20px;
+  }
+  .jmt-segmented-search-bar {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  .jmt-search-segmented-field:not(:last-child) {
+    border-right: 0;
+  }
+  .search-submit-btn {
+    grid-column: span 1;
+  }
+  .jmt-unified-trust-strip {
+    grid-template-columns: 1fr;
+    gap: 14px;
+    padding: 16px;
+  }
+  .jmt-destinations-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  .jmt-dest-rich-card,
+  .jmt-dest-rich-card img,
+  .jmt-trust-col,
+  .search-submit-btn,
+  .jmt-view-all-link span {
+    transition: none !important;
+    transform: none !important;
+  }
+}
+
+/* =============================================================
+   CUSTOM TRAVELLER POPOVER & EDITORIAL GRID STYLES
+   ============================================================= */
+
+/* Custom Traveller Popover Panel */
+.jmt-traveller-popover {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 0;
+  width: 320px;
+  background: #FFFFFF;
+  border-radius: 18px;
+  border: 1px solid rgba(11, 40, 108, 0.12);
+  box-shadow: 0 16px 40px rgba(7, 21, 59, 0.14);
+  padding: 20px;
+  z-index: 100;
+  animation: jmtFadeInUp 0.2s ease-out forwards;
+}
+
+@keyframes jmtFadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.jmt-pax-counter-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+}
+.jmt-pax-counter-row:not(:last-child) {
+  border-bottom: 1px solid #F1F5F9;
+}
+
+.jmt-pax-title {
+  font-size: 13.5px;
+  font-weight: 800;
+  color: #07153B;
+}
+.jmt-pax-sub {
+  font-size: 11px;
+  color: #64748B;
+}
+
+.jmt-counter-ctrl {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.jmt-pax-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid #CBD5E1;
+  background: #FFFFFF;
+  color: #07153B;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+.jmt-pax-btn:hover {
+  border-color: #00A651;
+  color: #00A651;
+  background: #E6F6ED;
+}
+
+.jmt-pax-num {
+  font-size: 14px;
+  font-weight: 800;
+  color: #07153B;
+  min-width: 18px;
+  text-align: center;
+}
+
+.jmt-preset-chips-title {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  color: #64748B;
+  text-transform: uppercase;
+  margin: 14px 0 8px;
+}
+
+.jmt-preset-chips-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.jmt-preset-chip {
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 99px;
+  padding: 5px 12px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #334155;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.jmt-preset-chip:hover,
+.jmt-preset-chip.active {
+  background: #00A651;
+  border-color: #00A651;
+  color: #FFFFFF;
+}
+
+.jmt-popover-footer {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #E2E8F0;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.jmt-popover-done-btn {
+  background: #00A651;
+  color: #FFFFFF;
+  border: 0;
+  padding: 8px 20px;
+  border-radius: 99px;
+  font-size: 12.5px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+.jmt-popover-done-btn:hover {
+  background: #009347;
+}
+
+/* Editorial Asymmetric Destinations Grid */
+.jmt-editorial-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+.jmt-dest-card-featured {
+  grid-column: span 2;
+  height: 340px;
+}
+
+.jmt-dest-card-regular {
+  grid-column: span 1;
+  height: 340px;
+}
+
+.jmt-dest-card-sub {
+  height: 260px;
+}
+
+@media (max-width: 1024px) {
+  .jmt-editorial-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .jmt-dest-card-featured {
+    grid-column: span 2;
+    height: 300px;
+  }
+  .jmt-dest-card-regular {
+    grid-column: span 1;
+    height: 260px;
+  }
+  .jmt-dest-card-sub {
+    grid-column: span 1;
+    height: 240px;
+  }
+}
+
+@media (max-width: 640px) {
+  .jmt-editorial-grid {
+    grid-template-columns: 1fr;
+  }
+  .jmt-dest-card-featured,
+  .jmt-dest-card-regular,
+  .jmt-dest-card-sub {
+    grid-column: span 1;
+    height: 250px;
+  }
+  .jmt-traveller-popover {
+    width: 290px;
+    left: -10px;
+  }
+}
+
+/* =============================================================
+   PREMIUM BLUE-TINTED DESIGN SYSTEM OVERRIDES (NO PURE WHITE WALLS)
+   ============================================================= */
+
+/* Page Background & Global Text */
+body {
+  background-color: var(--jmt-bg, #F3F8FC) !important;
+  color: var(--jmt-navy, #082B52);
+}
+
+#view-container {
+  background-color: var(--jmt-bg, #F3F8FC);
+}
+
+/* Translucent Blue-Tinted Header */
+.site-header,
+header.site-header {
+  background: rgba(243, 248, 252, 0.92) !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+  border-bottom: 1px solid rgba(13, 59, 102, 0.08) !important;
+}
+
+/* Deep Navy Footer */
+.site-footer,
+footer.site-footer {
+  background: var(--jmt-blue-dark, #062746) !important;
+  color: #FFFFFF !important;
+}
+.site-footer a {
+  color: #CBD5E1 !important;
+}
+.site-footer a:hover {
+  color: var(--jmt-green, #00A86B) !important;
+}
+
+/* Clean White Outer Search Card Container Override */
+.jmt-home-search-card,
+.search-card-container {
+  background: #FFFFFF !important;
+  border-radius: 24px !important;
+  border: 1px solid rgba(11, 40, 108, 0.12) !important;
+  box-shadow: 0 20px 50px rgba(7, 21, 59, 0.08), 0 4px 12px rgba(0, 0, 0, 0.03) !important;
+  color: #07153B !important;
+}
+
+/* JMT Green Primary Buttons */
+.jmt-btn-primary,
+.search-submit-btn,
+.jmt-btn-green,
+.btn-primary {
+  background: var(--jmt-green, #00A86B) !important;
+  color: #FFFFFF !important;
+  border: none !important;
+  border-radius: 14px !important;
+  font-weight: 800 !important;
+  box-shadow: 0 6px 18px rgba(0, 168, 107, 0.28) !important;
+  transition: transform 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease !important;
+}
+
+.jmt-btn-primary:hover,
+.search-submit-btn:hover,
+.jmt-btn-green:hover,
+.btn-primary:hover {
+  background: var(--jmt-green-hover, #00935D) !important;
+  transform: translateY(-1.5px) !important;
+  box-shadow: 0 10px 24px rgba(0, 168, 107, 0.38) !important;
+}
+
+/* Soft Blue Card Styling (Replacing Pure White Cards) */
+.card:not([style*="background"]),
+.jmt-card:not([style*="background"]),
+.jmt-visa-card:not([style*="background"]),
+.jmt-hotel-card:not([style*="background"]),
+.jmt-benefit-card:not([style*="background"]),
+.jmt-gulf-card:not([style*="background"]),
+.jmt-feature-card:not([style*="background"]),
+.jmt-step-card:not([style*="background"]),
+.jmt-auth-card:not([style*="background"]),
+.jmt-admin-card:not([style*="background"]) {
+  background: var(--jmt-card-bg-solid, #F8FCFF);
+  border: 1px solid var(--jmt-border, rgba(13, 59, 102, 0.10));
+  border-radius: 20px;
+  box-shadow: var(--jmt-shadow-soft, 0 10px 30px rgba(20, 60, 90, 0.06));
+}
+
+/* Section Background Alternations */
+.jmt-section-alt,
+.jmt-trust-section,
+.jmt-section-blue {
+  background-color: var(--jmt-bg-alt, #EAF4FA) !important;
+}
+
+.jmt-section-light {
+  background-color: var(--jmt-bg-light, #F7FBFE) !important;
+}
+
+/* Popover & Dropdown Blue-Theme Styling */
+.jmt-traveller-popover,
+.jmt-flight-popover,
+.jmt-airport-dropdown,
+.dropdown-menu {
+  background: linear-gradient(135deg, #07153B 0%, #0B286C 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.22) !important;
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.5) !important;
+  border-radius: 18px !important;
+  color: #FFFFFF !important;
+  z-index: 9999 !important;
+}
+
+.jmt-home-search-card,
+.search-card-container,
+#home-flight-panel,
+#home-flight-search-form,
+.jmt-flight-fields-grid {
+  overflow: visible !important;
+}
+
+#from-airport-container,
+#to-airport-container,
+.jmt-airport-field-box {
+  position: relative !important;
+}
+
+#from-airport-container:focus-within,
+#to-airport-container:focus-within,
+.jmt-airport-field-box:focus-within {
+  z-index: 999 !important;
+}
+
+.jmt-airport-option {
+  padding: 10px 14px !important;
+  border-radius: 10px !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+}
+
+.jmt-airport-option:hover,
+.jmt-airport-option.highlighted {
+  background: rgba(255, 255, 255, 0.15) !important;
+}
+
+.jmt-airport-name {
+  color: #FFFFFF !important;
+}
+
+.jmt-airport-sub {
+  color: #D6E0F4 !important;
+}
+
+.jmt-airport-option:hover .jmt-airport-name,
+.jmt-airport-option.highlighted .jmt-airport-name {
+  color: #00E676 !important;
+}
+
+.jmt-iata-pill {
+  background: #00E676 !important;
+  color: #07153B !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  padding: 3px 8px !important;
+  border-radius: 6px !important;
+  letter-spacing: 0.5px !important;
+}
+
+.jmt-pax-counter-row {
+  border-bottom-color: rgba(255, 255, 255, 0.12) !important;
+}
+.jmt-pax-title {
+  color: #FFFFFF !important;
+  font-weight: 800 !important;
+}
+.jmt-pax-sub {
+  color: #D6E0F4 !important;
+}
+.jmt-pax-num {
+  color: #FFFFFF !important;
+  font-weight: 800 !important;
+}
+.jmt-pax-btn {
+  background: rgba(255, 255, 255, 0.15) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  color: #FFFFFF !important;
+}
+.jmt-pax-btn:hover {
+  background: #00A651 !important;
+  border-color: #00A651 !important;
+  color: #FFFFFF !important;
+}
+.jmt-preset-chips-title {
+  color: #D6E0F4 !important;
+}
+.jmt-preset-chip {
+  background: rgba(255, 255, 255, 0.12) !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  color: #FFFFFF !important;
+}
+.jmt-preset-chip:hover,
+.jmt-preset-chip.active {
+  background: #00A651 !important;
+  border-color: #00A651 !important;
+  color: #FFFFFF !important;
+}
+.jmt-popover-footer {
+  border-top-color: rgba(255, 255, 255, 0.15) !important;
+}
+.jmt-popover-option {
+  color: #FFFFFF !important;
+  padding: 10px 14px !important;
+  border-radius: 8px !important;
+  cursor: pointer !important;
+}
+.jmt-popover-option:hover {
+  background: rgba(255, 255, 255, 0.15) !important;
+}
+.jmt-airport-dropdown-item {
+  color: #FFFFFF !important;
+  border-bottom-color: rgba(255, 255, 255, 0.1) !important;
+}
+.jmt-airport-dropdown-item:hover {
+  background: rgba(255, 255, 255, 0.15) !important;
+}
+
+/* =============================================================
+   BLACK / DARK THEME SYSTEM TOKENS & OVERRIDES
+   ============================================================= */
+[data-theme="dark"] {
+  /* Brand Tokens - Dark Mode */
+  --jmt-green: #00C875;
+  --jmt-green-hover: #00A86B;
+  --jmt-navy: #F8FAFC;
+  --jmt-blue: #38BDF8;
+  --jmt-blue-dark: #070B14;
+
+  /* Layered Dark Background System */
+  --jmt-bg: #0A0F1D;
+  --jmt-bg-alt: #111827;
+  --jmt-bg-light: #1E293B;
+  --jmt-card-bg: rgba(19, 27, 46, 0.88);
+  --jmt-card-bg-solid: #131B2E;
+  --jmt-panel-bg: rgba(19, 27, 46, 0.96);
+  --jmt-input-bg: #1B2438;
+  --jmt-input-hover: #242F48;
+
+  /* Borders & Shadows */
+  --jmt-border: rgba(255, 255, 255, 0.10);
+  --jmt-border-strong: rgba(255, 255, 255, 0.18);
+  --jmt-shadow-soft: 0 10px 30px rgba(0, 0, 0, 0.40);
+  --jmt-shadow-float: 0 24px 60px rgba(0, 0, 0, 0.60);
+
+  /* Legacy Mappings for Dark Mode */
+  --primary: #F8FAFC;
+  --background: #0A0F1D;
+  --surface: #131B2E;
+  --surface-alt: #111827;
+  --text: #F8FAFC;
+  --text-muted: #94A3B8;
+  --border: rgba(255, 255, 255, 0.10);
+}
+
+[data-theme="dark"] body {
+  background-color: #0A0F1D !important;
+  color: #F8FAFC !important;
+}
+
+[data-theme="dark"] #view-container {
+  background-color: #0A0F1D !important;
+}
+
+[data-theme="dark"] .site-header,
+[data-theme="dark"] header.site-header,
+[data-theme="dark"] header[style] {
+  background: rgba(10, 15, 29, 0.94) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.10) !important;
+}
+
+[data-theme="dark"] .brand-title b {
+  color: #F8FAFC !important;
+}
+
+[data-theme="dark"] .nav-link-item,
+[data-theme="dark"] .nav-links a {
+  color: #CBD5E1 !important;
+}
+
+[data-theme="dark"] .nav-link-item:hover,
+[data-theme="dark"] .nav-links a:hover {
+  color: #00C875 !important;
+}
+
+[data-theme="dark"] .site-footer,
+[data-theme="dark"] footer.site-footer {
+  background: #050810 !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-theme="dark"] h1,
+[data-theme="dark"] h2,
+[data-theme="dark"] h3,
+[data-theme="dark"] h4,
+[data-theme="dark"] h5,
+[data-theme="dark"] h6 {
+  color: #F8FAFC !important;
+}
+
+[data-theme="dark"] p,
+[data-theme="dark"] span:not(.search-submit-btn):not(.btn) {
+  color: #CBD5E1;
+}
+
+[data-theme="dark"] input[type="text"],
+[data-theme="dark"] input[type="email"],
+[data-theme="dark"] input[type="password"],
+[data-theme="dark"] input[type="number"],
+[data-theme="dark"] input[type="tel"],
+[data-theme="dark"] input[type="date"],
+[data-theme="dark"] select,
+[data-theme="dark"] textarea,
+[data-theme="dark"] .jmt-segmented-input,
+[data-theme="dark"] .jmt-search-segmented-field {
+  background-color: #1B2438 !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: #F8FAFC !important;
+}
+
+[data-theme="dark"] .jmt-segmented-label {
+  color: #94A3B8 !important;
+}
+
+[data-theme="dark"] #travellers-display-val {
+  color: #F8FAFC !important;
+}
+
+[data-theme="dark"] .theme-toggle-btn {
+  background: rgba(255, 255, 255, 0.10) !important;
+  border-color: rgba(255, 255, 255, 0.20) !important;
+  color: #F8FAFC !important;
+}
+
+[data-theme="dark"] .jmt-unified-trust-strip {
+  background: #111827 !important;
+  border-color: rgba(255, 255, 255, 0.10) !important;
+}
+
+[data-theme="dark"] .jmt-trust-title {
+  color: #F8FAFC !important;
+}
+
+[data-theme="dark"] .jmt-trust-desc {
+  color: #94A3B8 !important;
+}
+
+[data-theme="dark"] .jmt-trust-col:not(:last-child) {
+  border-right-color: rgba(255, 255, 255, 0.10) !important;
+}
+
+[data-theme="dark"] .mobile-nav-drawer {
+  background: #111827 !important;
+  border-color: rgba(255, 255, 255, 0.10) !important;
+}
+
+[data-theme="dark"] .mobile-nav-drawer a {
+  color: #F8FAFC !important;
+}
+
+/* About Us Page Layout & Responsive Grid */
+@media (max-width: 900px) {
+  .jmt-about-timeline-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+@media (max-width: 600px) {
+  .jmt-about-timeline-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Flight Services Interactive Hover Lift */
+.jmt-service-card-interactive:hover {
+  transform: translateY(-6px) !important;
+  box-shadow: 0 20px 44px rgba(7, 21, 59, 0.35) !important;
+  border-color: rgba(0, 230, 118, 0.4) !important;
+}
+
+/* FEATURED TOUR PACKAGES CARDS - DEEP DARK-BLUE GRADIENT SYSTEM */
+#home-packages-grid .card,
+#home-packages-grid .jmt-card,
+#home-packages-grid .jmt-tour-card-dark,
+#packages-grid .card,
+#packages-grid .jmt-card,
+.jmt-tour-card-dark {
+  background: linear-gradient(135deg, #07153B 0%, #0B286C 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  border-radius: 20px !important;
+  box-shadow: 0 12px 32px rgba(7, 21, 59, 0.22) !important;
+  overflow: hidden !important;
+}
+
+#home-packages-grid .card h3,
+#home-packages-grid .jmt-card h3,
+#home-packages-grid .jmt-tour-card-dark h3,
+#packages-grid .card h2,
+#packages-grid .jmt-card h2 {
+  color: #FFFFFF !important;
+}
+
+#home-packages-grid .card p,
+#home-packages-grid .jmt-card p,
+#home-packages-grid .jmt-tour-card-dark p,
+#packages-grid .card p,
+#packages-grid .jmt-card p,
+#packages-grid .card span,
+#packages-grid .jmt-card span {
+  color: #D6E0F4 !important;
+}
+
+#home-packages-grid .card div[style*="border-top"],
+#home-packages-grid .jmt-card div[style*="border-top"],
+#home-packages-grid .jmt-tour-card-dark div[style*="border-top"],
+#packages-grid .card div[style*="border-top"],
+#packages-grid .jmt-card div[style*="border-top"] {
+  background: rgba(0, 0, 0, 0.22) !important;
+  border-top-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+#home-packages-grid .card strong,
+#home-packages-grid .jmt-card strong,
+#home-packages-grid .jmt-tour-card-dark strong,
+#packages-grid .card strong,
+#packages-grid .jmt-card strong {
+  color: #00E676 !important;
+}
+
+/* Theme Toggle Button & Create Account Header Styling */
+.theme-toggle-btn {
+  background: #07153B !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 4px 12px rgba(7, 21, 59, 0.3) !important;
+  transition: all 0.25s ease !important;
+}
+
+.theme-toggle-btn:hover {
+  background: #0B286C !important;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(7, 21, 59, 0.45) !important;
+}
+
+.btn-create-account {
+  background: linear-gradient(135deg, #07153B 0%, #0B286C 100%) !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 4px 14px rgba(7, 21, 59, 0.35) !important;
+  transition: all 0.25s ease !important;
+}
+
+.btn-create-account:hover {
+  background: linear-gradient(135deg, #0B286C 0%, #0F3895 100%) !important;
+  color: #FFFFFF !important;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(7, 21, 59, 0.5) !important;
 }

@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 60" width="200" height="60">
+  <g transform="translate(6, 12)">
+    <!-- Dot matrix aircraft tail emblem -->
+    <circle cx="8" cy="8" r="3" fill="#001B94"/>
+    <circle cx="16" cy="8" r="3.5" fill="#001B94"/>
+    <circle cx="24" cy="8" r="4" fill="#001B94"/>
+    <circle cx="12" cy="18" r="3.5" fill="#001B94"/>
+    <circle cx="20" cy="18" r="4" fill="#001B94"/>
+    <circle cx="28" cy="18" r="4.5" fill="#001B94"/>
+    <circle cx="16" cy="28" r="4" fill="#001B94"/>
+    <circle cx="24" cy="28" r="4.5" fill="#001B94"/>
+    <circle cx="32" cy="28" r="5" fill="#001B94"/>
+  </g>
+  <text x="50" y="36" font-family="system-ui, -apple-system, sans-serif" font-weight="900" font-size="24" fill="#001B94" letter-spacing="-0.8">IndiGo</text>
+</svg>
