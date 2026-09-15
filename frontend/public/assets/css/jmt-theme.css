@@ -1,47 +1,47 @@
 /* JMT TRAVELS — Centralized Design Tokens & Visual Identity System */
 :root {
   /* Brand Primary Colors */
-  --jmt-green: #00A86B;
-  --jmt-green-hover: #00935D;
-  --jmt-navy: #082B52;
-  --jmt-blue: #0D3B66;
-  --jmt-blue-dark: #062746;
+  --jmt-green: #00E676;
+  --jmt-green-hover: #00A651;
+  --jmt-navy: #07153B;
+  --jmt-blue: #0B286C;
+  --jmt-blue-dark: #050E28;
 
-  /* Global Website Background (#C1D4E4) */
-  --jmt-page-bg: #C1D4E4;
-  --jmt-bg: #C1D4E4;
-  --jmt-bg-alt: #B6CBDC;
-  --jmt-bg-light: #C9D9E8;
-  --jmt-card-bg: #F4F9FC;
-  --jmt-card-bg-solid: #F4F9FC;
-  --jmt-panel-bg: #F5FAFD;
-  --jmt-input-bg: #EAF3F9;
-  --jmt-input-hover: #E1EDF5;
+  /* Global Website Background (#07153B) */
+  --jmt-page-bg: #07153B;
+  --jmt-bg: #07153B;
+  --jmt-bg-alt: #050E28;
+  --jmt-bg-light: #07153B;
+  --jmt-card-bg: #0B286C;
+  --jmt-card-bg-solid: #0B286C;
+  --jmt-panel-bg: #0B286C;
+  --jmt-input-bg: #FFFFFF;
+  --jmt-input-hover: #FFFFFF;
 
   /* Borders & Shadows */
-  --jmt-border: rgba(8, 43, 82, 0.08);
-  --jmt-border-strong: rgba(8, 43, 82, 0.14);
-  --jmt-shadow-soft: 0 8px 25px rgba(8, 43, 82, 0.06);
-  --jmt-shadow-float: 0 20px 50px rgba(8, 43, 82, 0.12);
+  --jmt-border: rgba(255, 255, 255, 0.10);
+  --jmt-border-strong: rgba(255, 255, 255, 0.20);
+  --jmt-shadow-soft: 0 8px 25px rgba(0, 0, 0, 0.25);
+  --jmt-shadow-float: 0 20px 50px rgba(0, 0, 0, 0.40);
 
   /* Legacy Mapping for Full Compatibility */
-  --primary: #082B52;
-  --primary-dark: #062746;
-  --secondary: #00A86B;
-  --secondary-dark: #00935D;
-  --accent-gold: #C9962E;
+  --primary: #07153B;
+  --primary-dark: #050E28;
+  --secondary: #00A651;
+  --secondary-dark: #00E676;
+  --accent-gold: #00E676;
 
-  --background: #C1D4E4;
-  --surface: #F4F9FC;
-  --surface-alt: #EAF3F9;
+  --background: #07153B;
+  --surface: #0B286C;
+  --surface-alt: rgba(255, 255, 255, 0.05);
 
-  --text: #082B52;
-  --text-muted: #58718A;
-  --border: rgba(8, 43, 82, 0.08);
+  --text: #FFFFFF;
+  --text-muted: #E2E8F0;
+  --border: rgba(255, 255, 255, 0.10);
 
-  --success: #00A86B;
-  --warning: #D97706;
-  --error: #DC2626;
+  --success: #00E676;
+  --warning: #F59E0B;
+  --error: #EF4444;
 
   --radius-sm: 8px;
   --radius-md: 12px;
@@ -49,9 +49,9 @@
   --radius-xl: 26px;
   --radius-pill: 9999px;
 
-  --shadow-sm: 0 1px 3px rgba(0,0,0,0.05);
-  --shadow-md: 0 4px 16px -2px rgba(8, 43, 82, 0.08);
-  --shadow-lg: 0 12px 32px -4px rgba(8, 43, 82, 0.12);
+  --shadow-sm: 0 2px 8px rgba(0,0,0,0.20);
+  --shadow-md: 0 4px 16px -2px rgba(0, 0, 0, 0.30);
+  --shadow-lg: 0 12px 32px -4px rgba(0, 0, 0, 0.40);
 
   --font-body: 'Plus Jakarta Sans', sans-serif;
   --transition: all 0.25s ease-in-out;
@@ -96,8 +96,8 @@ html {
 
 body {
   font-family: var(--font-body);
-  background-color: #C1D4E4;
-  color: #082B52;
+  background-color: #07153B !important;
+  color: #FFFFFF !important;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
 }
@@ -247,7 +247,9 @@ body {
 
 /* Page Views & SPA Router Container */
 #view-container {
-  min-height: 80vh;
+  min-height: 85vh;
+  background-color: #07153B !important;
+  color: #FFFFFF !important;
 }
 
 /* Card System */
@@ -257,18 +259,27 @@ body {
   gap: 24px;
   margin-top: 24px;
 }
-.card {
-  background: var(--surface);
-  border: 1px solid var(--border);
+.card, .jmt-card, .jmt-panel {
+  background: #0B286C !important;
+  color: #FFFFFF !important;
+  border: 1px solid rgba(255, 255, 255, 0.10) !important;
   border-radius: var(--radius-md);
   padding: 24px;
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25) !important;
   transition: var(--transition);
 }
-.card:hover {
+.card:hover, .jmt-card:hover {
   transform: translateY(-3px);
-  box-shadow: var(--shadow-md);
-  border-color: #CBD5E1;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35) !important;
+  border-color: rgba(0, 230, 118, 0.40) !important;
+}
+
+.card-subtle, .jmt-card-subtle {
+  background: rgba(255, 255, 255, 0.05) !important;
+  color: #FFFFFF !important;
+  border: 1px solid rgba(255, 255, 255, 0.10) !important;
+  border-radius: var(--radius-md);
+  padding: 24px;
 }
 
 /* Badges */
@@ -309,9 +320,10 @@ body {
   right: 24px;
   width: 360px;
   height: 500px;
-  background: var(--surface);
-  border-radius: var(--radius-lg);
-  box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+  background: #07153B;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 25px 80px rgba(0,0,0,0.5), 0 0 30px rgba(0, 230, 118, 0.1);
   display: none;
   flex-direction: column;
   overflow: hidden;
@@ -321,50 +333,89 @@ body {
   display: flex;
 }
 .chat-header {
-  background: var(--primary);
+  background: linear-gradient(135deg, #07153B 0%, #0B286C 100%);
   color: #FFFFFF;
-  padding: 16px;
+  padding: 16px 20px;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
 }
 .chat-body {
   flex: 1;
-  padding: 16px;
+  padding: 18px 16px;
   overflow-y: auto;
-  background: var(--surface-alt);
+  background: radial-gradient(circle at 85% 15%, rgba(0, 230, 118, 0.08) 0%, transparent 45%),
+              radial-gradient(circle at 15% 85%, rgba(11, 40, 108, 0.6) 0%, transparent 50%),
+              linear-gradient(160deg, #07153B 0%, #0B286C 55%, #050E28 100%);
+  color: #FFFFFF;
 }
 .chat-bubble {
   padding: 12px 16px;
-  border-radius: 12px;
-  margin-bottom: 12px;
-  font-size: 13px;
+  border-radius: 16px;
+  margin-bottom: 14px;
+  font-size: 13.5px;
   line-height: 1.5;
   max-width: 85%;
+  word-break: break-word;
 }
 .chat-bubble.bot {
-  background: #FFFFFF;
-  color: var(--text);
-  border: 1px solid var(--border);
+  background: rgba(11, 40, 108, 0.88);
+  color: #FFFFFF;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
+  border-radius: 16px 16px 16px 4px;
+  margin-right: auto;
 }
 .chat-bubble.user {
-  background: var(--primary);
-  color: #FFFFFF;
+  background: linear-gradient(135deg, #00E676 0%, #00C853 100%);
+  color: #07153B;
+  font-weight: 700;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 15px rgba(0, 230, 118, 0.3);
+  border-radius: 16px 16px 4px 16px;
   margin-left: auto;
 }
 .chat-input {
   display: flex;
-  padding: 12px;
-  border-top: 1px solid var(--border);
-  background: var(--surface);
+  gap: 8px;
+  padding: 12px 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  background: #050E28;
+  align-items: center;
 }
 .chat-input input {
   flex: 1;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  padding: 8px 12px;
-  font-size: 13px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 13.5px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #FFFFFF;
   outline: none;
+}
+.chat-input input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+.chat-input input:focus {
+  border-color: #00E676;
+  box-shadow: 0 0 0 3px rgba(0, 230, 118, 0.25);
+}
+.chat-input button {
+  min-height: 40px;
+  border-radius: 12px;
+  background: #00E676;
+  color: #07153B;
+  font-weight: 700;
+  border: none;
+  padding: 0 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.chat-input button:hover {
+  background: #00C853;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 230, 118, 0.35);
 }
 
 /* Footer */
@@ -772,24 +823,20 @@ body {
 /* Floating Search Card */
 .jmt-home-search-card,
 .search-card-container {
-  background: #F5FAFD;
+  background: linear-gradient(135deg, #07153B 0%, #0B286C 50%, #153B8A 100%) !important;
   border-radius: 24px;
-  box-shadow: 0 20px 50px rgba(7, 21, 59, 0.16);
+  box-shadow: 0 20px 50px rgba(7, 21, 59, 0.40) !important;
   padding: 24px 28px;
-  border: 1px solid rgba(11, 40, 108, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
   position: relative;
-  overflow: hidden;
+  overflow: visible !important;
   transition: background-color 0.3s ease, border-color 0.3s ease;
+  color: #FFFFFF !important;
 }
 .jmt-home-search-card::before,
 .search-card-container::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 5px;
-  background: linear-gradient(90deg, #0B286C 0%, #00A651 50%, #F59E0B 100%);
+  display: none !important;
+  content: none !important;
 }
 .search-tab-item {
   background: transparent;
@@ -945,29 +992,31 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
    Frontend-only visual overrides. No business logic changes.
    ============================================================= */
 :root {
-  --jmt-green: #00A651;
-  --jmt-green-dark: #008F46;
+  --jmt-green: #00E676;
+  --jmt-green-dark: #00A651;
   --jmt-blue: #0B286C;
   --jmt-navy: #07153B;
-  --jmt-ink: #10234F;
-  --jmt-muted: #66758F;
-  --jmt-bg: #F5F8FC;
-  --jmt-border: #E1E8F2;
-  --jmt-card: #FFFFFF;
-  --jmt-shadow: 0 12px 36px rgba(11,40,108,.08);
-  --jmt-shadow-hover: 0 18px 45px rgba(11,40,108,.14);
+  --jmt-ink: #FFFFFF;
+  --jmt-muted: #E2E8F0;
+  --jmt-bg: #07153B;
+  --jmt-border: rgba(255, 255, 255, 0.12);
+  --jmt-card: #0B286C;
+  --jmt-shadow: 0 12px 36px rgba(0,0,0,.25);
+  --jmt-shadow-hover: 0 18px 45px rgba(0,0,0,.35);
 }
 
-html { background: var(--jmt-bg); }
+html { background: #07153B !important; }
 body {
-  background:
-    radial-gradient(circle at 8% 8%, rgba(0,166,81,.035), transparent 25%),
-    var(--jmt-bg);
-  color: var(--jmt-ink);
+  background: #07153B !important;
+  color: #FFFFFF !important;
 }
 
 /* Shared page container */
-#view-container { min-height: 72vh; }
+#view-container {
+  min-height: 100vh !important;
+  background: #07153B !important;
+  color: #FFFFFF !important;
+}
 #view-container > .shell {
   max-width: 1320px !important;
   padding-left: 28px !important;
@@ -1121,10 +1170,10 @@ form input:focus, form select:focus, form textarea:focus {
 #view-container h1:not(.jmt-dest-name),
 #view-container h2:not(.jmt-dest-name),
 #view-container h3:not(.jmt-dest-name) {
-  color: var(--jmt-navy, #082B52);
+  color: #00E676 !important;
   letter-spacing: -.45px;
 }
-#view-container p:not(.jmt-dest-sub) { color: var(--jmt-muted, #3F5C74); }
+#view-container p:not(.jmt-dest-sub) { color: #E2E8F0 !important; }
 
 /* Destination / package imagery */
 .dest-card-box, .destination-card { border-radius: 18px !important; }
@@ -1193,14 +1242,67 @@ form input:focus, form select:focus, form textarea:focus {
   width: 390px !important;
   height: min(600px, calc(100vh - 120px)) !important;
   border-radius: 20px !important;
-  border: 1px solid var(--jmt-border);
-  box-shadow: 0 25px 80px rgba(7,21,59,.25) !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  box-shadow: 0 25px 80px rgba(0,0,0,0.5), 0 0 30px rgba(0, 230, 118, 0.1) !important;
+  background: #07153B !important;
+  overflow: hidden !important;
 }
-.chat-header { background: linear-gradient(135deg,var(--jmt-blue),#153B8A) !important; }
-.chat-body { background: #F6F9FC !important; }
-.chat-input { display: flex !important; gap: 8px !important; }
-.chat-input input { min-height: 44px !important; border-radius: 12px !important; }
-.chat-input button { min-height: 44px !important; border-radius: 12px !important; }
+.chat-header {
+  background: linear-gradient(135deg, #07153B 0%, #0B286C 100%) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12) !important;
+  color: #FFFFFF !important;
+}
+.chat-body {
+  background: radial-gradient(circle at 85% 15%, rgba(0, 230, 118, 0.08) 0%, transparent 45%),
+              radial-gradient(circle at 15% 85%, rgba(11, 40, 108, 0.6) 0%, transparent 50%),
+              linear-gradient(160deg, #07153B 0%, #0B286C 55%, #050E28 100%) !important;
+  color: #FFFFFF !important;
+}
+.chat-bubble.bot {
+  background: rgba(11, 40, 108, 0.88) !important;
+  color: #FFFFFF !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25) !important;
+  border-radius: 16px 16px 16px 4px !important;
+}
+.chat-bubble.user {
+  background: linear-gradient(135deg, #00E676 0%, #00C853 100%) !important;
+  color: #07153B !important;
+  font-weight: 700 !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  box-shadow: 0 4px 15px rgba(0, 230, 118, 0.3) !important;
+  border-radius: 16px 16px 4px 16px !important;
+}
+.chat-input {
+  display: flex !important;
+  gap: 8px !important;
+  background: #050E28 !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.12) !important;
+  padding: 12px 16px !important;
+}
+.chat-input input {
+  min-height: 44px !important;
+  border-radius: 12px !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  color: #FFFFFF !important;
+}
+.chat-input input::placeholder {
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+.chat-input button {
+  min-height: 44px !important;
+  border-radius: 12px !important;
+  background: #00E676 !important;
+  color: #07153B !important;
+  font-weight: 700 !important;
+  border: none !important;
+  padding: 0 16px !important;
+}
+.chat-input button:hover {
+  background: #00C853 !important;
+  transform: translateY(-1px) !important;
+}
 
 /* Footer */
 body > footer, footer[style] {
@@ -1454,6 +1556,7 @@ html, body { max-width: 100%; overflow-x: hidden; }
   background: #07153B !important;
   color: #94A3B8 !important;
   padding: 70px 0 28px !important;
+  margin-top: 0 !important;
   font-size: 13.5px;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
@@ -3061,7 +3164,8 @@ a[href^="mailto:"]:hover,
 }
 
 .jmt-hotel-search-panel .jmt-field-input {
-  color: #07153B !important;
+  color: #FFFFFF !important;
+  -webkit-text-fill-color: #FFFFFF !important;
 }
 
 .jmt-hotel-search-grid {
@@ -4728,29 +4832,29 @@ a[href^="mailto:"]:hover,
    HOMEPAGE PREMIUM REDESIGN STYLES
    ============================================================= */
 
-/* Floating Search Container - Clean White Outer Container Card */
+/* Floating Search Container - Dark Blue Outer Container Card */
 .jmt-home-search-card,
 .search-card-container {
-  background: #FFFFFF !important;
+  background: linear-gradient(135deg, #07153B 0%, #0B286C 50%, #153B8A 100%) !important;
   border-radius: 24px !important;
-  border: 1px solid rgba(11, 40, 108, 0.12) !important;
-  box-shadow: 0 20px 50px rgba(7, 21, 59, 0.08), 0 4px 12px rgba(0, 0, 0, 0.03) !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  box-shadow: 0 20px 50px rgba(7, 21, 59, 0.40) !important;
   padding: 24px 28px !important;
   transition: box-shadow 0.3s ease !important;
-  color: #07153B !important;
+  color: #FFFFFF !important;
 }
 
 /* Service Navigation Tabs */
 .jmt-search-tabs-row {
   display: flex;
   gap: 8px;
-  background: #07153B !important;
+  background: rgba(7, 21, 59, 0.6) !important;
   padding: 6px !important;
   border-radius: 14px !important;
   margin-bottom: 20px !important;
   overflow-x: auto;
   scrollbar-width: none;
-  border: 1px solid rgba(7, 21, 59, 0.15) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
 }
 .jmt-search-tabs-row::-webkit-scrollbar {
   display: none;
@@ -4772,10 +4876,11 @@ a[href^="mailto:"]:hover,
   background: rgba(255, 255, 255, 0.12) !important;
 }
 .search-tab-item.active {
-  background: linear-gradient(135deg, #0B286C 0%, #103B9B 100%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.3) !important;
-  color: #FFFFFF !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25) !important;
+  background: #00E676 !important;
+  border: 1px solid #00E676 !important;
+  color: #07153B !important;
+  font-weight: 800 !important;
+  box-shadow: 0 4px 14px rgba(0, 230, 118, 0.35) !important;
 }
 
 /* Segmented Search Field Bar */
@@ -4801,17 +4906,17 @@ a[href^="mailto:"]:hover,
 /* Inner Input Field Boxes - Dark Blue Background with White Font Across All Sections */
 .jmt-search-segmented-field,
 .jmt-search-field-box {
-  height: 60px !important;
-  min-height: 60px !important;
-  max-height: 60px !important;
-  padding: 10px 18px !important;
+  height: 72px !important;
+  min-height: 72px !important;
+  max-height: 72px !important;
+  padding: 12px 20px !important;
   display: flex !important;
   flex-direction: column !important;
   justify-content: center !important;
-  gap: 2px !important;
+  gap: 3px !important;
   position: relative !important;
   background: linear-gradient(135deg, #07153B 0%, #0B286C 100%) !important;
-  border-radius: 14px !important;
+  border-radius: 16px !important;
   border: 1px solid rgba(255, 255, 255, 0.18) !important;
   box-shadow: 0 4px 14px rgba(7, 21, 59, 0.15) !important;
   transition: all 0.25s ease !important;
@@ -4834,12 +4939,12 @@ a[href^="mailto:"]:hover,
 
 .jmt-segmented-label,
 .jmt-field-label {
-  font-size: 10.5px !important;
+  font-size: 11px !important;
   font-weight: 800 !important;
   letter-spacing: 0.9px !important;
   color: #00E676 !important;
   text-transform: uppercase !important;
-  margin-bottom: 1px !important;
+  margin-bottom: 2px !important;
   display: block !important;
   line-height: 1.1 !important;
 }
@@ -4853,7 +4958,7 @@ a[href^="mailto:"]:hover,
   background: transparent !important;
   background-color: transparent !important;
   width: 100% !important;
-  font-size: 14px !important;
+  font-size: 15px !important;
   font-weight: 700 !important;
   color: #FFFFFF !important;
   outline: none !important;
@@ -4897,62 +5002,84 @@ a[href^="mailto:"]:hover,
 /* Flight Fields Grid Layout */
 .jmt-flight-fields-grid {
   display: grid !important;
-  grid-template-columns: 1.4fr auto 1.4fr 1fr 1fr auto !important;
-  gap: 10px !important;
-  align-items: stretch !important;
+  grid-template-columns: 1.4fr auto 1.4fr 1.0fr 1.0fr auto !important;
+  gap: 12px !important;
+  align-items: center !important;
   width: 100% !important;
 }
 
 @media (max-width: 1024px) {
   .jmt-flight-fields-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 12px !important;
+  }
+  .jmt-swap-btn {
+    display: none !important;
+  }
+  .search-submit-btn {
+    grid-column: span 2 !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .jmt-flight-fields-grid {
     grid-template-columns: 1fr !important;
-    gap: 10px !important;
+    gap: 12px !important;
+  }
+  .search-submit-btn {
+    grid-column: span 1 !important;
   }
 }
 
 #travellers-display-val {
   color: #FFFFFF !important;
   font-weight: 700 !important;
-  font-size: 14px !important;
+  font-size: 15px !important;
   line-height: 1.3 !important;
 }
 
-/* Swap Airport Button - Exact Height Alignment */
+/* Swap Airport Button - Compact Square Control Centered Vertically */
 .jmt-swap-btn {
   background: #07153B !important;
   border: 1px solid rgba(255, 255, 255, 0.25) !important;
-  color: #FFFFFF !important;
-  width: 44px !important;
-  height: 60px !important;
-  min-height: 60px !important;
-  max-height: 60px !important;
-  border-radius: 14px !important;
+  color: #00E676 !important;
+  width: 42px !important;
+  height: 42px !important;
+  min-width: 42px !important;
+  min-height: 42px !important;
+  max-height: 42px !important;
+  border-radius: 12px !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
   font-size: 18px !important;
+  font-weight: 800 !important;
   cursor: pointer !important;
   transition: all 0.25s ease !important;
-  box-shadow: 0 4px 12px rgba(7, 21, 59, 0.2) !important;
+  box-shadow: 0 4px 12px rgba(7, 21, 59, 0.3) !important;
   box-sizing: border-box !important;
+  align-self: center !important;
+  margin: 0 2px !important;
 }
 .jmt-swap-btn:hover {
-  background: #00A651 !important;
-  border-color: #00A651 !important;
-  transform: rotate(180deg) !important;
+  background: #00E676 !important;
+  color: #07153B !important;
+  border-color: #00E676 !important;
+  transform: rotate(180deg) scale(1.08) !important;
+  box-shadow: 0 6px 16px rgba(0, 230, 118, 0.4) !important;
 }
 
 /* Minimal Uniform Search CTA Buttons Across All 4 Sections */
 .search-submit-btn {
-  background: #00A651 !important;
+  background: #07153B !important;
   color: #FFFFFF !important;
-  border: 0 !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
   padding: 0 28px !important;
-  height: 60px !important;
-  min-height: 60px !important;
-  max-height: 60px !important;
+  height: 72px !important;
+  min-height: 72px !important;
+  max-height: 72px !important;
   border-radius: 14px !important;
-  font-size: 15px !important;
+  font-size: 15.5px !important;
   font-weight: 800 !important;
   letter-spacing: 0.3px !important;
   cursor: pointer !important;
@@ -4960,15 +5087,17 @@ a[href^="mailto:"]:hover,
   align-items: center !important;
   justify-content: center !important;
   gap: 8px !important;
-  box-shadow: 0 4px 14px rgba(0, 166, 81, 0.35) !important;
+  box-shadow: 0 4px 14px rgba(7, 21, 59, 0.40) !important;
   transition: all 0.25s ease !important;
   white-space: nowrap !important;
   box-sizing: border-box !important;
 }
 .search-submit-btn:hover {
-  background: #009347 !important;
+  background: #00E676 !important;
+  color: #07153B !important;
+  border-color: #00E676 !important;
   transform: translateY(-1.5px) !important;
-  box-shadow: 0 6px 18px rgba(0, 166, 81, 0.45) !important;
+  box-shadow: 0 6px 20px rgba(0, 230, 118, 0.40) !important;
 }
 .search-submit-btn:active {
   transform: translateY(0) !important;
@@ -5478,14 +5607,14 @@ footer.site-footer {
   color: var(--jmt-green, #00A86B) !important;
 }
 
-/* Clean White Outer Search Card Container Override */
+/* Dark Blue Outer Search Card Container Override */
 .jmt-home-search-card,
 .search-card-container {
-  background: #FFFFFF !important;
+  background: linear-gradient(135deg, #07153B 0%, #0B286C 50%, #153B8A 100%) !important;
   border-radius: 24px !important;
-  border: 1px solid rgba(11, 40, 108, 0.12) !important;
-  box-shadow: 0 20px 50px rgba(7, 21, 59, 0.08), 0 4px 12px rgba(0, 0, 0, 0.03) !important;
-  color: #07153B !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  box-shadow: 0 20px 50px rgba(7, 21, 59, 0.40) !important;
+  color: #FFFFFF !important;
 }
 
 /* JMT Green Primary Buttons */
@@ -5876,16 +6005,21 @@ footer.site-footer {
 }
 
 /* Theme Toggle Button & Create Account Header Styling */
-.theme-toggle-btn {
+.theme-toggle-btn,
+[data-theme="dark"] .theme-toggle-btn {
   background: #07153B !important;
-  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
   color: #FFFFFF !important;
   box-shadow: 0 4px 12px rgba(7, 21, 59, 0.3) !important;
   transition: all 0.25s ease !important;
+  border-radius: 50% !important;
 }
 
-.theme-toggle-btn:hover {
+.theme-toggle-btn:hover,
+[data-theme="dark"] .theme-toggle-btn:hover {
   background: #0B286C !important;
+  border-color: rgba(255, 255, 255, 0.4) !important;
+  color: #FFFFFF !important;
   transform: translateY(-1px);
   box-shadow: 0 6px 16px rgba(7, 21, 59, 0.45) !important;
 }
@@ -5903,3 +6037,367 @@ footer.site-footer {
   transform: translateY(-1px);
   box-shadow: 0 6px 18px rgba(7, 21, 59, 0.5) !important;
 }
+
+/* Header Sign In Nav Link Styling */
+.nav-signin-link {
+  color: #07153B !important; /* Dark Blue in White Theme */
+  font-weight: 700 !important;
+  font-size: 14px !important;
+  text-decoration: none !important;
+  transition: color 0.2s ease !important;
+}
+
+.nav-signin-link:hover {
+  color: #00A651 !important;
+}
+
+[data-theme="dark"] .nav-signin-link {
+  color: #FFFFFF !important; /* Pure White in Black Theme */
+}
+
+[data-theme="dark"] .nav-signin-link:hover {
+  color: #00E676 !important;
+}
+
+/* Fluid Viewport & Zoom Proportional Scaling System */
+.hero-slideshow-wrap,
+.jmt-hero,
+.hero,
+.hero-section,
+.jmt-hero-slideshow {
+  min-height: clamp(560px, 62vh, 880px) !important;
+}
+
+.shell,
+.container,
+.jmt-container,
+.hero-shell {
+  max-width: clamp(1200px, 86vw, 1540px);
+}
+
+.jmt-home-search-card,
+.search-card-container,
+.jmt-search-card {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+@media screen and (min-width: 1600px) {
+  .shell,
+  .container,
+  .jmt-container {
+    max-width: 1480px;
+  }
+  .jmt-home-search-card,
+  .search-card-container {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+}
+
+/* Master Theme Overrides: Dark Blue Search Card Container & Pure White Search Input Text */
+.jmt-home-search-card,
+.search-card-container,
+.jmt-search-card {
+  background: linear-gradient(135deg, #07153B 0%, #0B286C 50%, #153B8A 100%) !important;
+  border-radius: 24px !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  box-shadow: 0 20px 50px rgba(7, 21, 59, 0.40) !important;
+  color: #FFFFFF !important;
+}
+
+.jmt-search-field-box input,
+.jmt-search-segmented-field input,
+.jmt-hotel-search-panel .jmt-field-input,
+.jmt-hotel-search-panel input,
+.jmt-field-input,
+.jmt-segmented-input,
+#flight-from-input,
+#flight-to-input,
+#flight-dept-input,
+#flight-return-input,
+#hotel-dest-input,
+#hotel-checkin-input,
+#hotel-checkout-input,
+#search-dest-input,
+#search-dates-input,
+#travellers-display-val {
+  color: #FFFFFF !important;
+  -webkit-text-fill-color: #FFFFFF !important;
+  opacity: 1 !important;
+  color-scheme: dark !important;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1) brightness(100%) !important;
+  cursor: pointer !important;
+}
+
+/* =============================================================
+   FLIGHTS SEARCH BAR REFINEMENT (DARK BLUE + BRAND GREEN THEME)
+   ============================================================= */
+#home-flight-panel,
+#flight-search-panel-container,
+.jmt-hotel-search-panel {
+  background: linear-gradient(135deg, #07153B 0%, #0B286C 50%, #153B8A 100%) !important;
+  border-radius: 22px !important;
+  padding: 28px 26px !important;
+  box-shadow: 0 16px 40px rgba(7, 21, 59, 0.3) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  margin-bottom: 40px !important;
+  color: #FFFFFF !important;
+}
+
+.jmt-flight-top-row,
+.jmt-flight-top-controls {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 16px !important;
+  flex-wrap: wrap !important;
+  margin-bottom: 22px !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12) !important;
+  padding-bottom: 16px !important;
+}
+
+/* Segmented Trip Type Selector */
+.jmt-flight-segmented-trip {
+  display: inline-flex !important;
+  background: rgba(7, 21, 59, 0.75) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  border-radius: 30px !important;
+  padding: 4px !important;
+  gap: 4px !important;
+}
+.jmt-trip-btn {
+  border: 0 !important;
+  background: transparent !important;
+  color: #E2E8F0 !important;
+  font-weight: 600 !important;
+  font-size: 13.5px !important;
+  padding: 9px 20px !important;
+  border-radius: 20px !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  outline: none !important;
+}
+.jmt-trip-btn:hover:not(.active) {
+  color: #FFFFFF !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+.jmt-trip-btn.active {
+  background: #00E676 !important;
+  color: #07153B !important;
+  font-weight: 800 !important;
+  box-shadow: 0 2px 10px rgba(0, 230, 118, 0.35) !important;
+}
+
+/* Passenger Selector Button */
+.jmt-flight-pax-btn,
+.jmt-flight-pill-btn {
+  background: #07153B !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  border-radius: 14px !important;
+  padding: 10px 18px !important;
+  font-size: 13.5px !important;
+  font-weight: 700 !important;
+  color: #FFFFFF !important;
+  cursor: pointer !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 10px !important;
+  transition: all 0.2s ease !important;
+  height: 44px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+}
+.jmt-flight-pax-btn:hover,
+.jmt-flight-pill-btn:hover {
+  border-color: #00E676 !important;
+  box-shadow: 0 0 0 3px rgba(0, 230, 118, 0.25) !important;
+}
+
+/* Search Fields Grid */
+.jmt-flight-fields-grid {
+  display: grid !important;
+  grid-template-columns: 1.35fr auto 1.35fr 1.05fr 1.05fr 1.25fr !important;
+  gap: 14px !important;
+  align-items: center !important;
+}
+
+/* Field Box Card */
+.jmt-search-field-box {
+  height: 72px !important;
+  min-height: 72px !important;
+  max-height: 72px !important;
+  padding: 12px 18px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  position: relative !important;
+  background: #07153B !important;
+  border-radius: 14px !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2) !important;
+  transition: all 0.25s ease !important;
+  color: #FFFFFF !important;
+  box-sizing: border-box !important;
+}
+.jmt-search-field-box:hover {
+  border-color: #00E676 !important;
+  box-shadow: 0 6px 18px rgba(0, 230, 118, 0.15) !important;
+}
+.jmt-search-field-box:focus-within {
+  border-color: #00E676 !important;
+  box-shadow: 0 0 0 3.5px rgba(0, 230, 118, 0.3) !important;
+  z-index: 2 !important;
+}
+
+/* Field Label & Value Typography */
+.jmt-field-label {
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.05em !important;
+  color: #00E676 !important;
+  text-transform: uppercase !important;
+  margin-bottom: 2px !important;
+  display: block !important;
+  line-height: 1.1 !important;
+}
+.jmt-field-input {
+  border: 0 !important;
+  background: transparent !important;
+  width: 100% !important;
+  font-size: 14.5px !important;
+  font-weight: 700 !important;
+  color: #FFFFFF !important;
+  -webkit-text-fill-color: #FFFFFF !important;
+  outline: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  line-height: 1.3 !important;
+}
+.jmt-field-icon {
+  font-size: 20px !important;
+  color: #00E676 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0 !important;
+  line-height: 1 !important;
+}
+
+/* Circular/Compact Swap Button */
+.jmt-swap-btn {
+  width: 44px !important;
+  height: 44px !important;
+  min-width: 44px !important;
+  min-height: 44px !important;
+  border-radius: 12px !important;
+  background: #07153B !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  color: #00E676 !important;
+  font-size: 20px !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25) !important;
+  transition: all 0.25s ease !important;
+  align-self: center !important;
+  margin: 0 auto !important;
+}
+.jmt-swap-btn:hover {
+  background: #00E676 !important;
+  color: #07153B !important;
+  border-color: #00E676 !important;
+  transform: rotate(180deg) scale(1.05) !important;
+  box-shadow: 0 4px 16px rgba(0, 230, 118, 0.4) !important;
+}
+
+/* CTA Search Button */
+.jmt-flight-search-submit-btn,
+#home-flight-search-form .search-submit-btn,
+#flights-page-search-form .search-submit-btn {
+  height: 72px !important;
+  min-height: 72px !important;
+  max-height: 72px !important;
+  background: #07153B !important;
+  color: #FFFFFF !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  border-radius: 14px !important;
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  padding: 0 24px !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  white-space: nowrap !important;
+  transition: all 0.25s ease !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2) !important;
+  width: 100% !important;
+}
+.jmt-flight-search-submit-btn:hover,
+#home-flight-search-form .search-submit-btn:hover,
+#flights-page-search-form .search-submit-btn:hover {
+  background: #00E676 !important;
+  color: #07153B !important;
+  border-color: #00E676 !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 20px rgba(0, 230, 118, 0.4) !important;
+}
+
+/* Responsive Layout */
+@media (max-width: 1100px) {
+  .jmt-flight-fields-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 12px !important;
+  }
+  .jmt-swap-btn {
+    grid-column: span 2 !important;
+    margin: 4px auto !important;
+  }
+  #home-flight-search-form .search-submit-btn,
+  #flights-page-search-form .search-submit-btn {
+    grid-column: span 2 !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .jmt-flight-fields-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+  .jmt-swap-btn {
+    grid-column: 1 !important;
+    margin: 4px auto !important;
+  }
+  #home-flight-search-form .search-submit-btn,
+  #flights-page-search-form .search-submit-btn {
+    grid-column: 1 !important;
+  }
+  .jmt-flight-top-row,
+  .jmt-flight-top-controls {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 12px !important;
+  }
+  .jmt-flight-segmented-trip {
+    width: 100% !important;
+    display: flex !important;
+    justify-content: space-between !important;
+  }
+  .jmt-trip-btn {
+    flex: 1 !important;
+    text-align: center !important;
+    padding: 8px 10px !important;
+    font-size: 12.5px !important;
+  }
+  .jmt-flight-pax-btn {
+    width: 100% !important;
+  }
+}
+

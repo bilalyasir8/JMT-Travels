@@ -39,7 +39,7 @@
     "@type": "TravelAgency",
     "name": "JMT TRAVELS",
     "image": "https://jmttravels.com/assets/logo.png",
-    "telephone": "+96871132424",
+    "telephone": ["+96825655711", "+96825655177"],
     "email": "info@jmttravels.com",
     "address": {
       "@type": "PostalAddress",
@@ -64,7 +64,7 @@
     <div class="shell" style="display: flex; justify-content: space-between; align-items: center;">
       <div>Trusted Oman travel, visa &amp; Umrah specialists for over 20+ years</div>
       <div style="display: flex; align-items: center; gap: 16px;">
-        <a href="tel:+96871132424" style="color: #FFFFFF; text-decoration: none; font-weight: 600;">+968 7113 2424</a>
+        <a href="tel:+96825655711" style="color: #FFFFFF; text-decoration: none; font-weight: 600;">+968 25655711</a> / <a href="tel:+96825655177" style="color: #FFFFFF; text-decoration: none; font-weight: 600;">+968 25655177</a>
         <a href="https://wa.me/96897608999" target="_blank" rel="noopener" style="color: #4ADE80; text-decoration: none; font-weight: 600;">WhatsApp</a>
         <a href="https://mail.google.com/mail/?view=cm&fs=1&to=info%40jmttravels.com" target="_blank" rel="noopener noreferrer" aria-label="Email JMT Travels via Gmail" title="Email JMT Travels via Gmail" style="color: #FFFFFF; text-decoration: none; font-weight: 600;" class="jmt-email-link">info@jmttravels.com</a>
       </div>
@@ -98,7 +98,7 @@
             <span id="theme-toggle-icon" style="display:inline-flex; align-items:center; justify-content:center;"><svg width="18" height="18" viewBox="0 0 24 24" fill="#FFFFFF" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.389 5.389 0 0 1-4.4 2.26 5.403 5.403 0 0 1-5.4-5.4c0-1.81.89-3.42 2.26-4.4C12.92 3.04 12.46 3 12 3z"/></svg></span><span id="theme-toggle-label" style="display:none !important;">Dark</span>
           </button>
           <div id="nav-auth" style="display:flex; align-items:center; gap:10px;">
-            <a href="/login" onclick="event.preventDefault(); navigate('/login')" style="color:#334155; font-weight:600; font-size:14px; text-decoration:none; margin-right:4px;">Sign In</a>
+            <a href="/login" id="nav-signin-link" onclick="event.preventDefault(); navigate('/login')" class="nav-signin-link" style="font-weight:700; font-size:14px; text-decoration:none; margin-right:4px;">Sign In</a>
             <a href="/register" onclick="event.preventDefault(); navigate('/register')" class="btn-create-account" style="background: linear-gradient(135deg, #07153B 0%, #0B286C 100%); color:#FFFFFF !important; padding:10px 22px; border-radius:99px; font-weight:700; font-size:13px; text-decoration:none; display:inline-flex; align-items:center; gap:6px; box-shadow: 0 4px 14px rgba(7, 21, 59, 0.35); white-space:nowrap;">Create Account →</a>
           </div>
           <button class="mobile-menu-btn" onclick="toggleMobileMenu()" aria-label="Toggle Mobile Navigation Menu" aria-expanded="false" style="display:none; background:none; border:0; font-size:24px; cursor:pointer; color:#0B286C; padding:4px;">
@@ -142,8 +142,8 @@
 
   <!-- FLOATING CHATBOT WIDGET (TASK #9 & #10 ACCESSIBLE) -->
   <div style="position:fixed; bottom:24px; right:24px; z-index:999; display:flex; align-items:center; gap:12px;">
-    <div style="background:#F4F9FC; border-radius:99px; padding:8px 16px; box-shadow:0 10px 25px rgba(8,43,82,0.15); font-size:12px; font-weight:700; color:#082B52; border:1px solid rgba(8,43,82,0.12);">
-      <span style="color:#58718A; font-weight:500;">Need help?</span><br><strong style="color:#00A651;">Chat with us</strong>
+    <div style="background:#0B286C; border-radius:99px; padding:8px 16px; box-shadow:0 10px 25px rgba(0,0,0,0.4); font-size:12px; font-weight:700; color:#FFFFFF; border:1px solid rgba(255,255,255,0.18);">
+      <span style="color:#E2E8F0; font-weight:500;">Need help?</span><br><strong style="color:#00E676;">Chat with us</strong>
     </div>
     <button class="chatbot-trigger" id="chat-trigger" aria-expanded="false" aria-controls="chat-drawer" aria-label="Open JMT Assistant Chatbot" style="width:56px; height:56px; border-radius:50%; background:#00A651; color:#FFFFFF; border:0; font-size:24px; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 8px 20px rgba(0,166,81,0.4); position:static; right:auto; bottom:auto;">💬</button>
   </div>
@@ -166,29 +166,6 @@
       <button id="chat-send" class="btn btn-sm" style="margin-left:8px;" aria-label="Send Chat Message">Send</button>
     </div>
   </div>
-
-  <!-- PRE-FOOTER CTA SECTION -->
-  <section class="jmt-pre-footer-cta" style="background: linear-gradient(135deg, #0B286C 0%, #00A651 100%); color: #FFFFFF; padding: 60px 0; text-align: center; position: relative; overflow: hidden;">
-    <div class="shell" style="max-width: 900px; margin: 0 auto; position: relative; z-index: 2;">
-      <span style="display: inline-block; background: rgba(255,255,255,0.15); color: #FFFFFF; font-size: 12px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; padding: 6px 16px; border-radius: 99px; margin-bottom: 16px; backdrop-filter: blur(4px);">
-        Start Your Next Chapter
-      </span>
-      <h2 style="font-size: clamp(28px, 4vw, 42px); font-weight: 800; color: #FFFFFF !important; margin-bottom: 16px; line-height: 1.2;">
-        Ready to Experience Extraordinary Travel?
-      </h2>
-      <p style="font-size: 16px; color: rgba(255,255,255,0.9); margin-bottom: 32px; line-height: 1.6; max-width: 680px; margin-left: auto; margin-right: auto;">
-        Whether you are planning an Oman desert adventure, applying for a tourist or Schengen visa, or booking flights and luxury stays, JMT Travels is here for you.
-      </p>
-      <div style="display: flex; gap: 16px; justify-content: center; flex-wrap: wrap;">
-        <a href="/tourism" onclick="event.preventDefault(); navigate('/tourism')" class="jmt-btn-primary" style="background: #FFFFFF; color: #0B286C; font-weight: 800; padding: 14px 32px; font-size: 15px;">
-          Explore Oman Tours →
-        </a>
-        <a href="/visa" onclick="event.preventDefault(); navigate('/visa')" class="jmt-btn-secondary" style="border-color: #FFFFFF; color: #FFFFFF; font-weight: 800; padding: 14px 32px; font-size: 15px; background: rgba(255,255,255,0.1);">
-          Apply For Visa
-        </a>
-      </div>
-    </div>
-  </section>
 
   <!-- FOOTER -->
   <footer class="jmt-footer">
@@ -216,6 +193,9 @@
             </a>
             <a href="https://mail.google.com/mail/?view=cm&fs=1&to=info%40jmttravels.com" target="_blank" rel="noopener noreferrer" class="jmt-social-button" aria-label="Email JMT Travels via Gmail" title="Email JMT Travels via Gmail">
               <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64l-6.545-4.91v9.272H1.636A1.636 1.636 0 0 1 0 19.366V5.457c0-2.023 2.309-3.178 3.927-1.964L12 9.545l8.073-6.052C21.69 2.28 24 3.434 24 5.457z"/></svg>
+            </a>
+            <a href="https://maps.app.goo.gl/3xDLiEdchqgivn1Z7" target="_blank" rel="noopener noreferrer" class="jmt-social-button" aria-label="Google Maps Location" title="JMT Travels on Google Maps">
+              <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
             </a>
           </div>
         </div>
@@ -258,10 +238,10 @@
         <div class="jmt-footer-column">
           <h3 class="jmt-footer-heading">Contact Us</h3>
           <div style="font-size:13.5px; color:#94A3B8; line-height:1.9;">
-            <p style="margin:0 0 8px; color:#E2E8F0;"><strong style="color:#00A651;">Phone:</strong> <a href="tel:+96871132424" style="color:#FFFFFF; text-decoration:none;">+968 7113 2424</a></p>
+            <p style="margin:0 0 8px; color:#E2E8F0;"><strong style="color:#00A651;">Phone:</strong> <a href="tel:+96825655711" style="color:#FFFFFF; text-decoration:none;">+968 25655711</a> / <a href="tel:+96825655177" style="color:#FFFFFF; text-decoration:none;">+968 25655177</a></p>
             <p style="margin:0 0 8px; color:#E2E8F0;"><strong style="color:#00A651;">WhatsApp:</strong> <a href="https://wa.me/96897608999" target="_blank" rel="noopener" style="color:#FFFFFF; text-decoration:none;">+968 9760 8999</a></p>
             <p style="margin:0 0 8px; color:#E2E8F0;"><a href="mailto:info@jmttravels.com" aria-label="Email JMT Travels" title="Email JMT Travels" class="jmt-email-link" style="color:#FFFFFF; text-decoration:none;"><strong style="color:#00A651;">Email:</strong> <span style="text-decoration:underline; font-weight:600;">info@jmttravels.com</span></a></p>
-            <p style="margin:0 0 12px; font-size:12.5px; line-height:1.5; color:#94A3B8;">near Mazda R/A, next to Yahar Restaurant, 512, Muscat, Oman</p>
+            <p style="margin:0 0 12px; font-size:12.5px; line-height:1.5; color:#E2E8F0;"><a href="https://maps.app.goo.gl/3xDLiEdchqgivn1Z7" target="_blank" rel="noopener noreferrer" style="color:#FFFFFF; text-decoration:underline; font-weight:600; display:inline-flex; align-items:flex-start; gap:6px;" title="Open location on Google Maps"><span>📍</span> <span>JMT Travel &amp; Tourism, near Mazda R/A, next to Yahar Restaurant, 512, Oman</span></a></p>
             <a href="/admin" style="display:inline-block; font-size:11.5px; color:#64748B; text-decoration:none; padding:4px 10px; border:1px solid #1E293B; border-radius:6px; background:#0F172A;">Staff Console →</a>
           </div>
         </div>

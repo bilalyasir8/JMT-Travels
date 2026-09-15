@@ -137,7 +137,7 @@ class NotificationService {
     const greeting = isArabic ? `مرحباً <strong>${safeName}</strong>،` : `Hello <strong>${safeName}</strong>,`;
     const refLabel = isArabic ? 'رقم المرجع:' : 'Reference Number:';
     const footerText1 = isArabic ? 'شركة جي إم تي للسفر والسياحة · مسقط، سلطنة عمان' : 'JMT Travel & Tourism LLC · Muscat, Sultanate of Oman';
-    const footerText2 = isArabic ? 'الهاتف: +968 7113 2424 · واتساب: +968 9760 8999 · البريد: support@jmttravels.com' : 'Phone: +968 7113 2424 · WhatsApp: +968 9760 8999 · Email: support@jmttravels.com';
+    const footerText2 = isArabic ? 'الهاتف: +968 25655177 / +968 25655711 · واتساب: +968 9760 8999 · البريد: support@jmttravels.com' : 'Phone: +968 25655177 / +968 25655711 · WhatsApp: +968 9760 8999 · Email: support@jmttravels.com';
 
     const htmlBody = `
       <!DOCTYPE html>

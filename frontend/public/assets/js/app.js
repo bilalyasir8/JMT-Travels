@@ -29,15 +29,9 @@ function applyTheme(theme) {
 
   const moonSvg = '<svg width="18" height="18" viewBox="0 0 24 24" fill="#FFFFFF" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.389 5.389 0 0 1-4.4 2.26 5.403 5.403 0 0 1-5.4-5.4c0-1.81.89-3.42 2.26-4.4C12.92 3.04 12.46 3 12 3z"/></svg>';
 
-  if (theme === 'dark') {
-    if (icon) icon.textContent = '☀️';
-    if (label) label.textContent = 'Light';
-    if (mobileBtn) mobileBtn.innerHTML = '☀️';
-  } else {
-    if (icon) icon.innerHTML = moonSvg;
-    if (label) label.textContent = 'Dark';
-    if (mobileBtn) mobileBtn.innerHTML = moonSvg;
-  }
+  if (icon) icon.innerHTML = moonSvg;
+  if (mobileBtn) mobileBtn.innerHTML = moonSvg;
+  if (label) label.textContent = theme === 'dark' ? 'Dark' : 'Light';
 }
 
 // Initial theme setup
@@ -334,8 +328,8 @@ async function renderRoute() {
       authNav.innerHTML = userHtml;
       if (mobileAuthNav) mobileAuthNav.innerHTML = userHtml;
     } else {
-      authNav.innerHTML = `<a href="/login" onclick="event.preventDefault(); navigate('/login')" style="color:#334155; font-weight:600; font-size:14px; text-decoration:none; margin-right:4px;">Sign In</a> <a href="/register" onclick="event.preventDefault(); navigate('/register')" class="btn-create-account" style="background: linear-gradient(135deg, #07153B 0%, #0B286C 100%); color:#FFFFFF !important; padding:10px 22px; border-radius:99px; font-weight:700; font-size:13px; text-decoration:none; display:inline-flex; align-items:center; gap:6px; box-shadow: 0 4px 14px rgba(7, 21, 59, 0.35); white-space:nowrap;">Create Account →</a>`;
-      if (mobileAuthNav) mobileAuthNav.innerHTML = `<a href="/login" onclick="event.preventDefault(); toggleMobileMenu(); navigate('/login')" class="btn btn-outline" style="flex:1; text-align:center;">Sign In</a> <a href="/register" onclick="event.preventDefault(); toggleMobileMenu(); navigate('/register')" class="btn btn-create-account" style="flex:1; text-align:center; background: linear-gradient(135deg, #07153B 0%, #0B286C 100%); color:#FFFFFF !important;">Register</a>`;
+      authNav.innerHTML = `<a href="/login" onclick="event.preventDefault(); navigate('/login')" class="nav-signin-link" style="font-weight:700; font-size:14px; text-decoration:none; margin-right:4px;">Sign In</a> <a href="/register" onclick="event.preventDefault(); navigate('/register')" class="btn-create-account" style="background: linear-gradient(135deg, #07153B 0%, #0B286C 100%); color:#FFFFFF !important; padding:10px 22px; border-radius:99px; font-weight:700; font-size:13px; text-decoration:none; display:inline-flex; align-items:center; gap:6px; box-shadow: 0 4px 14px rgba(7, 21, 59, 0.35); white-space:nowrap;">Create Account →</a>`;
+      if (mobileAuthNav) mobileAuthNav.innerHTML = `<a href="/login" onclick="event.preventDefault(); toggleMobileMenu(); navigate('/login')" class="btn btn-outline nav-signin-link" style="flex:1; text-align:center;">Sign In</a> <a href="/register" onclick="event.preventDefault(); toggleMobileMenu(); navigate('/register')" class="btn btn-create-account" style="flex:1; text-align:center; background: linear-gradient(135deg, #07153B 0%, #0B286C 100%); color:#FFFFFF !important;">Register</a>`;
     }
   }
 
@@ -421,7 +415,7 @@ function renderHomePage(container) {
       "@type": "TravelAgency",
       "name": "JMT TRAVELS",
       "image": "https://jmttravels.com/assets/logo.png",
-      "telephone": "+96871132424",
+      "telephone": ["+96825655711", "+96825655177"],
       "email": "info@jmttravels.com",
       "address": {
         "@type": "PostalAddress",
@@ -525,8 +519,8 @@ function renderHomePage(container) {
     </section>
 
     <!-- 4. FLOATING SEARCH CONTAINER -->
-    <div class="shell" style="margin-top: -65px; position: relative; z-index: 40; padding: 0 20px;">
-      <div class="jmt-home-search-card">
+    <div class="shell" style="margin-top: -65px; position: relative; z-index: 40; padding: 0 20px; width: 100%; max-width: 100%;">
+      <div class="jmt-home-search-card" style="width: 100% !important; max-width: 100% !important;">
 
         <!-- SEARCH TABS -->
         <div class="jmt-search-tabs-row" role="tablist" aria-label="Travel Search Categories">
@@ -639,23 +633,26 @@ function renderHomePage(container) {
         <div id="home-flight-panel" style="display: none;">
           <!-- Top Control Pills -->
           <div class="jmt-flight-top-controls">
-            <!-- Trip Type -->
-            <div style="position: relative;">
-              <button type="button" class="jmt-flight-pill-btn" id="flight-triptype-pill" onclick="toggleFlightPopover('triptype')">
-                <span id="flight-triptype-label">Round-trip</span> ▾
+            <!-- Segmented Trip Selector -->
+            <div class="jmt-flight-segmented-trip">
+              <button type="button" onclick="setFlightTripType('round-trip')" id="btn-trip-round-home" class="jmt-trip-btn active">
+                Round Trip
               </button>
-              <div class="jmt-flight-popover" id="popover-triptype" style="display: none; width: 160px;">
-                <div class="jmt-popover-option" onclick="setFlightTripType('round-trip')">Round-trip</div>
-                <div class="jmt-popover-option" onclick="setFlightTripType('one-way')">One-way</div>
-              </div>
+              <button type="button" onclick="setFlightTripType('one-way')" id="btn-trip-oneway-home" class="jmt-trip-btn">
+                One Way
+              </button>
+              <button type="button" onclick="setFlightTripType('multi-city')" id="btn-trip-multicity-home" class="jmt-trip-btn">
+                Multi City
+              </button>
             </div>
 
             <!-- Passengers & Cabin -->
             <div style="position: relative;">
-              <button type="button" class="jmt-flight-pill-btn" id="flight-pax-pill" onclick="toggleFlightPopover('passengers')">
-                <span id="flight-pax-label">1 Adult, Economy</span> ▾
+              <button type="button" class="jmt-flight-pax-btn" id="flight-pax-pill" onclick="toggleFlightPopover('passengers')">
+                <span><span style="color: #00E676; margin-right: 6px;">👤</span> <span id="flight-pax-label">1 Passenger, Economy</span></span>
+                <span style="font-size: 10px; color: #00E676; margin-left: 6px;">▼</span>
               </button>
-              <div class="jmt-flight-popover" id="popover-passengers" style="display: none; width: 300px; padding: 16px;">
+              <div class="jmt-flight-popover" id="popover-passengers" style="display: none; width: 300px; padding: 20px; background: linear-gradient(135deg, #07153B 0%, #0B286C 100%); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 16px; box-shadow: 0 16px 40px rgba(0,0,0,0.5); color: #FFFFFF; position: absolute; top: calc(100% + 8px); right: 0; z-index: 120;">
                 <div class="jmt-pax-row">
                   <div>
                     <div class="jmt-pax-title">Adults</div>
@@ -694,7 +691,7 @@ function renderHomePage(container) {
 
                 <div style="margin-top: 14px; border-top: 1px solid rgba(255, 255, 255, 0.15); padding-top: 12px;">
                   <label style="font-size: 11px; font-weight: 700; color: #FFFFFF; text-transform: uppercase; display: block; margin-bottom: 6px;">Cabin Class</label>
-                  <select id="flight-cabin-select" onchange="updateFlightCabin(this.value)" class="jmt-select-input">
+                  <select id="flight-cabin-select" onchange="updateFlightCabin(this.value)" class="jmt-select-input" style="background:#07153B; color:#FFFFFF; border:1px solid rgba(255,255,255,0.2); border-radius:8px; padding:8px 12px; width:100%;">
                     <option value="Economy">Economy</option>
                     <option value="Premium Economy">Premium Economy</option>
                     <option value="Business">Business</option>
@@ -730,8 +727,9 @@ function renderHomePage(container) {
               <!-- From -->
               <div id="from-airport-container" style="position: relative;">
                 <div class="jmt-search-field-box" onclick="focusAirportInput('from')">
-                  <div style="flex: 1;">
-                    <div class="jmt-field-label">From</div>
+                  <span class="jmt-field-icon" style="font-size: 19px; color: #00E676;">🛫</span>
+                  <div style="flex: 1; display: flex; flex-direction: column; justify-content: center;">
+                    <div class="jmt-field-label">FROM</div>
                     <input type="text" id="flight-from-input" class="jmt-field-input"
                            placeholder="Select origin"
                            value="Muscat International Airport (MCT)"
@@ -752,8 +750,9 @@ function renderHomePage(container) {
               <!-- To -->
               <div id="to-airport-container" style="position: relative;">
                 <div class="jmt-search-field-box" onclick="focusAirportInput('to')">
-                  <div style="flex: 1;">
-                    <div class="jmt-field-label">To</div>
+                  <span class="jmt-field-icon" style="font-size: 19px; color: #00E676;">🛬</span>
+                  <div style="flex: 1; display: flex; flex-direction: column; justify-content: center;">
+                    <div class="jmt-field-label">TO</div>
                     <input type="text" id="flight-to-input" class="jmt-field-input"
                            placeholder="Select destination"
                            value="Dubai International Airport (DXB)"
@@ -768,23 +767,25 @@ function renderHomePage(container) {
 
               <!-- Departure Date -->
               <div class="jmt-search-field-box">
-                <div style="flex: 1;">
-                  <div class="jmt-field-label">Departure</div>
+                <span class="jmt-field-icon" style="font-size: 19px; color: #00E676;">📅</span>
+                <div style="flex: 1; display: flex; flex-direction: column; justify-content: center;">
+                  <div class="jmt-field-label">DEPARTURE</div>
                   <input type="date" id="flight-dept-input" required class="jmt-field-input">
                 </div>
               </div>
 
               <!-- Return Date -->
               <div class="jmt-search-field-box" id="flight-return-box">
-                <div style="flex: 1;">
-                  <div class="jmt-field-label">Return</div>
+                <span class="jmt-field-icon" style="font-size: 19px; color: #00E676;">📅</span>
+                <div style="flex: 1; display: flex; flex-direction: column; justify-content: center;">
+                  <div class="jmt-field-label">RETURN</div>
                   <input type="date" id="flight-return-input" required class="jmt-field-input">
                 </div>
               </div>
 
               <!-- CTA Submit Button -->
-              <button type="submit" class="search-submit-btn" style="color: #FFFFFF !important; white-space: nowrap;">
-                Search Flights →
+              <button type="submit" class="search-submit-btn" style="white-space: nowrap;">
+                🔍 Search Flights →
               </button>
             </div>
             <div id="flight-search-error" style="color: #DC2626; font-size: 13px; font-weight: 600; margin-top: 10px; display: none;"></div>
@@ -953,12 +954,12 @@ function renderHomePage(container) {
     <section class="shell" style="margin-bottom: 70px;">
       <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 32px; flex-wrap: wrap; gap: 16px;">
         <div>
-          <h2 style="font-size: clamp(28px, 3.8vw, 38px); font-weight: 700; color: #082B52; margin: 0 0 4px; display: flex; align-items: center; gap: 10px;">
-            Why Choose JMT Travels? <span class="heading-green-line" style="width: 44px; height: 3.5px; background: #00A86B; border-radius: 99px;"></span>
+          <h2 style="font-size: clamp(28px, 3.8vw, 38px); font-weight: 800; color: #00E676 !important; margin: 0 0 4px; display: flex; align-items: center; gap: 10px;">
+            Why Choose JMT Travels? <span class="heading-green-line" style="width: 44px; height: 3.5px; background: #00E676; border-radius: 99px;"></span>
           </h2>
-          <p style="color: #3F5C74; font-size: 15px; margin: 0;">20+ years of trusted regional expertise</p>
+          <p style="color: #E2E8F0 !important; font-size: 15px; margin: 0;">20+ years of trusted regional expertise</p>
         </div>
-        <a href="/about" onclick="event.preventDefault(); navigate('/about')" style="color: #00A86B; font-weight: 600; text-decoration: none; font-size: 15px;">Learn More About Us →</a>
+        <a href="/about" onclick="event.preventDefault(); navigate('/about')" style="color: #00E676 !important; font-weight: 600; text-decoration: none; font-size: 15px;">Learn More About Us →</a>
       </div>
 
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px;">
@@ -1029,13 +1030,13 @@ function renderHomePage(container) {
     <section class="shell" style="margin-bottom: 70px;">
       <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 24px; flex-wrap: wrap; gap: 16px;">
         <div>
-          <h2 style="font-size: clamp(28px, 3.8vw, 38px); font-weight: 700; color: #082B52; margin: 0 0 4px; display: flex; align-items: center; gap: 10px;">
-            What Our Travellers Say <span class="heading-green-line" style="width: 44px; height: 3.5px; background: #00A86B; border-radius: 999px;"></span>
+          <h2 style="font-size: clamp(28px, 3.8vw, 38px); font-weight: 800; color: #00E676 !important; margin: 0 0 4px; display: flex; align-items: center; gap: 10px;">
+            What Our Travellers Say <span class="heading-green-line" style="width: 44px; height: 3.5px; background: #00E676; border-radius: 999px;"></span>
           </h2>
-          <p style="color: #3F5C74; font-size: 15px; margin: 0;">Real experiences. Lasting memories.</p>
+          <p style="color: #E2E8F0 !important; font-size: 15px; margin: 0;">Real experiences. Lasting memories.</p>
         </div>
         <div style="display: flex; align-items: center; gap: 12px;">
-          <a href="/contact" onclick="event.preventDefault(); navigate('/contact')" style="color: #00A86B; font-weight: 600; text-decoration: none; font-size: 14px;">View All Reviews →</a>
+          <a href="/contact" onclick="event.preventDefault(); navigate('/contact')" style="color: #00E676 !important; font-weight: 600; text-decoration: none; font-size: 14px;">View All Reviews →</a>
         </div>
       </div>
 
@@ -7372,10 +7373,19 @@ function initFlightSearchDates() {
   };
 }
 
+window.toggleFlightPassengersPopover = function(e) {
+  if (e) e.stopPropagation();
+  const el = document.getElementById('flight-pax-popover') || document.getElementById('popover-passengers');
+  if (el) {
+    const isVisible = el.style.display === 'block';
+    el.style.display = isVisible ? 'none' : 'block';
+  }
+};
+
 window.toggleFlightPopover = function(popoverName) {
   const popovers = ['triptype', 'passengers', 'promo'];
   popovers.forEach(name => {
-    const el = document.getElementById(`popover-${name}`);
+    const el = document.getElementById(`popover-${name}`) || (name === 'passengers' ? document.getElementById('flight-pax-popover') : null);
     if (name === popoverName) {
       if (el) {
         const isVisible = el.style.display === 'block';
@@ -7392,12 +7402,43 @@ window.closeFlightPopovers = function() {
     const el = document.getElementById(`popover-${name}`);
     if (el) el.style.display = 'none';
   });
+  const paxPop = document.getElementById('flight-pax-popover');
+  if (paxPop) paxPop.style.display = 'none';
 };
 
 window.setFlightTripType = function(type) {
   flightSearchState.tripType = type;
   const label = document.getElementById('flight-triptype-label');
-  if (label) label.textContent = type === 'one-way' ? 'One-way' : 'Round-trip';
+  if (label) label.textContent = type === 'one-way' ? 'One-way' : (type === 'multi-city' ? 'Multi City' : 'Round-trip');
+
+  const btnRounds = document.querySelectorAll('#btn-trip-round, #btn-trip-round-home');
+  const btnOneways = document.querySelectorAll('#btn-trip-oneway, #btn-trip-oneway-home');
+  const btnMulticities = document.querySelectorAll('#btn-trip-multicity, #btn-trip-multicity-home');
+
+  const map = {
+    'round-trip': btnRounds,
+    'one-way': btnOneways,
+    'multi-city': btnMulticities
+  };
+
+  ['round-trip', 'one-way', 'multi-city'].forEach(key => {
+    const list = map[key];
+    if (list) {
+      list.forEach(btn => {
+        if (key === type) {
+          btn.classList.add('active');
+          btn.style.background = '#00E676';
+          btn.style.color = '#07153B';
+          btn.style.fontWeight = '800';
+        } else {
+          btn.classList.remove('active');
+          btn.style.background = 'transparent';
+          btn.style.color = '#E2E8F0';
+          btn.style.fontWeight = '700';
+        }
+      });
+    }
+  });
 
   const returnBox = document.getElementById('flight-return-box');
   const returnInput = document.getElementById('flight-return-input');
@@ -7443,12 +7484,22 @@ window.updateFlightCabin = function(cabin) {
 };
 
 function updatePaxPillLabel() {
-  const paxPill = document.getElementById('flight-pax-label');
-  if (!paxPill) return;
-
   const totalPax = flightSearchState.adults + flightSearchState.children + flightSearchState.infants;
-  const paxText = totalPax === 1 ? '1 Adult' : `${totalPax} Guests`;
-  paxPill.textContent = `${paxText}, ${flightSearchState.cabinClass}`;
+  const paxText = totalPax === 1 ? '1 Passenger' : `${totalPax} Passengers`;
+  const labelStr = `${paxText}, ${flightSearchState.cabinClass}`;
+
+  const paxPill = document.getElementById('flight-pax-label');
+  if (paxPill) paxPill.textContent = labelStr;
+
+  const paxSummaryText = document.getElementById('flight-pax-summary-text');
+  if (paxSummaryText) paxSummaryText.textContent = labelStr;
+
+  const paxAdultsVal = document.getElementById('pax-adults-val');
+  const paxChildrenVal = document.getElementById('pax-children-val');
+  const paxInfantsVal = document.getElementById('pax-infants-val');
+  if (paxAdultsVal) paxAdultsVal.textContent = flightSearchState.adults;
+  if (paxChildrenVal) paxChildrenVal.textContent = flightSearchState.children;
+  if (paxInfantsVal) paxInfantsVal.textContent = flightSearchState.infants;
 }
 
 window.applyFlightPromo = function() {
@@ -7918,10 +7969,10 @@ async function renderVisaListPage(container) {
           <div id="visa-grid" style="margin-bottom: 60px;">
             <div style="text-align: center; max-width: 750px; margin: 0 auto 36px;">
               <span class="jmt-editorial-eyebrow" style="margin-bottom: 12px;">JMT TRAVELS • SCHENGEN VISA SERVICES</span>
-              <h2 style="font-size: clamp(28px, 3.5vw, 40px); color: #07153B; font-weight: 800; margin: 0 0 12px; letter-spacing: -0.5px;">
-                Explore <span style="color: #00A651;">Schengen</span> Visa Services
+              <h2 style="font-size: clamp(28px, 3.5vw, 40px); color: #FFFFFF !important; font-weight: 800; margin: 0 0 12px; letter-spacing: -0.5px;">
+                Explore <span style="color: #00E676 !important;">Schengen</span> Visa Services
               </h2>
-              <p style="font-size: 15.5px; color: #64748B; margin: 0; line-height: 1.6;">
+              <p style="font-size: 15.5px; color: #E2E8F0 !important; margin: 0; line-height: 1.6;">
                 Professional Schengen visa assistance for travellers applying from Oman and across the Gulf.
               </p>
             </div>
@@ -8348,7 +8399,7 @@ async function renderHotelsPage(container) {
             </div>
 
             <!-- Submit Button -->
-            <button type="submit" class="jmt-btn-primary" style="background: #00A651; color: #FFFFFF; border: 0; padding: 14px 26px; border-radius: 12px; font-size: 15px; font-weight: 800; cursor: pointer; white-space: nowrap; height: 100%;">
+            <button type="submit" class="jmt-btn-primary" style="background: #07153B; color: #FFFFFF; border: 1px solid rgba(255,255,255,0.25); padding: 14px 26px; border-radius: 12px; font-size: 15px; font-weight: 800; cursor: pointer; white-space: nowrap; height: 100%;">
               Search Hotels →
             </button>
 
@@ -8695,65 +8746,68 @@ async function renderFlightsPage(container) {
           </div>
         </div>
 
-        <!-- FLIGHT SEARCH WIDGET CARD -->
-        <div style="background: #FFFFFF; border-radius: 20px; padding: 28px; color: #1E293B; box-shadow: 0 12px 32px rgba(0,0,0,0.18);">
+        <!-- FLIGHT SEARCH PANEL -->
+        <div class="jmt-hotel-search-panel" id="flight-search-panel-container">
           <!-- Top Row Controls -->
-          <div style="display: flex; gap: 16px; flex-wrap: wrap; align-items: center; justify-content: space-between; margin-bottom: 20px; border-bottom: 1px solid #E2E8F0; padding-bottom: 14px;">
+          <div class="jmt-flight-top-controls">
             <!-- Trip Type Selector -->
-            <div style="display: flex; background: #F1F5F9; border-radius: 30px; padding: 4px;">
-              <button type="button" onclick="setFlightTripType('round-trip')" id="btn-trip-round" style="border:0; background: ${tripType === 'round-trip' ? '#0B286C' : 'transparent'}; color: ${tripType === 'round-trip' ? '#FFF' : '#475569'}; font-weight:700; font-size:13px; padding:6px 16px; border-radius:20px; cursor:pointer; transition: all 0.2s;">
-                ⇄ Round-trip
+            <div class="jmt-flight-segmented-trip">
+              <button type="button" onclick="setFlightTripType('round-trip')" id="btn-trip-round" class="jmt-trip-btn ${tripType === 'round-trip' ? 'active' : ''}">
+                Round Trip
               </button>
-              <button type="button" onclick="setFlightTripType('one-way')" id="btn-trip-oneway" style="border:0; background: ${tripType === 'one-way' ? '#0B286C' : 'transparent'}; color: ${tripType === 'one-way' ? '#FFF' : '#475569'}; font-weight:700; font-size:13px; padding:6px 16px; border-radius:20px; cursor:pointer; transition: all 0.2s;">
-                → One-way
+              <button type="button" onclick="setFlightTripType('one-way')" id="btn-trip-oneway" class="jmt-trip-btn ${tripType === 'one-way' ? 'active' : ''}">
+                One Way
+              </button>
+              <button type="button" onclick="setFlightTripType('multi-city')" id="btn-trip-multicity" class="jmt-trip-btn ${tripType === 'multi-city' ? 'active' : ''}">
+                Multi City
               </button>
             </div>
 
             <!-- Passengers & Cabin Class Selector -->
             <div style="position: relative;">
-              <button type="button" onclick="toggleFlightPassengersPopover(event)" id="flight-pax-summary-btn" style="background: #F8FAFC; border: 1px solid #CBD5E1; border-radius: 8px; padding: 8px 14px; font-size: 13px; font-weight: 600; color: #0B286C; cursor: pointer; display: flex; align-items: center; gap: 8px;">
-                <span>👤 <span id="flight-pax-summary-text">${adults + children + infants} Passenger${(adults + children + infants) > 1 ? 's' : ''}, ${cabinClass}</span></span>
-                <span style="font-size: 10px;">▼</span>
+              <button type="button" onclick="toggleFlightPassengersPopover(event)" id="flight-pax-summary-btn" class="jmt-flight-pax-btn">
+                <span><span style="color: #00E676; margin-right: 6px;">👤</span> <span id="flight-pax-summary-text">${adults + children + infants} Passenger${(adults + children + infants) > 1 ? 's' : ''}, ${cabinClass}</span></span>
+                <span style="font-size: 10px; color: #00E676; margin-left: 6px;">▼</span>
               </button>
 
-              <div id="flight-pax-popover" class="jmt-pax-popover" style="display: none; position: absolute; top: calc(100% + 6px); right: 0; z-index: 120; background: #FFF; border: 1px solid #CBD5E1; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); width: 280px; padding: 16px;">
-                <div style="font-size: 14px; font-weight: 700; color: #0B286C; margin-bottom: 12px; border-bottom: 1px solid #E2E8F0; padding-bottom: 8px;">Passengers & Cabin</div>
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+              <div id="flight-pax-popover" class="jmt-pax-popover" style="display: none; position: absolute; top: calc(100% + 8px); right: 0; z-index: 120; background: linear-gradient(135deg, #07153B 0%, #0B286C 100%); border: 1px solid rgba(255,255,255,0.2); border-radius: 16px; box-shadow: 0 16px 40px rgba(0,0,0,0.4); width: 290px; padding: 20px; color: #FFFFFF;">
+                <div style="font-size: 14px; font-weight: 800; color: #00E676; margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.15); padding-bottom: 8px;">Passengers & Cabin</div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                   <div>
-                    <div style="font-size: 13px; font-weight: 600;">Adults</div>
-                    <div style="font-size: 11px; color: #64748B;">12+ yrs</div>
+                    <div style="font-size: 13.5px; font-weight: 700; color: #FFFFFF;">Adults</div>
+                    <div style="font-size: 11px; color: #D6E0F4;">12+ yrs</div>
                   </div>
                   <div style="display: flex; align-items: center; gap: 8px;">
-                    <button type="button" onclick="updatePaxCount('adults', -1)" style="width:28px; height:28px; border-radius:50%; border:1px solid #CBD5E1; background:#FFF; font-weight:700; cursor:pointer;">-</button>
-                    <span id="pax-adults-val" style="font-weight:700; font-size:14px; width:16px; text-align:center;">${adults}</span>
-                    <button type="button" onclick="updatePaxCount('adults', 1)" style="width:28px; height:28px; border-radius:50%; border:1px solid #CBD5E1; background:#FFF; font-weight:700; cursor:pointer;">+</button>
+                    <button type="button" onclick="updatePaxCount('adults', -1)" style="width:28px; height:28px; border-radius:50%; border:1px solid rgba(255,255,255,0.3); background:rgba(255,255,255,0.1); color:#FFF; font-weight:700; cursor:pointer;">-</button>
+                    <span id="pax-adults-val" style="font-weight:800; font-size:14px; width:16px; text-align:center; color:#FFF;">${adults}</span>
+                    <button type="button" onclick="updatePaxCount('adults', 1)" style="width:28px; height:28px; border-radius:50%; border:1px solid rgba(255,255,255,0.3); background:rgba(255,255,255,0.1); color:#FFF; font-weight:700; cursor:pointer;">+</button>
                   </div>
                 </div>
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                   <div>
-                    <div style="font-size: 13px; font-weight: 600;">Children</div>
-                    <div style="font-size: 11px; color: #64748B;">2-11 yrs</div>
+                    <div style="font-size: 13.5px; font-weight: 700; color: #FFFFFF;">Children</div>
+                    <div style="font-size: 11px; color: #D6E0F4;">2-11 yrs</div>
                   </div>
                   <div style="display: flex; align-items: center; gap: 8px;">
-                    <button type="button" onclick="updatePaxCount('children', -1)" style="width:28px; height:28px; border-radius:50%; border:1px solid #CBD5E1; background:#FFF; font-weight:700; cursor:pointer;">-</button>
-                    <span id="pax-children-val" style="font-weight:700; font-size:14px; width:16px; text-align:center;">${children}</span>
-                    <button type="button" onclick="updatePaxCount('children', 1)" style="width:28px; height:28px; border-radius:50%; border:1px solid #CBD5E1; background:#FFF; font-weight:700; cursor:pointer;">+</button>
+                    <button type="button" onclick="updatePaxCount('children', -1)" style="width:28px; height:28px; border-radius:50%; border:1px solid rgba(255,255,255,0.3); background:rgba(255,255,255,0.1); color:#FFF; font-weight:700; cursor:pointer;">-</button>
+                    <span id="pax-children-val" style="font-weight:800; font-size:14px; width:16px; text-align:center; color:#FFF;">${children}</span>
+                    <button type="button" onclick="updatePaxCount('children', 1)" style="width:28px; height:28px; border-radius:50%; border:1px solid rgba(255,255,255,0.3); background:rgba(255,255,255,0.1); color:#FFF; font-weight:700; cursor:pointer;">+</button>
                   </div>
                 </div>
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
                   <div>
-                    <div style="font-size: 13px; font-weight: 600;">Infants</div>
-                    <div style="font-size: 11px; color: #64748B;">&lt;2 yrs</div>
+                    <div style="font-size: 13.5px; font-weight: 700; color: #FFFFFF;">Infants</div>
+                    <div style="font-size: 11px; color: #D6E0F4;">&lt;2 yrs</div>
                   </div>
                   <div style="display: flex; align-items: center; gap: 8px;">
-                    <button type="button" onclick="updatePaxCount('infants', -1)" style="width:28px; height:28px; border-radius:50%; border:1px solid #CBD5E1; background:#FFF; font-weight:700; cursor:pointer;">-</button>
-                    <span id="pax-infants-val" style="font-weight:700; font-size:14px; width:16px; text-align:center;">${infants}</span>
-                    <button type="button" onclick="updatePaxCount('infants', 1)" style="width:28px; height:28px; border-radius:50%; border:1px solid #CBD5E1; background:#FFF; font-weight:700; cursor:pointer;">+</button>
+                    <button type="button" onclick="updatePaxCount('infants', -1)" style="width:28px; height:28px; border-radius:50%; border:1px solid rgba(255,255,255,0.3); background:rgba(255,255,255,0.1); color:#FFF; font-weight:700; cursor:pointer;">-</button>
+                    <span id="pax-infants-val" style="font-weight:800; font-size:14px; width:16px; text-align:center; color:#FFF;">${infants}</span>
+                    <button type="button" onclick="updatePaxCount('infants', 1)" style="width:28px; height:28px; border-radius:50%; border:1px solid rgba(255,255,255,0.3); background:rgba(255,255,255,0.1); color:#FFF; font-weight:700; cursor:pointer;">+</button>
                   </div>
                 </div>
-                <div style="border-top: 1px solid #E2E8F0; padding-top: 10px;">
-                  <label style="font-size: 12px; font-weight: 600; color: #475569; display: block; margin-bottom: 4px;">Cabin Class</label>
-                  <select id="pax-cabin-select" onchange="updateCabinClass(this.value)" style="width:100%; padding:6px; border-radius:6px; border:1px solid #CBD5E1; font-size:13px; font-weight:600;">
+                <div style="border-top: 1px solid rgba(255,255,255,0.15); padding-top: 12px;">
+                  <label style="font-size: 11px; font-weight: 800; color: #00E676; display: block; margin-bottom: 6px; text-transform: uppercase;">Cabin Class</label>
+                  <select id="pax-cabin-select" onchange="updateCabinClass(this.value)" style="width:100%; padding:8px 12px; border-radius:8px; border:1px solid rgba(255,255,255,0.3); background:#07153B; color:#FFF; font-size:13.5px; font-weight:700;">
                     <option value="Economy" ${cabinClass === 'Economy' ? 'selected' : ''}>Economy Class</option>
                     <option value="Business" ${cabinClass === 'Business' ? 'selected' : ''}>Business Class</option>
                     <option value="First" ${cabinClass === 'First' ? 'selected' : ''}>First Class</option>
@@ -8769,9 +8823,9 @@ async function renderFlightsPage(container) {
               <!-- From -->
               <div class="jmt-airport-field-box" id="from-airport-container" style="position: relative;">
                 <div class="jmt-search-field-box" onclick="focusAirportInput('from')">
-                  <span class="jmt-field-icon">🛫</span>
-                  <div style="flex: 1;">
-                    <div class="jmt-field-label">From</div>
+                  <span class="jmt-field-icon" style="font-size: 19px; color: #00E676;">🛫</span>
+                  <div style="flex: 1; display: flex; flex-direction: column; justify-content: center;">
+                    <div class="jmt-field-label">FROM</div>
                     <input type="text" id="flight-from-input" class="jmt-field-input"
                            placeholder="Select origin"
                            value="${escapeHTML(fromDisplay)}"
@@ -8792,9 +8846,9 @@ async function renderFlightsPage(container) {
               <!-- To -->
               <div class="jmt-airport-field-box" id="to-airport-container" style="position: relative;">
                 <div class="jmt-search-field-box" onclick="focusAirportInput('to')">
-                  <span class="jmt-field-icon">🛬</span>
-                  <div style="flex: 1;">
-                    <div class="jmt-field-label">To</div>
+                  <span class="jmt-field-icon" style="font-size: 19px; color: #00E676;">🛬</span>
+                  <div style="flex: 1; display: flex; flex-direction: column; justify-content: center;">
+                    <div class="jmt-field-label">TO</div>
                     <input type="text" id="flight-to-input" class="jmt-field-input"
                            placeholder="Select destination"
                            value="${escapeHTML(toDisplay)}"
@@ -8809,24 +8863,24 @@ async function renderFlightsPage(container) {
 
               <!-- Departure Date -->
               <div class="jmt-search-field-box">
-                <span class="jmt-field-icon">📅</span>
-                <div style="flex: 1;">
-                  <div class="jmt-field-label">Departure</div>
+                <span class="jmt-field-icon" style="font-size: 19px; color: #00E676;">📅</span>
+                <div style="flex: 1; display: flex; flex-direction: column; justify-content: center;">
+                  <div class="jmt-field-label">DEPARTURE</div>
                   <input type="date" id="flight-dept-input" required value="${deptDate}" min="${tomorrow}" class="jmt-field-input">
                 </div>
               </div>
 
               <!-- Return Date -->
               <div class="jmt-search-field-box" id="flight-return-box" style="display: ${tripType === 'one-way' ? 'none' : 'flex'};">
-                <span class="jmt-field-icon">📅</span>
-                <div style="flex: 1;">
-                  <div class="jmt-field-label">Return</div>
+                <span class="jmt-field-icon" style="font-size: 19px; color: #00E676;">📅</span>
+                <div style="flex: 1; display: flex; flex-direction: column; justify-content: center;">
+                  <div class="jmt-field-label">RETURN</div>
                   <input type="date" id="flight-return-input" value="${returnDate}" min="${deptDate}" class="jmt-field-input">
                 </div>
               </div>
 
               <!-- CTA Submit Button -->
-              <button type="submit" class="search-submit-btn" style="background: #00A651; color: #FFFFFF; border: 0; padding: 14px 24px; border-radius: 12px; font-size: 15px; font-weight: 700; cursor: pointer; height: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 6px 16px rgba(0, 166, 81, 0.3); white-space: nowrap;">
+              <button type="submit" class="search-submit-btn jmt-btn-primary" style="white-space: nowrap;">
                 🔍 Search Flights →
               </button>
             </div>
@@ -11563,42 +11617,44 @@ function renderBookPage(container) {
   announceToSR('Navigated to Tour Booking Request Form');
 
   container.innerHTML = `
-    <div class="shell" style="padding: 40px 20px 60px; max-width: 640px;">
-      <div class="jmt-card">
-        <h1 style="font-size: 26px; color: #0B286C; font-weight: 800; margin-bottom: 8px;">Book Tour Package</h1>
-        <p style="color: #64748B; font-size: 14px; margin-bottom: 24px;">Complete lead traveler details below to process your tour reservation with JMT Travels.</p>
+    <div style="background: #07153B !important; min-height: 100vh; color: #FFFFFF !important;">
+      <div class="shell" style="padding: 40px 20px 60px; max-width: 640px;">
+        <div class="jmt-card" style="background: #0B286C !important; border: 1px solid rgba(255, 255, 255, 0.15) !important; color: #FFFFFF !important; border-radius: 20px; padding: 32px;">
+          <h1 style="font-size: 26px; color: #00E676 !important; font-weight: 800; margin-bottom: 8px;">Book Tour Package</h1>
+          <p style="color: #E2E8F0 !important; font-size: 14px; margin-bottom: 24px;">Complete lead traveler details below to process your tour reservation with JMT Travels.</p>
 
-        <form id="tour-book-form" aria-describedby="book-form-desc">
-          <p id="book-form-desc" class="sr-only">All fields marked required are mandatory for tour booking requests.</p>
-          <input type="hidden" name="packageId" value="${escapeHTML(pkgId)}">
-          <div style="margin-bottom: 16px;">
-            <label for="book-name" style="display:block; font-weight:700; font-size:13.5px; color:#0F172A; margin-bottom:6px;">Lead Traveler Name <span style="color:#DC2626;" aria-hidden="true">*</span></label>
-            <input type="text" id="book-name" name="travellerName" class="chat-input" style="width:100%; padding:12px 16px; border:1px solid #E2E8F0; border-radius:12px; font-size:14px;" value="${state.user ? escapeHTML(state.user.name) : ''}" required aria-required="true">
-          </div>
-          <div style="margin-bottom: 16px;">
-            <label for="book-email" style="display:block; font-weight:700; font-size:13.5px; color:#0F172A; margin-bottom:6px;">Email Address <span style="color:#DC2626;" aria-hidden="true">*</span></label>
-            <input type="email" id="book-email" name="email" class="chat-input" style="width:100%; padding:12px 16px; border:1px solid #E2E8F0; border-radius:12px; font-size:14px;" value="${state.user ? escapeHTML(state.user.email) : ''}" required aria-required="true">
-          </div>
-          <div style="margin-bottom: 16px;">
-            <label for="book-phone" style="display:block; font-weight:700; font-size:13.5px; color:#0F172A; margin-bottom:6px;">Phone / WhatsApp <span style="color:#DC2626;" aria-hidden="true">*</span></label>
-            <input type="text" id="book-phone" name="phone" class="chat-input" style="width:100%; padding:12px 16px; border:1px solid #E2E8F0; border-radius:12px; font-size:14px;" placeholder="+968 9000 0000" required aria-required="true">
-          </div>
-          <div style="margin-bottom: 16px;">
-            <label for="book-travellers" style="display:block; font-weight:700; font-size:13.5px; color:#0F172A; margin-bottom:6px;">Number of Travelers</label>
-            <select id="book-travellers" name="travellers" class="chat-input" style="width:100%; padding:12px 16px; border:1px solid #E2E8F0; border-radius:12px; font-size:14px; background:#FFF;">
-              <option value="1">1 Traveler</option>
-              <option value="2">2 Travelers</option>
-              <option value="3">3 Travelers</option>
-              <option value="4">4+ Travelers</option>
-            </select>
-          </div>
-          <div style="margin-bottom: 24px;">
-            <label for="book-date" style="display:block; font-weight:700; font-size:13.5px; color:#0F172A; margin-bottom:6px;">Preferred Travel Date</label>
-            <input type="date" id="book-date" name="travelDate" class="chat-input" style="width:100%; padding:12px 16px; border:1px solid #E2E8F0; border-radius:12px; font-size:14px; background:#FFF;">
-          </div>
-          <button type="submit" class="jmt-btn-primary" style="width:100%; justify-content:center; padding:14px; font-size:15px;">Confirm Booking Request →</button>
-        </form>
-        <div id="tour-book-result" style="margin-top:20px;" aria-live="polite"></div>
+          <form id="tour-book-form" aria-describedby="book-form-desc">
+            <p id="book-form-desc" class="sr-only">All fields marked required are mandatory for tour booking requests.</p>
+            <input type="hidden" name="packageId" value="${escapeHTML(pkgId)}">
+            <div style="margin-bottom: 16px;">
+              <label for="book-name" style="display:block; font-weight:700; font-size:13.5px; color:#FFFFFF !important; margin-bottom:6px;">Lead Traveler Name <span style="color:#FF5252;" aria-hidden="true">*</span></label>
+              <input type="text" id="book-name" name="travellerName" class="chat-input" style="width:100%; padding:12px 16px; border:1.5px solid #CBD5E1; border-radius:12px; font-size:14px; background:#FFFFFF !important; color:#07153B !important;" value="${state.user ? escapeHTML(state.user.name) : ''}" required aria-required="true">
+            </div>
+            <div style="margin-bottom: 16px;">
+              <label for="book-email" style="display:block; font-weight:700; font-size:13.5px; color:#FFFFFF !important; margin-bottom:6px;">Email Address <span style="color:#FF5252;" aria-hidden="true">*</span></label>
+              <input type="email" id="book-email" name="email" class="chat-input" style="width:100%; padding:12px 16px; border:1.5px solid #CBD5E1; border-radius:12px; font-size:14px; background:#FFFFFF !important; color:#07153B !important;" value="${state.user ? escapeHTML(state.user.email) : ''}" required aria-required="true">
+            </div>
+            <div style="margin-bottom: 16px;">
+              <label for="book-phone" style="display:block; font-weight:700; font-size:13.5px; color:#FFFFFF !important; margin-bottom:6px;">Phone / WhatsApp <span style="color:#FF5252;" aria-hidden="true">*</span></label>
+              <input type="text" id="book-phone" name="phone" class="chat-input" style="width:100%; padding:12px 16px; border:1.5px solid #CBD5E1; border-radius:12px; font-size:14px; background:#FFFFFF !important; color:#07153B !important;" placeholder="+968 9000 0000" required aria-required="true">
+            </div>
+            <div style="margin-bottom: 16px;">
+              <label for="book-travellers" style="display:block; font-weight:700; font-size:13.5px; color:#FFFFFF !important; margin-bottom:6px;">Number of Travelers</label>
+              <select id="book-travellers" name="travellers" class="chat-input" style="width:100%; padding:12px 16px; border:1.5px solid #CBD5E1; border-radius:12px; font-size:14px; background:#FFFFFF !important; color:#07153B !important;">
+                <option value="1">1 Traveler</option>
+                <option value="2">2 Travelers</option>
+                <option value="3">3 Travelers</option>
+                <option value="4">4+ Travelers</option>
+              </select>
+            </div>
+            <div style="margin-bottom: 24px;">
+              <label for="book-date" style="display:block; font-weight:700; font-size:13.5px; color:#FFFFFF !important; margin-bottom:6px;">Preferred Travel Date</label>
+              <input type="date" id="book-date" name="travelDate" class="chat-input" style="width:100%; padding:12px 16px; border:1.5px solid #CBD5E1; border-radius:12px; font-size:14px; background:#FFFFFF !important; color:#07153B !important;">
+            </div>
+            <button type="submit" class="jmt-btn-primary" style="width:100%; justify-content:center; padding:14px; font-size:15px; background: #00A651 !important; color: #FFFFFF !important;">Confirm Booking Request →</button>
+          </form>
+          <div id="tour-book-result" style="margin-top:20px;" aria-live="polite"></div>
+        </div>
       </div>
     </div>
   `;
@@ -11627,85 +11683,145 @@ function renderBookPage(container) {
 
 function renderContactPage(container) {
   updateSEO({
-    title: "Let's Plan Your Journey | Contact JMT Travels Muscat",
-    description: 'Get in touch with JMT Travels in Muscat, Oman. Call +968 7113 2424 or chat on WhatsApp.',
+    title: "Let's Plan Your Journey | Contact JMT Travels Al Buraimi",
+    description: 'Get in touch with JMT Travels in Al Buraimi, Oman. Call +968 25655711 / +968 25655177 or chat on WhatsApp.',
     canonicalUrl: '/contact',
     noindex: false
   });
   announceToSR('Navigated to Contact Page');
 
   container.innerHTML = `
-    <div class="shell" style="padding: 40px 20px 60px;">
-      <div class="jmt-hero">
-        <span class="jmt-hero-eyebrow">JMT TRAVELS — MUSCAT HEADQUARTERS</span>
-        <h1 class="jmt-hero-title">Let's Plan Your Journey</h1>
-        <p class="jmt-hero-sub">Tell us what you need and our travel specialists in Muscat will help customize your visa clearing, tour packages, flights, or hotel stays.</p>
-      </div>
+    <div class="shell" style="padding: 30px 20px 0px;">
+      <!-- SLEEK EXECUTIVE CONTACT HERO BANNER WITH VISUAL DEPTH & QUICK HIGHLIGHTS -->
+      <div class="jmt-hero" style="background: linear-gradient(135deg, rgba(7, 21, 59, 0.94) 0%, rgba(11, 40, 108, 0.88) 100%), url('/assets/destinations/hero_hd_muscat_waterfront.jpg') center/cover no-repeat !important; color: #FFFFFF !important; border-radius: 24px; padding: 36px 40px; margin-bottom: 0 !important; box-shadow: 0 20px 50px rgba(7, 21, 59, 0.25); border: 1px solid rgba(255, 255, 255, 0.15); position: relative; overflow: hidden;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 28px; position: relative; z-index: 2;">
+          <!-- LEFT CONTENT -->
+          <div style="flex: 1 1 480px; max-width: 600px;">
+            <span class="jmt-hero-eyebrow" style="background: rgba(0, 230, 118, 0.18) !important; color: #00E676 !important; border: 1px solid rgba(0, 230, 118, 0.5) !important; padding: 6px 16px; font-size: 11.5px; font-weight: 800; letter-spacing: 1.5px; border-radius: 99px; display: inline-block; margin-bottom: 14px;">JMT TRAVELS — AL BURAIMI HEADQUARTERS</span>
+            <h1 class="jmt-hero-title" style="color: #FFFFFF !important; font-size: clamp(30px, 4vw, 42px); font-weight: 800; line-height: 1.15; margin-bottom: 12px; letter-spacing: -0.5px;">Let's Plan Your Journey</h1>
+            <p class="jmt-hero-sub" style="color: #E2E8F0 !important; font-size: 14.5px; line-height: 1.6; margin: 0;">Tell us what you need and our travel specialists in Al Buraimi will help customize your visa clearing, tour packages, flights, or hotel stays.</p>
+          </div>
 
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 32px; align-items: start;">
-        <!-- LEFT INQUIRY FORM -->
-        <form id="contact-form" class="jmt-card">
-          <h2 style="font-size: 22px; color: #0B286C; font-weight: 800; margin-bottom: 8px;">Send Us a Message</h2>
-          <p style="color: #64748B; font-size: 14px; margin-bottom: 24px;">Fill in your details below and our team will get back to you within 24 hours.</p>
-
-          <div style="margin-bottom: 16px;">
-            <label for="contact-name" style="display:block; font-weight:700; font-size:13.5px; color:#0F172A; margin-bottom:6px;">Your Name <span style="color:#DC2626;" aria-hidden="true">*</span></label>
-            <input type="text" id="contact-name" name="name" class="chat-input" style="width:100%; padding:12px 16px; border:1px solid #E2E8F0; border-radius:12px; font-size:14px;" required aria-required="true">
-          </div>
-          <div style="margin-bottom: 16px;">
-            <label for="contact-input" style="display:block; font-weight:700; font-size:13.5px; color:#0F172A; margin-bottom:6px;">Contact Email / Phone <span style="color:#DC2626;" aria-hidden="true">*</span></label>
-            <input type="text" id="contact-input" name="contact" class="chat-input" style="width:100%; padding:12px 16px; border:1px solid #E2E8F0; border-radius:12px; font-size:14px;" required aria-required="true">
-          </div>
-          <div style="margin-bottom: 16px;">
-            <label for="contact-type" style="display:block; font-weight:700; font-size:13.5px; color:#0F172A; margin-bottom:6px;">Inquiry Type</label>
-            <select id="contact-type" name="type" class="chat-input" style="width:100%; padding:12px 16px; border:1px solid #E2E8F0; border-radius:12px; font-size:14px; background:#FFF;">
-              <option value="visa">Visa Services Inquiry</option>
-              <option value="tours">Holiday & Tour Packages</option>
-              <option value="hotels">Hotel & Accommodations</option>
-              <option value="flights">Flight Ticketing</option>
-              <option value="general">General Inquiry / Support</option>
-            </select>
-          </div>
-          <div style="margin-bottom: 24px;">
-            <label for="contact-msg" style="display:block; font-weight:700; font-size:13.5px; color:#0F172A; margin-bottom:6px;">Message <span style="color:#DC2626;" aria-hidden="true">*</span></label>
-            <textarea id="contact-msg" name="message" rows="4" class="chat-input" style="width:100%; padding:12px 16px; border:1px solid #E2E8F0; border-radius:12px; font-size:14px;" required aria-required="true"></textarea>
-          </div>
-          <button type="submit" class="jmt-btn-primary" style="width:100%; justify-content:center; padding:14px; font-size:15px;">Send Inquiry →</button>
-          <div id="contact-result" style="margin-top:16px;" aria-live="polite"></div>
-        </form>
-
-        <!-- RIGHT CONTACT DETAILS -->
-        <div style="display: flex; flex-direction: column; gap: 20px;">
-          <div class="jmt-card" style="border-left: 5px solid #00A651;">
-            <h2 style="font-size: 20px; color: #0B286C; font-weight: 800; margin-bottom: 16px;">JMT Travels — Muscat Office</h2>
-            <div style="display: flex; flex-direction: column; gap: 14px; font-size: 14.5px; color: #334155;">
-              <div style="display: flex; gap: 12px; align-items: flex-start;">
-                <span style="font-size: 18px;">📍</span>
-                <div><b>Office Location:</b><br>Near Mazda R/A, next to Yahar Restaurant, 512, Muscat, Sultanate of Oman</div>
+          <!-- RIGHT QUICK HIGHLIGHT CHIPS (FILLING EMPTY SPACE ELEGANTLY) -->
+          <div style="flex: 1 1 300px; max-width: 420px; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px;">
+            <div style="background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 16px; padding: 12px 16px; display: flex; align-items: center; gap: 12px;">
+              <span style="font-size: 20px; flex-shrink: 0;">📞</span>
+              <div>
+                <small style="display: block; font-size: 10px; text-transform: uppercase; font-weight: 700; color: #00E676; letter-spacing: 0.5px;">Call Us</small>
+                <a href="tel:+96825655711" style="font-size: 12.5px; font-weight: 800; color: #FFFFFF; text-decoration: none;">+968 25655711</a>
               </div>
-              <div style="display: flex; gap: 12px; align-items: center;">
-                <span style="font-size: 18px;">📞</span>
-                <div><b>Landline Phone:</b> <a href="tel:+96871132424" style="color:#0B286C; font-weight:700; text-decoration:none;">+968 7113 2424</a></div>
+            </div>
+            <div style="background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 16px; padding: 12px 16px; display: flex; align-items: center; gap: 12px;">
+              <span style="font-size: 20px; flex-shrink: 0;">💬</span>
+              <div>
+                <small style="display: block; font-size: 10px; text-transform: uppercase; font-weight: 700; color: #00E676; letter-spacing: 0.5px;">WhatsApp 24/7</small>
+                <a href="https://wa.me/96897608999" target="_blank" rel="noopener" style="font-size: 12.5px; font-weight: 800; color: #FFFFFF; text-decoration: none;">+968 9760 8999</a>
               </div>
-              <div style="display: flex; gap: 12px; align-items: center;">
-                <span style="font-size: 18px;">💬</span>
-                <div><b>WhatsApp Support:</b> <a href="https://wa.me/96897608999" target="_blank" rel="noopener" style="color:#00A651; font-weight:700; text-decoration:none;">+968 9760 8999</a></div>
+            </div>
+            <div style="background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 16px; padding: 12px 16px; display: flex; align-items: center; gap: 12px;">
+              <span style="font-size: 20px; flex-shrink: 0;">📍</span>
+              <div>
+                <small style="display: block; font-size: 10px; text-transform: uppercase; font-weight: 700; color: #00E676; letter-spacing: 0.5px;">Location</small>
+                <span style="font-size: 12px; font-weight: 700; color: #FFFFFF;">Al Buraimi, Oman</span>
               </div>
-              <div style="display: flex; gap: 12px; align-items: center;">
-                <span style="font-size: 18px;">✉️</span>
-                <div><b>Email Address:</b> <a href="https://mail.google.com/mail/?view=cm&fs=1&to=info%40jmttravels.com" target="_blank" rel="noopener noreferrer" aria-label="Email JMT Travels via Gmail" class="jmt-email-link" style="color:#00A651; font-weight:700; text-decoration:underline;">info@jmttravels.com</a></div>
-              </div>
-              <div style="display: flex; gap: 12px; align-items: flex-start;">
-                <span style="font-size: 18px;">🕐</span>
-                <div><b>Working Hours:</b><br>Saturday – Thursday: 8:30 AM – 1:30 PM &amp; 4:30 PM – 9:30 PM<br>Friday: 4:30 PM – 9:30 PM</div>
+            </div>
+            <div style="background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 16px; padding: 12px 16px; display: flex; align-items: center; gap: 12px;">
+              <span style="font-size: 20px; flex-shrink: 0;">⚡</span>
+              <div>
+                <small style="display: block; font-size: 10px; text-transform: uppercase; font-weight: 700; color: #00E676; letter-spacing: 0.5px;">Support</small>
+                <span style="font-size: 12px; font-weight: 700; color: #FFFFFF;">Fast 24h Response</span>
               </div>
             </div>
           </div>
+        </div>
 
-          <div class="jmt-card" style="text-align: center; background: #F8FAFC;">
-            <h3 style="font-size: 16px; color: #0B286C; font-weight: 700; margin-bottom: 8px;">Visit Our Office in Muscat</h3>
-            <p style="font-size: 13.5px; color: #64748B; margin-bottom: 16px;">Located centrally near Mazda Roundabout for in-person visa clearing and travel consultations.</p>
-            <a href="https://maps.app.goo.gl/3xDLiEdchqgivn1Z7" target="_blank" rel="noopener" class="jmt-btn-secondary" style="width:100%; justify-content:center;">📍 Open in Google Maps</a>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 32px; align-items: start; margin-top: 32px; position: relative; z-index: 2;">
+          <!-- LEFT INQUIRY FORM (DARK BLUE BACKGROUND, WHITE FONT, GREEN HEADING) -->
+          <form id="contact-form" class="jmt-card" style="background: rgba(7, 21, 59, 0.88) !important; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); color: #FFFFFF !important; border: 1px solid rgba(255, 255, 255, 0.2) !important; border-radius: 20px; padding: 32px; box-shadow: 0 16px 40px rgba(7, 21, 59, 0.35);">
+            <h2 style="font-size: 24px; color: #00E676 !important; font-weight: 800; margin-bottom: 8px;">Send Us a Message</h2>
+            <p style="color: #D6E0F4 !important; font-size: 14px; margin-bottom: 24px;">Fill in your details below and our team will get back to you within 24 hours.</p>
+
+            <div style="margin-bottom: 18px;">
+              <label for="contact-name" style="display:block; font-weight:700; font-size:13.5px; color:#FFFFFF !important; margin-bottom:6px;">Your Name <span style="color:#00E676;" aria-hidden="true">*</span></label>
+              <div style="position:relative; display:flex; align-items:center;">
+                <span style="position:absolute; left:14px; pointer-events:none; display:flex; align-items:center; z-index:2; color:#07153B;">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#07153B" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                </span>
+                <input type="text" id="contact-name" name="name" class="chat-input" placeholder="Enter your full name" style="width:100%; padding:14px 16px 14px 44px; border:1.5px solid #D1D5DB; border-radius:12px; font-size:14.5px; background:#FFFFFF !important; color:#07153B !important; outline:none; transition:border-color 0.2s;" onfocus="this.style.borderColor='#00A651'; this.style.boxShadow='0 0 0 3px rgba(0,166,81,0.2)'" onblur="this.style.borderColor='#D1D5DB'; this.style.boxShadow='none'" required aria-required="true">
+              </div>
+            </div>
+            <div style="margin-bottom: 18px;">
+              <label for="contact-input" style="display:block; font-weight:700; font-size:13.5px; color:#FFFFFF !important; margin-bottom:6px;">Contact Email / Phone <span style="color:#00E676;" aria-hidden="true">*</span></label>
+              <div style="position:relative; display:flex; align-items:center;">
+                <span style="position:absolute; left:14px; pointer-events:none; display:flex; align-items:center; gap:4px; z-index:2; color:#07153B;">
+                  <span style="font-family:sans-serif; font-weight:700; font-size:15px; line-height:1; color:#07153B;">@</span>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#07153B" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                </span>
+                <input type="text" id="contact-input" name="contact" class="chat-input" placeholder="email@domain.com or phone number" style="width:100%; padding:14px 16px 14px 54px; border:1.5px solid #D1D5DB; border-radius:12px; font-size:14.5px; background:#FFFFFF !important; color:#07153B !important; outline:none; transition:border-color 0.2s;" onfocus="this.style.borderColor='#00A651'; this.style.boxShadow='0 0 0 3px rgba(0,166,81,0.2)'" onblur="this.style.borderColor='#D1D5DB'; this.style.boxShadow='none'" required aria-required="true">
+              </div>
+            </div>
+            <div style="margin-bottom: 18px;">
+              <label for="contact-type" style="display:block; font-weight:700; font-size:13.5px; color:#FFFFFF !important; margin-bottom:6px;">Inquiry Type</label>
+              <div style="position:relative; display:flex; align-items:center;">
+                <span style="position:absolute; left:14px; pointer-events:none; display:flex; align-items:center; gap:8px; z-index:2; color:#07153B;">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#07153B" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="9" y1="13" x2="15" y2="13"></line><polyline points="12 10 15 13 12 16"></polyline></svg>
+                  <span style="width:1px; height:18px; background:rgba(7,21,59,0.3); display:inline-block;"></span>
+                </span>
+                <select id="contact-type" name="type" class="chat-input" style="width:100%; padding:14px 16px 14px 54px; border:1.5px solid #D1D5DB; border-radius:12px; font-size:14.5px; background:#FFFFFF !important; color:#07153B !important; outline:none; transition:border-color 0.2s;" onfocus="this.style.borderColor='#00A651'; this.style.boxShadow='0 0 0 3px rgba(0,166,81,0.2)'" onblur="this.style.borderColor='#D1D5DB'; this.style.boxShadow='none'">
+                  <option value="visa" style="background:#FFFFFF; color:#07153B;">Visa Services Inquiry</option>
+                  <option value="tours" style="background:#FFFFFF; color:#07153B;">Holiday & Tour Packages</option>
+                  <option value="hotels" style="background:#FFFFFF; color:#07153B;">Hotel & Accommodations</option>
+                  <option value="flights" style="background:#FFFFFF; color:#07153B;">Flight Ticketing</option>
+                  <option value="general" style="background:#FFFFFF; color:#07153B;">General Inquiry / Support</option>
+                </select>
+              </div>
+            </div>
+            <div style="margin-bottom: 26px;">
+              <label for="contact-msg" style="display:block; font-weight:700; font-size:13.5px; color:#FFFFFF !important; margin-bottom:6px;">Message <span style="color:#00E676;" aria-hidden="true">*</span></label>
+              <div style="position:relative; display:flex;">
+                <span style="position:absolute; left:14px; top:16px; pointer-events:none; display:flex; align-items:center; z-index:2; color:#07153B;">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#07153B" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                </span>
+                <textarea id="contact-msg" name="message" rows="4" class="chat-input" placeholder="How can we assist you?" style="width:100%; padding:14px 16px 14px 44px; border:1.5px solid #D1D5DB; border-radius:12px; font-size:14.5px; background:#FFFFFF !important; color:#07153B !important; outline:none; transition:border-color 0.2s;" onfocus="this.style.borderColor='#00A651'; this.style.boxShadow='0 0 0 3px rgba(0,166,81,0.2)'" onblur="this.style.borderColor='#D1D5DB'; this.style.boxShadow='none'" required aria-required="true"></textarea>
+              </div>
+            </div>
+            <button type="submit" class="jmt-btn-primary" style="width:100%; justify-content:center; padding:15px; font-size:16px; font-weight:800; background:#00A651 !important; color:#FFFFFF !important; border-radius:12px;">Send Inquiry →</button>
+            <div id="contact-result" style="margin-top:16px;" aria-live="polite"></div>
+          </form>
+
+          <!-- RIGHT CONTACT DETAILS (DARK BLUE BACKGROUND, WHITE FONT, GREEN HEADING) -->
+          <div style="display: flex; flex-direction: column; gap: 24px;">
+            <div class="jmt-card" style="background: rgba(7, 21, 59, 0.88) !important; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); color: #FFFFFF !important; border: 1px solid rgba(255, 255, 255, 0.2) !important; border-left: 5px solid #00E676 !important; border-radius: 20px; padding: 32px; box-shadow: 0 16px 40px rgba(7, 21, 59, 0.35);">
+              <h2 style="font-size: 22px; color: #00E676 !important; font-weight: 800; margin-bottom: 20px;">JMT Travels — Al Buraimi Office</h2>
+              <div style="display: flex; flex-direction: column; gap: 16px; font-size: 14.5px; color: #D6E0F4 !important;">
+                <div style="display: flex; gap: 14px; align-items: flex-start;">
+                  <span style="font-size: 20px;">📍</span>
+                  <div><b style="color: #FFFFFF !important;">Office Location:</b><br><a href="https://maps.app.goo.gl/3xDLiEdchqgivn1Z7" target="_blank" rel="noopener noreferrer" style="color:#FFFFFF !important; font-weight:700; text-decoration:underline;" title="Open in Google Maps">near Mazda R/A, next to Yahar Restaurant, 512, Oman</a></div>
+                </div>
+                <div style="display: flex; gap: 14px; align-items: center;">
+                  <span style="font-size: 20px;">📞</span>
+                  <div><b style="color: #FFFFFF !important;">Landline Phone:</b> <a href="tel:+96825655711" style="color:#FFFFFF !important; font-weight:700; text-decoration:none;">+968 25655711</a> / <a href="tel:+96825655177" style="color:#FFFFFF !important; font-weight:700; text-decoration:none;">+968 25655177</a></div>
+                </div>
+                <div style="display: flex; gap: 14px; align-items: center;">
+                  <span style="font-size: 20px;">💬</span>
+                  <div><b style="color: #FFFFFF !important;">WhatsApp Support:</b> <a href="https://wa.me/96897608999" target="_blank" rel="noopener" style="color:#00E676 !important; font-weight:700; text-decoration:none;">+968 9760 8999</a></div>
+                </div>
+                <div style="display: flex; gap: 14px; align-items: center;">
+                  <span style="font-size: 20px;">✉️</span>
+                  <div><b style="color: #FFFFFF !important;">Email Address:</b> <a href="https://mail.google.com/mail/?view=cm&fs=1&to=info%40jmttravels.com" target="_blank" rel="noopener noreferrer" aria-label="Email JMT Travels via Gmail" class="jmt-email-link" style="color:#00E676 !important; font-weight:700; text-decoration:underline;">info@jmttravels.com</a></div>
+                </div>
+                <div style="display: flex; gap: 14px; align-items: flex-start;">
+                  <span style="font-size: 20px;">🕐</span>
+                  <div><b style="color: #FFFFFF !important;">Working Hours:</b><br><span style="color: #D6E0F4 !important;">Saturday – Thursday: 8:30 AM – 1:30 PM &amp; 4:30 PM – 9:30 PM<br>Friday: 4:30 PM – 9:30 PM</span></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="jmt-card" style="text-align: center; background: rgba(7, 21, 59, 0.88) !important; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); color: #FFFFFF !important; border: 1px solid rgba(255, 255, 255, 0.2) !important; border-radius: 20px; padding: 28px; box-shadow: 0 16px 40px rgba(7, 21, 59, 0.35);">
+              <h3 style="font-size: 18px; color: #00E676 !important; font-weight: 800; margin-bottom: 8px;">Visit Our Office in Al Buraimi</h3>
+              <p style="font-size: 14px; color: #D6E0F4 !important; margin-bottom: 20px; line-height: 1.5;">Located centrally near Mazda Roundabout for in-person visa clearing and travel consultations.</p>
+              <a href="https://maps.app.goo.gl/3xDLiEdchqgivn1Z7" target="_blank" rel="noopener" class="jmt-btn-primary" style="width:100%; justify-content:center; padding:15px; font-size:15px; font-weight:800; background:#00A651 !important; color:#FFFFFF !important; border-radius:12px; text-decoration:none; display:inline-flex; align-items:center; gap:8px; box-shadow: 0 6px 18px rgba(0, 166, 81, 0.35) !important;">📍 Open in Google Maps</a>
+            </div>
           </div>
         </div>
       </div>
@@ -11739,25 +11855,36 @@ function renderLoginPage(container) {
 
   container.innerHTML = `
     <div class="shell" style="padding: 60px 20px; max-width: 480px;">
-      <form id="login-form" class="jmt-card" style="border-top: 5px solid #00A651;">
+      <form id="login-form" class="jmt-card" style="background: linear-gradient(135deg, #07153B 0%, #0B286C 100%) !important; color: #FFFFFF !important; border: 1px solid rgba(255, 255, 255, 0.18) !important; border-top: 5px solid #00E676 !important; border-radius: 24px; padding: 36px 40px; box-shadow: 0 20px 50px rgba(7, 21, 59, 0.35);">
         <div style="text-align: center; margin-bottom: 24px;">
           <img src="/assets/logo.png" alt="JMT Travels" style="height: 48px; margin-bottom: 12px;">
-          <h1 style="font-size: 26px; color: #0B286C; font-weight: 800; margin: 0 0 6px;">Welcome Back</h1>
-          <p style="color: #64748B; font-size: 14px; margin: 0;">Sign in to manage your visa applications and bookings.</p>
+          <h1 style="font-size: 26px; color: #00E676 !important; font-weight: 800; margin: 0 0 6px;">Welcome Back</h1>
+          <p style="color: #D6E0F4 !important; font-size: 14px; margin: 0;">Sign in to manage your visa applications and bookings.</p>
         </div>
 
-        <div style="margin-bottom: 16px;">
-          <label for="login-email" style="display:block; font-weight:700; font-size:13.5px; color:#0F172A; margin-bottom:6px;">Email Address <span style="color:#DC2626;" aria-hidden="true">*</span></label>
-          <input type="email" id="login-email" name="email" class="chat-input" style="width:100%; padding:12px 16px; border:1px solid #E2E8F0; border-radius:12px; font-size:14px;" placeholder="name@example.com" required aria-required="true">
+        <div style="margin-bottom: 18px;">
+          <label for="login-email" style="display:block; font-weight:700; font-size:13.5px; color:#FFFFFF !important; margin-bottom:6px;">Email Address <span style="color:#00E676;" aria-hidden="true">*</span></label>
+          <div style="position:relative; display:flex; align-items:center;">
+            <span style="position:absolute; left:14px; pointer-events:none; display:flex; align-items:center; gap:4px; z-index:2; color:#07153B;">
+              <span style="font-family:sans-serif; font-weight:700; font-size:15px; line-height:1; color:#07153B;">@</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#07153B" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+            </span>
+            <input type="email" id="login-email" name="email" class="chat-input" style="width:100%; padding:14px 16px 14px 50px; border:1.5px solid #D1D5DB; border-radius:12px; font-size:14.5px; background:#FFFFFF !important; color:#07153B !important; outline:none; transition:border-color 0.2s;" placeholder="name@example.com" onfocus="this.style.borderColor='#00A651'; this.style.boxShadow='0 0 0 3px rgba(0,166,81,0.2)'" onblur="this.style.borderColor='#D1D5DB'; this.style.boxShadow='none'" required aria-required="true">
+          </div>
         </div>
-        <div style="margin-bottom: 24px;">
-          <label for="login-pass" style="display:block; font-weight:700; font-size:13.5px; color:#0F172A; margin-bottom:6px;">Password <span style="color:#DC2626;" aria-hidden="true">*</span></label>
-          <input type="password" id="login-pass" name="password" class="chat-input" style="width:100%; padding:12px 16px; border:1px solid #E2E8F0; border-radius:12px; font-size:14px;" placeholder="••••••••" required aria-required="true">
+        <div style="margin-bottom: 26px;">
+          <label for="login-pass" style="display:block; font-weight:700; font-size:13.5px; color:#FFFFFF !important; margin-bottom:6px;">Password <span style="color:#00E676;" aria-hidden="true">*</span></label>
+          <div style="position:relative; display:flex; align-items:center;">
+            <span style="position:absolute; left:14px; pointer-events:none; display:flex; align-items:center; z-index:2; color:#07153B;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#07153B" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+            </span>
+            <input type="password" id="login-pass" name="password" class="chat-input" style="width:100%; padding:14px 16px 14px 44px; border:1.5px solid #D1D5DB; border-radius:12px; font-size:14.5px; background:#FFFFFF !important; color:#07153B !important; outline:none; transition:border-color 0.2s;" placeholder="••••••••" onfocus="this.style.borderColor='#00A651'; this.style.boxShadow='0 0 0 3px rgba(0,166,81,0.2)'" onblur="this.style.borderColor='#D1D5DB'; this.style.boxShadow='none'" required aria-required="true">
+          </div>
         </div>
-        <button type="submit" class="jmt-btn-primary" style="width:100%; justify-content:center; padding:14px; font-size:15px;">Sign In →</button>
-        <div id="login-error" style="margin-top:16px; color: #DC2626; font-weight:700; text-align:center;" aria-live="polite"></div>
-        <div style="margin-top: 24px; text-align: center; border-top: 1px solid #F1F5F9; padding-top: 18px; font-size: 14px; color: #64748B;">
-          Don't have an account? <a href="/register" onclick="event.preventDefault(); navigate('/register')" style="color:#00A651; font-weight:700; text-decoration:none;">Create Account →</a>
+        <button type="submit" class="jmt-btn-primary" style="width:100%; justify-content:center; padding:15px; font-size:16px; font-weight:800; background:#00A651 !important; color:#FFFFFF !important; border-radius:12px; box-shadow:0 6px 18px rgba(0, 166, 81, 0.35) !important;">Sign In →</button>
+        <div id="login-error" style="margin-top:16px; color: #FCA5A5; font-weight:700; text-align:center;" aria-live="polite"></div>
+        <div style="margin-top: 24px; text-align: center; border-top: 1px solid rgba(255, 255, 255, 0.15); padding-top: 18px; font-size: 14px; color: #D6E0F4 !important;">
+          Don't have an account? <a href="/register" onclick="event.preventDefault(); navigate('/register')" style="color:#00E676 !important; font-weight:700; text-decoration:underline;">Create Account →</a>
         </div>
       </form>
     </div>
@@ -11793,33 +11920,54 @@ function renderRegisterPage(container) {
 
   container.innerHTML = `
     <div class="shell" style="padding: 60px 20px; max-width: 520px;">
-      <form id="register-form" class="jmt-card" style="border-top: 5px solid #00A651;">
+      <form id="register-form" class="jmt-card" style="background: linear-gradient(135deg, #07153B 0%, #0B286C 100%) !important; color: #FFFFFF !important; border: 1px solid rgba(255, 255, 255, 0.18) !important; border-top: 5px solid #00E676 !important; border-radius: 24px; padding: 36px 40px; box-shadow: 0 20px 50px rgba(7, 21, 59, 0.35);">
         <div style="text-align: center; margin-bottom: 24px;">
           <img src="/assets/logo.png" alt="JMT Travels" style="height: 48px; margin-bottom: 12px;">
-          <h1 style="font-size: 26px; color: #0B286C; font-weight: 800; margin: 0 0 6px;">Start Your Journey With JMT</h1>
-          <p style="color: #64748B; font-size: 14px; margin: 0;">Create your account to manage visa applications & holiday bookings.</p>
+          <h1 style="font-size: 26px; color: #00E676 !important; font-weight: 800; margin: 0 0 6px;">Start Your Journey With JMT</h1>
+          <p style="color: #D6E0F4 !important; font-size: 14px; margin: 0;">Create your account to manage visa applications & holiday bookings.</p>
         </div>
 
-        <div style="margin-bottom: 16px;">
-          <label for="reg-name" style="display:block; font-weight:700; font-size:13.5px; color:#0F172A; margin-bottom:6px;">Full Name <span style="color:#DC2626;" aria-hidden="true">*</span></label>
-          <input type="text" id="reg-name" name="name" class="chat-input" style="width:100%; padding:12px 16px; border:1px solid #E2E8F0; border-radius:12px; font-size:14px;" placeholder="Full Name" required aria-required="true">
+        <div style="margin-bottom: 18px;">
+          <label for="reg-name" style="display:block; font-weight:700; font-size:13.5px; color:#FFFFFF !important; margin-bottom:6px;">Full Name <span style="color:#00E676;" aria-hidden="true">*</span></label>
+          <div style="position:relative; display:flex; align-items:center;">
+            <span style="position:absolute; left:14px; pointer-events:none; display:flex; align-items:center; z-index:2; color:#07153B;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#07153B" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+            </span>
+            <input type="text" id="reg-name" name="name" class="chat-input" style="width:100%; padding:14px 16px 14px 44px; border:1.5px solid #D1D5DB; border-radius:12px; font-size:14.5px; background:#FFFFFF !important; color:#07153B !important; outline:none; transition:border-color 0.2s;" placeholder="Full Name" onfocus="this.style.borderColor='#00A651'; this.style.boxShadow='0 0 0 3px rgba(0,166,81,0.2)'" onblur="this.style.borderColor='#D1D5DB'; this.style.boxShadow='none'" required aria-required="true">
+          </div>
         </div>
-        <div style="margin-bottom: 16px;">
-          <label for="reg-email" style="display:block; font-weight:700; font-size:13.5px; color:#0F172A; margin-bottom:6px;">Email Address <span style="color:#DC2626;" aria-hidden="true">*</span></label>
-          <input type="email" id="reg-email" name="email" class="chat-input" style="width:100%; padding:12px 16px; border:1px solid #E2E8F0; border-radius:12px; font-size:14px;" placeholder="name@example.com" required aria-required="true">
+        <div style="margin-bottom: 18px;">
+          <label for="reg-email" style="display:block; font-weight:700; font-size:13.5px; color:#FFFFFF !important; margin-bottom:6px;">Email Address <span style="color:#00E676;" aria-hidden="true">*</span></label>
+          <div style="position:relative; display:flex; align-items:center;">
+            <span style="position:absolute; left:14px; pointer-events:none; display:flex; align-items:center; gap:4px; z-index:2; color:#07153B;">
+              <span style="font-family:sans-serif; font-weight:700; font-size:15px; line-height:1; color:#07153B;">@</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#07153B" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+            </span>
+            <input type="email" id="reg-email" name="email" class="chat-input" style="width:100%; padding:14px 16px 14px 50px; border:1.5px solid #D1D5DB; border-radius:12px; font-size:14.5px; background:#FFFFFF !important; color:#07153B !important; outline:none; transition:border-color 0.2s;" placeholder="name@example.com" onfocus="this.style.borderColor='#00A651'; this.style.boxShadow='0 0 0 3px rgba(0,166,81,0.2)'" onblur="this.style.borderColor='#D1D5DB'; this.style.boxShadow='none'" required aria-required="true">
+          </div>
         </div>
-        <div style="margin-bottom: 16px;">
-          <label for="reg-phone" style="display:block; font-weight:700; font-size:13.5px; color:#0F172A; margin-bottom:6px;">Phone / WhatsApp</label>
-          <input type="text" id="reg-phone" name="phone" class="chat-input" style="width:100%; padding:12px 16px; border:1px solid #E2E8F0; border-radius:12px; font-size:14px;" placeholder="+968 9000 0000">
+        <div style="margin-bottom: 18px;">
+          <label for="reg-phone" style="display:block; font-weight:700; font-size:13.5px; color:#FFFFFF !important; margin-bottom:6px;">Phone / WhatsApp</label>
+          <div style="position:relative; display:flex; align-items:center;">
+            <span style="position:absolute; left:14px; pointer-events:none; display:flex; align-items:center; z-index:2; color:#07153B;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#07153B" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+            </span>
+            <input type="text" id="reg-phone" name="phone" class="chat-input" style="width:100%; padding:14px 16px 14px 44px; border:1.5px solid #D1D5DB; border-radius:12px; font-size:14.5px; background:#FFFFFF !important; color:#07153B !important; outline:none; transition:border-color 0.2s;" placeholder="+968 9000 0000" onfocus="this.style.borderColor='#00A651'; this.style.boxShadow='0 0 0 3px rgba(0,166,81,0.2)'" onblur="this.style.borderColor='#D1D5DB'; this.style.boxShadow='none'">
+          </div>
         </div>
-        <div style="margin-bottom: 24px;">
-          <label for="reg-pass" style="display:block; font-weight:700; font-size:13.5px; color:#0F172A; margin-bottom:6px;">Password <span style="color:#DC2626;" aria-hidden="true">*</span></label>
-          <input type="password" id="reg-pass" name="password" class="chat-input" style="width:100%; padding:12px 16px; border:1px solid #E2E8F0; border-radius:12px; font-size:14px;" placeholder="••••••••" required aria-required="true">
+        <div style="margin-bottom: 26px;">
+          <label for="reg-pass" style="display:block; font-weight:700; font-size:13.5px; color:#FFFFFF !important; margin-bottom:6px;">Password <span style="color:#00E676;" aria-hidden="true">*</span></label>
+          <div style="position:relative; display:flex; align-items:center;">
+            <span style="position:absolute; left:14px; pointer-events:none; display:flex; align-items:center; z-index:2; color:#07153B;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#07153B" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+            </span>
+            <input type="password" id="reg-pass" name="password" class="chat-input" style="width:100%; padding:14px 16px 14px 44px; border:1.5px solid #D1D5DB; border-radius:12px; font-size:14.5px; background:#FFFFFF !important; color:#07153B !important; outline:none; transition:border-color 0.2s;" placeholder="••••••••" onfocus="this.style.borderColor='#00A651'; this.style.boxShadow='0 0 0 3px rgba(0,166,81,0.2)'" onblur="this.style.borderColor='#D1D5DB'; this.style.boxShadow='none'" required aria-required="true">
+          </div>
         </div>
-        <button type="submit" class="jmt-btn-primary" style="width:100%; justify-content:center; padding:14px; font-size:15px;">Create Account →</button>
-        <div id="register-error" style="margin-top:16px; color: #DC2626; font-weight:700; text-align:center;" aria-live="polite"></div>
-        <div style="margin-top: 24px; text-align: center; border-top: 1px solid #F1F5F9; padding-top: 18px; font-size: 14px; color: #64748B;">
-          Already have an account? <a href="/login" onclick="event.preventDefault(); navigate('/login')" style="color:#00A651; font-weight:700; text-decoration:none;">Sign In →</a>
+        <button type="submit" class="jmt-btn-primary" style="width:100%; justify-content:center; padding:15px; font-size:16px; font-weight:800; background:#00A651 !important; color:#FFFFFF !important; border-radius:12px; box-shadow:0 6px 18px rgba(0, 166, 81, 0.35) !important;">Create Account →</button>
+        <div id="register-error" style="margin-top:16px; color: #FCA5A5; font-weight:700; text-align:center;" aria-live="polite"></div>
+        <div style="margin-top: 24px; text-align: center; border-top: 1px solid rgba(255, 255, 255, 0.15); padding-top: 18px; font-size: 14px; color: #D6E0F4 !important;">
+          Already have an account? <a href="/login" onclick="event.preventDefault(); navigate('/login')" style="color:#00E676 !important; font-weight:700; text-decoration:underline;">Sign In →</a>
         </div>
       </form>
     </div>
@@ -11867,91 +12015,93 @@ async function renderAccountPage(container) {
     ]);
 
     container.innerHTML = `
-      <div class="shell" style="padding: 40px 20px 60px;">
-        <!-- DASHBOARD HEADER -->
-        <div class="jmt-hero" style="padding: 36px 32px; margin-bottom: 32px;">
-          <span class="jmt-hero-eyebrow">CUSTOMER PORTAL</span>
-          <h1 class="jmt-hero-title" style="font-size: 28px; margin-bottom: 6px;">Welcome Back, ${escapeHTML(state.user.name)}</h1>
-          <p class="jmt-hero-sub" style="font-size: 14px; margin-bottom: 0; opacity: 0.9;">${escapeHTML(state.user.email)} • Account Role: <b>${escapeHTML(state.user.role || 'CUSTOMER')}</b></p>
-        </div>
-
-        <!-- QUICK STATUS METRICS -->
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 32px;">
-          <div class="jmt-card" style="border-top: 4px solid #00A651;">
-            <div style="font-size: 13px; font-weight: 700; color: #64748B; text-transform: uppercase;">Active Visas</div>
-            <div style="font-size: 32px; font-weight: 800; color: #0B286C; margin: 4px 0;">${visas.applications ? visas.applications.length : 0}</div>
-            <span style="font-size: 12px; color: #00A651; font-weight: 600;">E-Visa Applications</span>
+      <div style="background: #07153B !important; min-height: 100vh; color: #FFFFFF !important;">
+        <div class="shell" style="padding: 40px 20px 60px;">
+          <!-- DASHBOARD HEADER -->
+          <div class="jmt-hero" style="background: linear-gradient(135deg, #07153B 0%, #0B286C 100%) !important; border: 1px solid rgba(255, 255, 255, 0.15) !important; padding: 36px 32px; margin-bottom: 32px;">
+            <span class="jmt-hero-eyebrow" style="color: #00E676 !important;">CUSTOMER PORTAL</span>
+            <h1 class="jmt-hero-title" style="font-size: 28px; margin-bottom: 6px; color: #FFFFFF !important;">Welcome Back, ${escapeHTML(state.user.name)}</h1>
+            <p class="jmt-hero-sub" style="font-size: 14px; margin-bottom: 0; color: #E2E8F0 !important;">${escapeHTML(state.user.email)} • Account Role: <b style="color: #00E676 !important;">${escapeHTML(state.user.role || 'CUSTOMER')}</b></p>
           </div>
 
-          <div class="jmt-card" style="border-top: 4px solid #0B286C;">
-            <div style="font-size: 13px; font-weight: 700; color: #64748B; text-transform: uppercase;">Tour Bookings</div>
-            <div style="font-size: 32px; font-weight: 800; color: #0B286C; margin: 4px 0;">${bookings.bookings ? bookings.bookings.length : 0}</div>
-            <span style="font-size: 12px; color: #0B286C; font-weight: 600;">Reserved Holidays</span>
-          </div>
-
-          <div class="jmt-card" style="border-top: 4px solid #3B82F6;">
-            <div style="font-size: 13px; font-weight: 700; color: #64748B; text-transform: uppercase;">Support Tickets</div>
-            <div style="font-size: 32px; font-weight: 800; color: #0B286C; margin: 4px 0;">${tickets.tickets ? tickets.tickets.length : 0}</div>
-            <span style="font-size: 12px; color: #3B82F6; font-weight: 600;">Inquiries & Support</span>
-          </div>
-        </div>
-
-        <!-- VISA APPLICATIONS SECTION -->
-        <div class="jmt-card" style="margin-bottom: 32px;">
-          <h2 style="font-size: 20px; color: #0B286C; font-weight: 800; margin-bottom: 16px;">My Visa Applications</h2>
-          ${!visas.applications || visas.applications.length === 0 ? '<p style="color:#64748B; font-size:14px; margin:0;">No visa applications submitted yet. <a href="/visa" onclick="navigate(\'/visa\')" style="color:#00A651; font-weight:700;">Apply for an E-Visa →</a></p>' : `
-            <div style="overflow-x: auto;">
-              <table style="width:100%; border-collapse:collapse; font-size:14px;">
-                <thead>
-                  <tr style="text-align:left; border-bottom:2px solid #E1E8F2; color:#64748B; font-size:13px;">
-                    <th style="padding:12px 10px;">Reference #</th>
-                    <th style="padding:12px 10px;">Destination</th>
-                    <th style="padding:12px 10px;">Type</th>
-                    <th style="padding:12px 10px;">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${visas.applications.map(v => `
-                    <tr style="border-bottom:1px solid #F1F5F9;">
-                      <td style="padding:12px 10px; font-weight:700; color:#0B286C;">${escapeHTML(v.applicationNumber || v.id)}</td>
-                      <td style="padding:12px 10px;">${escapeHTML(v.destination)}</td>
-                      <td style="padding:12px 10px;">${escapeHTML(v.visaType)}</td>
-                      <td style="padding:12px 10px;"><span class="badge badge-success" style="background:#00A651; color:#FFF;">${escapeHTML(v.status)}</span></td>
-                    </tr>
-                  `).join('')}
-                </tbody>
-              </table>
+          <!-- QUICK STATUS METRICS -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 32px;">
+            <div class="jmt-card" style="background: #0B286C !important; border: 1px solid rgba(255, 255, 255, 0.15) !important; border-top: 4px solid #00E676 !important; color: #FFFFFF !important;">
+              <div style="font-size: 13px; font-weight: 700; color: #E2E8F0 !important; text-transform: uppercase;">Active Visas</div>
+              <div style="font-size: 32px; font-weight: 800; color: #00E676 !important; margin: 4px 0;">${visas.applications ? visas.applications.length : 0}</div>
+              <span style="font-size: 12px; color: #00E676 !important; font-weight: 600;">E-Visa Applications</span>
             </div>
-          `}
-        </div>
 
-        <!-- TOUR BOOKINGS SECTION -->
-        <div class="jmt-card">
-          <h2 style="font-size: 20px; color: #0B286C; font-weight: 800; margin-bottom: 16px;">My Tour Bookings</h2>
-          ${!bookings.bookings || bookings.bookings.length === 0 ? '<p style="color:#64748B; font-size:14px; margin:0;">No tour package bookings found. <a href="/tourism" onclick="navigate(\'/tourism\')" style="color:#00A651; font-weight:700;">Explore Oman Tours →</a></p>' : `
-            <div style="overflow-x: auto;">
-              <table style="width:100%; border-collapse:collapse; font-size:14px;">
-                <thead>
-                  <tr style="text-align:left; border-bottom:2px solid #E1E8F2; color:#64748B; font-size:13px;">
-                    <th style="padding:12px 10px;">Booking Ref</th>
-                    <th style="padding:12px 10px;">Package Title</th>
-                    <th style="padding:12px 10px;">Amount</th>
-                    <th style="padding:12px 10px;">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${bookings.bookings.map(b => `
-                    <tr style="border-bottom:1px solid #F1F5F9;">
-                      <td style="padding:12px 10px; font-weight:700; color:#0B286C;">${escapeHTML(b.bookingNumber || b.id)}</td>
-                      <td style="padding:12px 10px;">${escapeHTML(b.packageTitle)}</td>
-                      <td style="padding:12px 10px; font-weight:700; color:#00A651;">${escapeHTML(b.currency)} ${b.amount}</td>
-                      <td style="padding:12px 10px;"><span class="badge badge-primary">${escapeHTML(b.status)}</span></td>
-                    </tr>
-                  `).join('')}
-                </tbody>
-              </table>
+            <div class="jmt-card" style="background: #0B286C !important; border: 1px solid rgba(255, 255, 255, 0.15) !important; border-top: 4px solid #00A651 !important; color: #FFFFFF !important;">
+              <div style="font-size: 13px; font-weight: 700; color: #E2E8F0 !important; text-transform: uppercase;">Tour Bookings</div>
+              <div style="font-size: 32px; font-weight: 800; color: #FFFFFF !important; margin: 4px 0;">${bookings.bookings ? bookings.bookings.length : 0}</div>
+              <span style="font-size: 12px; color: #00E676 !important; font-weight: 600;">Reserved Holidays</span>
             </div>
-          `}
+
+            <div class="jmt-card" style="background: #0B286C !important; border: 1px solid rgba(255, 255, 255, 0.15) !important; border-top: 4px solid #3B82F6 !important; color: #FFFFFF !important;">
+              <div style="font-size: 13px; font-weight: 700; color: #E2E8F0 !important; text-transform: uppercase;">Support Tickets</div>
+              <div style="font-size: 32px; font-weight: 800; color: #60A5FA !important; margin: 4px 0;">${tickets.tickets ? tickets.tickets.length : 0}</div>
+              <span style="font-size: 12px; color: #60A5FA !important; font-weight: 600;">Inquiries & Support</span>
+            </div>
+          </div>
+
+          <!-- VISA APPLICATIONS SECTION -->
+          <div class="jmt-card" style="background: #0B286C !important; border: 1px solid rgba(255, 255, 255, 0.15) !important; color: #FFFFFF !important; margin-bottom: 32px;">
+            <h2 style="font-size: 20px; color: #00E676 !important; font-weight: 800; margin-bottom: 16px;">My Visa Applications</h2>
+            ${!visas.applications || visas.applications.length === 0 ? '<p style="color:#E2E8F0 !important; font-size:14px; margin:0;">No visa applications submitted yet. <a href="/visa" onclick="navigate(\'/visa\')" style="color:#00E676 !important; font-weight:700;">Apply for an E-Visa →</a></p>' : `
+              <div style="overflow-x: auto;">
+                <table style="width:100%; border-collapse:collapse; font-size:14px;">
+                  <thead>
+                    <tr style="text-align:left; border-bottom:2px solid rgba(255,255,255,0.2); color:#00E676 !important; font-size:13px;">
+                      <th style="padding:12px 10px;">Reference #</th>
+                      <th style="padding:12px 10px;">Destination</th>
+                      <th style="padding:12px 10px;">Type</th>
+                      <th style="padding:12px 10px;">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${visas.applications.map(v => `
+                      <tr style="border-bottom:1px solid rgba(255,255,255,0.1);">
+                        <td style="padding:12px 10px; font-weight:700; color:#FFFFFF !important;">${escapeHTML(v.applicationNumber || v.id)}</td>
+                        <td style="padding:12px 10px; color:#E2E8F0 !important;">${escapeHTML(v.destination)}</td>
+                        <td style="padding:12px 10px; color:#E2E8F0 !important;">${escapeHTML(v.visaType)}</td>
+                        <td style="padding:12px 10px;"><span class="badge badge-success" style="background:#00A651 !important; color:#FFF !important;">${escapeHTML(v.status)}</span></td>
+                      </tr>
+                    `).join('')}
+                  </tbody>
+                </table>
+              </div>
+            `}
+          </div>
+
+          <!-- TOUR BOOKINGS SECTION -->
+          <div class="jmt-card" style="background: #0B286C !important; border: 1px solid rgba(255, 255, 255, 0.15) !important; color: #FFFFFF !important;">
+            <h2 style="font-size: 20px; color: #00E676 !important; font-weight: 800; margin-bottom: 16px;">My Tour Bookings</h2>
+            ${!bookings.bookings || bookings.bookings.length === 0 ? '<p style="color:#E2E8F0 !important; font-size:14px; margin:0;">No tour package bookings found. <a href="/tourism" onclick="navigate(\'/tourism\')" style="color:#00E676 !important; font-weight:700;">Explore Oman Tours →</a></p>' : `
+              <div style="overflow-x: auto;">
+                <table style="width:100%; border-collapse:collapse; font-size:14px;">
+                  <thead>
+                    <tr style="text-align:left; border-bottom:2px solid rgba(255,255,255,0.2); color:#00E676 !important; font-size:13px;">
+                      <th style="padding:12px 10px;">Booking Ref</th>
+                      <th style="padding:12px 10px;">Package Title</th>
+                      <th style="padding:12px 10px;">Amount</th>
+                      <th style="padding:12px 10px;">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${bookings.bookings.map(b => `
+                      <tr style="border-bottom:1px solid rgba(255,255,255,0.1);">
+                        <td style="padding:12px 10px; font-weight:700; color:#FFFFFF !important;">${escapeHTML(b.bookingNumber || b.id)}</td>
+                        <td style="padding:12px 10px; color:#E2E8F0 !important;">${escapeHTML(b.packageTitle)}</td>
+                        <td style="padding:12px 10px; font-weight:700; color:#00E676 !important;">${escapeHTML(b.currency)} ${b.amount}</td>
+                        <td style="padding:12px 10px;"><span class="badge badge-primary" style="background:#00A651 !important; color:#FFF !important;">${escapeHTML(b.status)}</span></td>
+                      </tr>
+                    `).join('')}
+                  </tbody>
+                </table>
+              </div>
+            `}
+          </div>
         </div>
       </div>
     `;
@@ -11970,62 +12120,64 @@ function renderSupportPage(container) {
   announceToSR('Navigated to Customer Support Help Center');
 
   container.innerHTML = `
-    <div class="shell" style="padding: 40px 20px 60px;">
-      <div class="jmt-hero">
-        <span class="jmt-hero-eyebrow">JMT TRAVELS — HELP & SUPPORT</span>
-        <h1 class="jmt-hero-title">How Can We Help You Today?</h1>
-        <p class="jmt-hero-sub">Browse support topics, chat live with our digital assistant, or connect directly with our Muscat travel specialists.</p>
-        <div style="display: flex; gap: 14px; flex-wrap: wrap;">
-          <button onclick="toggleChat()" class="jmt-btn-primary">💬 Chat with JMT Assistant</button>
-          <a href="/contact" onclick="event.preventDefault(); navigate('/contact')" class="jmt-btn-secondary" style="color:#FFF; border-color:rgba(255,255,255,0.4);">Send Message to Desk</a>
-        </div>
-      </div>
-
-      <!-- SUPPORT TOPIC CARDS GRID -->
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 24px; margin-bottom: 40px;">
-        <div class="jmt-card" onclick="navigate('/visa')" style="cursor: pointer;">
-          <div style="font-size: 36px; margin-bottom: 14px;">🛂</div>
-          <h3 style="font-size: 18px; color: #0B286C; font-weight: 800; margin-bottom: 8px;">Visa Application Help</h3>
-          <p style="font-size: 14px; color: #475569; line-height: 1.6; margin-bottom: 16px;">Track active e-visas, check required document checklists, and review processing timelines.</p>
-          <span style="color: #00A651; font-weight: 700; font-size: 14px;">Explore Visa Desk →</span>
+    <div style="background: #07153B !important; min-height: 100vh; color: #FFFFFF !important;">
+      <div class="shell" style="padding: 40px 20px 60px;">
+        <div class="jmt-hero" style="background: linear-gradient(135deg, #07153B 0%, #0B286C 100%) !important; border: 1px solid rgba(255, 255, 255, 0.15) !important;">
+          <span class="jmt-hero-eyebrow" style="color: #00E676 !important;">JMT TRAVELS — HELP & SUPPORT</span>
+          <h1 class="jmt-hero-title" style="color: #FFFFFF !important;">How Can We Help You Today?</h1>
+          <p class="jmt-hero-sub" style="color: #E2E8F0 !important;">Browse support topics, chat live with our digital assistant, or connect directly with our Muscat travel specialists.</p>
+          <div style="display: flex; gap: 14px; flex-wrap: wrap;">
+            <button onclick="toggleChat()" class="jmt-btn-primary" style="background: #00A651 !important; color: #FFFFFF !important;">💬 Chat with JMT Assistant</button>
+            <a href="/contact" onclick="event.preventDefault(); navigate('/contact')" class="jmt-btn-secondary" style="color:#FFF !important; border-color:rgba(255,255,255,0.4) !important;">Send Message to Desk</a>
+          </div>
         </div>
 
-        <div class="jmt-card" onclick="navigate('/tourism')" style="cursor: pointer;">
-          <div style="font-size: 36px; margin-bottom: 14px;">🧳</div>
-          <h3 style="font-size: 18px; color: #0B286C; font-weight: 800; margin-bottom: 8px;">Tour & Package Booking</h3>
-          <p style="font-size: 14px; color: #475569; line-height: 1.6; margin-bottom: 16px;">Inquire about Salalah retreats, GCC escapes, Umrah itineraries, and custom Omani tours.</p>
-          <span style="color: #00A651; font-weight: 700; font-size: 14px;">View Holiday Packages →</span>
+        <!-- SUPPORT TOPIC CARDS GRID -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 24px; margin-bottom: 40px;">
+          <div class="jmt-card" onclick="navigate('/visa')" style="cursor: pointer; background: #0B286C !important; border: 1px solid rgba(255, 255, 255, 0.15) !important; color: #FFFFFF !important;">
+            <div style="font-size: 36px; margin-bottom: 14px;">🛂</div>
+            <h3 style="font-size: 18px; color: #00E676 !important; font-weight: 800; margin-bottom: 8px;">Visa Application Help</h3>
+            <p style="font-size: 14px; color: #E2E8F0 !important; line-height: 1.6; margin-bottom: 16px;">Track active e-visas, check required document checklists, and review processing timelines.</p>
+            <span style="color: #00E676 !important; font-weight: 700; font-size: 14px;">Explore Visa Desk →</span>
+          </div>
+
+          <div class="jmt-card" onclick="navigate('/tourism')" style="cursor: pointer; background: #0B286C !important; border: 1px solid rgba(255, 255, 255, 0.15) !important; color: #FFFFFF !important;">
+            <div style="font-size: 36px; margin-bottom: 14px;">🧳</div>
+            <h3 style="font-size: 18px; color: #00E676 !important; font-weight: 800; margin-bottom: 8px;">Tour & Package Booking</h3>
+            <p style="font-size: 14px; color: #E2E8F0 !important; line-height: 1.6; margin-bottom: 16px;">Inquire about Salalah retreats, GCC escapes, Umrah itineraries, and custom Omani tours.</p>
+            <span style="color: #00E676 !important; font-weight: 700; font-size: 14px;">View Holiday Packages →</span>
+          </div>
+
+          <div class="jmt-card" onclick="navigate('/account')" style="cursor: pointer; background: #0B286C !important; border: 1px solid rgba(255, 255, 255, 0.15) !important; color: #FFFFFF !important;">
+            <div style="font-size: 36px; margin-bottom: 14px;">💳</div>
+            <h3 style="font-size: 18px; color: #00E676 !important; font-weight: 800; margin-bottom: 8px;">Payment & Receipts</h3>
+            <p style="font-size: 14px; color: #E2E8F0 !important; line-height: 1.6; margin-bottom: 16px;">Review transaction history, download payment receipts, and verify currency billing.</p>
+            <span style="color: #00E676 !important; font-weight: 700; font-size: 14px;">Go to Dashboard →</span>
+          </div>
+
+          <div class="jmt-card" onclick="navigate('/flights')" style="cursor: pointer; background: #0B286C !important; border: 1px solid rgba(255, 255, 255, 0.15) !important; color: #FFFFFF !important;">
+            <div style="font-size: 36px; margin-bottom: 14px;">✈️</div>
+            <h3 style="font-size: 18px; color: #00E676 !important; font-weight: 800; margin-bottom: 8px;">Flight & Hotel Changes</h3>
+            <p style="font-size: 14px; color: #E2E8F0 !important; line-height: 1.6; margin-bottom: 16px;">Request date changes, baggage additions, room upgrades, and travel itinerary assistance.</p>
+            <span style="color: #00E676 !important; font-weight: 700; font-size: 14px;">Flight Desk Assistance →</span>
+          </div>
         </div>
 
-        <div class="jmt-card" onclick="navigate('/account')" style="cursor: pointer;">
-          <div style="font-size: 36px; margin-bottom: 14px;">💳</div>
-          <h3 style="font-size: 18px; color: #0B286C; font-weight: 800; margin-bottom: 8px;">Payment & Receipts</h3>
-          <p style="font-size: 14px; color: #475569; line-height: 1.6; margin-bottom: 16px;">Review transaction history, download payment receipts, and verify currency billing.</p>
-          <span style="color: #00A651; font-weight: 700; font-size: 14px;">Go to Dashboard →</span>
-        </div>
-
-        <div class="jmt-card" onclick="navigate('/flights')" style="cursor: pointer;">
-          <div style="font-size: 36px; margin-bottom: 14px;">✈️</div>
-          <h3 style="font-size: 18px; color: #0B286C; font-weight: 800; margin-bottom: 8px;">Flight & Hotel Changes</h3>
-          <p style="font-size: 14px; color: #475569; line-height: 1.6; margin-bottom: 16px;">Request date changes, baggage additions, room upgrades, and travel itinerary assistance.</p>
-          <span style="color: #00A651; font-weight: 700; font-size: 14px;">Flight Desk Assistance →</span>
-        </div>
-      </div>
-
-      <!-- DIRECT CONTACT ESCALATION BANNER -->
-      <div class="jmt-card" style="background: linear-gradient(135deg, #FAFBFD 0%, #F1F5F9 100%); border-left: 6px solid #00A651;">
-        <h2 style="font-size: 22px; color: #0B286C; font-weight: 800; margin-bottom: 10px;">Need Immediate Human Support?</h2>
-        <p style="color: #475569; font-size: 15px; margin-bottom: 20px; line-height: 1.6;">Our dedicated travel team in Muscat is available 6 days a week via phone and WhatsApp.</p>
-        <div style="display: flex; gap: 24px; flex-wrap: wrap;">
-          <a href="https://wa.me/96897608999" target="_blank" rel="noopener" style="text-decoration: none; color: #0B286C; font-weight: 700; display: flex; align-items: center; gap: 8px;">
-            <span style="font-size: 20px;">💬</span> WhatsApp: +968 9760 8999
-          </a>
-          <a href="tel:+96871132424" style="text-decoration: none; color: #0B286C; font-weight: 700; display: flex; align-items: center; gap: 8px;">
-            <span style="font-size: 20px;">📞</span> Muscat Phone: +968 7113 2424
-          </a>
-          <a href="https://mail.google.com/mail/?view=cm&fs=1&to=info%40jmttravels.com" target="_blank" rel="noopener noreferrer" aria-label="Email JMT Travels via Gmail" class="jmt-email-link" style="text-decoration: underline; color: #00A651; font-weight: 700; display: flex; align-items: center; gap: 8px;">
-            <span style="font-size: 20px;">✉️</span> Email: info@jmttravels.com
-          </a>
+        <!-- DIRECT CONTACT ESCALATION BANNER -->
+        <div class="jmt-card" style="background: linear-gradient(135deg, #07153B 0%, #0B286C 100%) !important; border-left: 6px solid #00E676 !important; border: 1px solid rgba(255, 255, 255, 0.15) !important; color: #FFFFFF !important;">
+          <h2 style="font-size: 22px; color: #00E676 !important; font-weight: 800; margin-bottom: 10px;">Need Immediate Human Support?</h2>
+          <p style="color: #E2E8F0 !important; font-size: 15px; margin-bottom: 20px; line-height: 1.6;">Our dedicated travel team in Muscat is available 6 days a week via phone and WhatsApp.</p>
+          <div style="display: flex; gap: 24px; flex-wrap: wrap;">
+            <a href="https://wa.me/96897608999" target="_blank" rel="noopener" style="text-decoration: none; color: #FFFFFF !important; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 20px;">💬</span> WhatsApp: +968 9760 8999
+            </a>
+            <a href="tel:+96825655177" style="text-decoration: none; color: #FFFFFF !important; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 20px;">📞</span> Muscat Phone: +968 25655177 / +968 25655711
+            </a>
+            <a href="https://mail.google.com/mail/?view=cm&fs=1&to=info%40jmttravels.com" target="_blank" rel="noopener noreferrer" aria-label="Email JMT Travels via Gmail" class="jmt-email-link" style="text-decoration: underline; color: #00E676 !important; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 20px;">✉️</span> Email: info@jmttravels.com
+            </a>
+          </div>
         </div>
       </div>
     </div>
@@ -12042,328 +12194,329 @@ function renderAboutPage(container) {
   announceToSR('Navigated to About JMT Travels');
 
   container.innerHTML = `
-    <!-- SECTION 1: ABOUT US HERO -->
-    <section style="position: relative; background: #07153B; overflow: hidden; padding: 90px 0 100px; color: #FFFFFF;">
-      <div style="position: absolute; inset: 0; background-image: url('/assets/destinations/hero_hd_muscat_waterfront.jpg'); background-size: cover; background-position: center; opacity: 0.35; pointer-events: none;"></div>
-      <div style="position: absolute; inset: 0; background: linear-gradient(135deg, rgba(7, 21, 59, 0.92) 0%, rgba(11, 40, 108, 0.78) 100%);"></div>
+    <div style="background: #07153B !important; color: #FFFFFF !important; width: 100%; min-height: 100vh; overflow: hidden;">
+      <!-- SECTION 1: ABOUT US HERO -->
+      <section style="position: relative; background: #07153B !important; overflow: hidden; padding: 90px 0 100px; color: #FFFFFF !important;">
+        <div style="position: absolute; inset: 0; background-image: url('/assets/destinations/hero_hd_muscat_waterfront.jpg'); background-size: cover; background-position: center; opacity: 0.35; pointer-events: none;"></div>
+        <div style="position: absolute; inset: 0; background: linear-gradient(135deg, rgba(7, 21, 59, 0.94) 0%, rgba(11, 40, 108, 0.85) 100%);"></div>
 
-      <div class="shell" style="position: relative; z-index: 10; max-width: 900px; text-align: center; margin: 0 auto;">
-        <div style="font-size: 13px; font-weight: 800; letter-spacing: 3px; color: #00A651; text-transform: uppercase; margin-bottom: 16px;">
-          ABOUT JMT TRAVELS
-        </div>
-        <h1 style="font-size: clamp(38px, 5.5vw, 62px); font-weight: 800; line-height: 1.1; margin-bottom: 24px; color: #FFFFFF; letter-spacing: -1px;">
-          Your Journey.<br>
-          <span style="color: #00A651;">Our Commitment.</span>
-        </h1>
-        <p style="font-size: 18px; line-height: 1.7; color: #E2E8F0; max-width: 760px; margin: 0 auto 40px; font-weight: 400;">
-          JMT Travels is a travel and tourism company dedicated to making travel simpler, more comfortable, and more memorable — from visa assistance and holidays to hotels and flights.
-        </p>
-
-        <div style="display: flex; gap: 16px; justify-content: center; align-items: center; flex-wrap: wrap;">
-          <a href="/tourism" onclick="event.preventDefault(); navigate('/tourism')" style="background: linear-gradient(135deg, #00C875 0%, #009347 100%); color: #FFFFFF; padding: 16px 36px; font-size: 16px; border-radius: 99px; font-weight: 800; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 6px 20px rgba(0, 166, 81, 0.38);">
-            Explore Our Services →
-          </a>
-          <a href="/contact" onclick="event.preventDefault(); navigate('/contact')" style="background: rgba(255, 255, 255, 0.12); border: 1.5px solid rgba(255, 255, 255, 0.4); color: #FFFFFF; padding: 16px 32px; font-size: 16px; border-radius: 99px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; backdrop-filter: blur(8px);">
-            Contact Us →
-          </a>
-        </div>
-      </div>
-    </section>
-
-    <!-- SECTION 2: COMPANY INTRODUCTION -->
-    <section style="background: linear-gradient(135deg, #07153B 0%, #0B286C 100%); padding: 80px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
-      <div class="shell" style="max-width: 1000px; text-align: center;">
-        <div style="font-size: 12px; font-weight: 800; letter-spacing: 2.5px; color: #00E676 !important; text-transform: uppercase; margin-bottom: 12px;">
-          WHO WE ARE
-        </div>
-        <h2 style="font-size: clamp(30px, 4vw, 44px); font-weight: 800; color: #FFFFFF !important; margin-bottom: 24px; line-height: 1.2;">
-          Travel Made Simpler.<br>
-          Journeys Made Better.
-        </h2>
-        <div style="background: rgba(255, 255, 255, 0.06); border-radius: 24px; padding: 40px 48px; border: 1px solid rgba(255, 255, 255, 0.15); box-shadow: 0 16px 40px rgba(0, 0, 0, 0.25); backdrop-filter: blur(10px); text-align: left; max-width: 860px; margin: 0 auto;">
-          <p style="font-size: 17px; line-height: 1.8; color: #D6E0F4 !important; margin-bottom: 20px;">
-            JMT Travels brings together essential travel services under one platform, helping customers plan and manage their journeys with greater convenience and confidence.
+        <div class="shell" style="position: relative; z-index: 10; max-width: 900px; text-align: center; margin: 0 auto;">
+          <div style="font-size: 13px; font-weight: 800; letter-spacing: 3px; color: #00E676 !important; text-transform: uppercase; margin-bottom: 16px;">
+            ABOUT JMT TRAVELS
+          </div>
+          <h1 style="font-size: clamp(38px, 5.5vw, 62px); font-weight: 800; line-height: 1.1; margin-bottom: 24px; color: #FFFFFF !important; letter-spacing: -1px;">
+            Your Journey.<br>
+            <span style="color: #00E676 !important;">Our Commitment.</span>
+          </h1>
+          <p style="font-size: 18px; line-height: 1.7; color: #E2E8F0 !important; max-width: 760px; margin: 0 auto 40px; font-weight: 400;">
+            JMT Travels is a travel and tourism company dedicated to making travel simpler, more comfortable, and more memorable — from visa assistance and holidays to hotels and flights.
           </p>
-          <p style="font-size: 17px; line-height: 1.8; color: #D6E0F4 !important; margin-bottom: 20px;">
-            From discovering destinations and arranging holidays to visa assistance, hotel accommodations and flight services, our goal is to make every stage of travel easier to navigate.
-          </p>
-          <p style="font-size: 17px; line-height: 1.8; color: #D6E0F4 !important; margin: 0;">
-            We combine personalized assistance with a modern digital experience so customers can spend less time dealing with travel complexity and more time looking forward to their journey.
-          </p>
-        </div>
-      </div>
-    </section>
 
-    <!-- SECTION 3: WHAT JMT TRAVELS DOES (5 SERVICES) -->
-    <section style="background: linear-gradient(135deg, #0A225C 0%, #07153B 100%); padding: 85px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
-      <div class="shell">
-        <div style="text-align: center; max-width: 700px; margin: 0 auto 50px;">
+          <div style="display: flex; gap: 16px; justify-content: center; align-items: center; flex-wrap: wrap;">
+            <a href="/tourism" onclick="event.preventDefault(); navigate('/tourism')" style="background: #00A651 !important; color: #FFFFFF !important; padding: 16px 36px; font-size: 16px; border-radius: 99px; font-weight: 800; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 6px 20px rgba(0, 166, 81, 0.38);">
+              Explore Our Services →
+            </a>
+            <a href="/contact" onclick="event.preventDefault(); navigate('/contact')" style="background: rgba(255, 255, 255, 0.12); border: 1.5px solid rgba(255, 255, 255, 0.4); color: #FFFFFF !important; padding: 16px 32px; font-size: 16px; border-radius: 99px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; backdrop-filter: blur(8px);">
+              Contact Us →
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION 2: COMPANY INTRODUCTION -->
+      <section style="background: #07153B !important; padding: 80px 0; border-top: 1px solid rgba(255, 255, 255, 0.08); border-bottom: 1px solid rgba(255, 255, 255, 0.08);">
+        <div class="shell" style="max-width: 1000px; text-align: center;">
           <div style="font-size: 12px; font-weight: 800; letter-spacing: 2.5px; color: #00E676 !important; text-transform: uppercase; margin-bottom: 12px;">
-            OUR SERVICES
+            WHO WE ARE
           </div>
-          <h2 style="font-size: clamp(28px, 3.8vw, 40px); font-weight: 800; color: #FFFFFF !important; margin: 0;">
-            Everything You Need for Your Journey
+          <h2 style="font-size: clamp(30px, 4vw, 44px); font-weight: 800; color: #FFFFFF !important; margin-bottom: 24px; line-height: 1.2;">
+            Travel Made Simpler.<br>
+            Journeys Made Better.
           </h2>
-        </div>
-
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px;">
-
-          <!-- Service 1: Oman Tours -->
-          <div style="background: rgba(255, 255, 255, 0.06); border-radius: 20px; padding: 32px 28px; border: 1px solid rgba(255, 255, 255, 0.15); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25); backdrop-filter: blur(10px); display: flex; flex-direction: column; justify-content: space-between;">
-            <div>
-              <div style="width: 48px; height: 48px; border-radius: 12px; background: rgba(0, 230, 118, 0.15); color: #00E676 !important; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 800; margin-bottom: 20px;">01</div>
-              <h3 style="font-size: 20px; font-weight: 800; color: #FFFFFF !important; margin-bottom: 12px;">Oman Tours &amp; Holidays</h3>
-              <p style="font-size: 14.5px; line-height: 1.6; color: #D6E0F4 !important; margin-bottom: 24px;">
-                Explore Oman through carefully planned travel experiences, destinations and holiday packages.
-              </p>
-            </div>
-            <a href="/tourism" onclick="event.preventDefault(); navigate('/tourism')" style="color: #00E676 !important; font-weight: 800; font-size: 14.5px; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
-              Explore →
-            </a>
-          </div>
-
-          <!-- Service 2: Oman Visa -->
-          <div style="background: rgba(255, 255, 255, 0.06); border-radius: 20px; padding: 32px 28px; border: 1px solid rgba(255, 255, 255, 0.15); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25); backdrop-filter: blur(10px); display: flex; flex-direction: column; justify-content: space-between;">
-            <div>
-              <div style="width: 48px; height: 48px; border-radius: 12px; background: rgba(0, 230, 118, 0.15); color: #00E676 !important; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 800; margin-bottom: 20px;">02</div>
-              <h3 style="font-size: 20px; font-weight: 800; color: #FFFFFF !important; margin-bottom: 12px;">Oman Visa Services</h3>
-              <p style="font-size: 14.5px; line-height: 1.6; color: #D6E0F4 !important; margin-bottom: 24px;">
-                Assistance with Oman visa applications and related documentation.
-              </p>
-            </div>
-            <a href="/visa" onclick="event.preventDefault(); navigate('/visa')" style="color: #00E676 !important; font-weight: 800; font-size: 14.5px; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
-              Explore →
-            </a>
-          </div>
-
-          <!-- Service 3: Schengen Visa -->
-          <div style="background: rgba(255, 255, 255, 0.06); border-radius: 20px; padding: 32px 28px; border: 1px solid rgba(255, 255, 255, 0.15); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25); backdrop-filter: blur(10px); display: flex; flex-direction: column; justify-content: space-between;">
-            <div>
-              <div style="width: 48px; height: 48px; border-radius: 12px; background: rgba(0, 230, 118, 0.15); color: #00E676 !important; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 800; margin-bottom: 20px;">03</div>
-              <h3 style="font-size: 20px; font-weight: 800; color: #FFFFFF !important; margin-bottom: 12px;">Schengen Visa Assistance</h3>
-              <p style="font-size: 14.5px; line-height: 1.6; color: #D6E0F4 !important; margin-bottom: 24px;">
-                Guidance for customers planning travel to Schengen destinations.
-              </p>
-            </div>
-            <a href="/visa?service=schengen" onclick="event.preventDefault(); navigate('/visa?service=schengen')" style="color: #00E676 !important; font-weight: 800; font-size: 14.5px; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
-              Explore →
-            </a>
-          </div>
-
-          <!-- Service 4: Hotels -->
-          <div style="background: rgba(255, 255, 255, 0.06); border-radius: 20px; padding: 32px 28px; border: 1px solid rgba(255, 255, 255, 0.15); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25); backdrop-filter: blur(10px); display: flex; flex-direction: column; justify-content: space-between;">
-            <div>
-              <div style="width: 48px; height: 48px; border-radius: 12px; background: rgba(0, 230, 118, 0.15); color: #00E676 !important; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 800; margin-bottom: 20px;">04</div>
-              <h3 style="font-size: 20px; font-weight: 800; color: #FFFFFF !important; margin-bottom: 12px;">Hotels</h3>
-              <p style="font-size: 14.5px; line-height: 1.6; color: #D6E0F4 !important; margin-bottom: 24px;">
-                Hotel accommodation options for leisure, business, family and group travel.
-              </p>
-            </div>
-            <a href="/hotels" onclick="event.preventDefault(); navigate('/hotels')" style="color: #00E676 !important; font-weight: 800; font-size: 14.5px; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
-              Explore →
-            </a>
-          </div>
-
-          <!-- Service 5: Flights -->
-          <div style="background: rgba(255, 255, 255, 0.06); border-radius: 20px; padding: 32px 28px; border: 1px solid rgba(255, 255, 255, 0.15); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25); backdrop-filter: blur(10px); display: flex; flex-direction: column; justify-content: space-between;">
-            <div>
-              <div style="width: 48px; height: 48px; border-radius: 12px; background: rgba(0, 230, 118, 0.15); color: #00E676 !important; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 800; margin-bottom: 20px;">05</div>
-              <h3 style="font-size: 20px; font-weight: 800; color: #FFFFFF !important; margin-bottom: 12px;">Flights</h3>
-              <p style="font-size: 14.5px; line-height: 1.6; color: #D6E0F4 !important; margin-bottom: 24px;">
-                Flight search and travel assistance for domestic and international journeys.
-              </p>
-            </div>
-            <a href="/flights" onclick="event.preventDefault(); navigate('/flights')" style="color: #00E676 !important; font-weight: 800; font-size: 14.5px; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
-              Explore →
-            </a>
-          </div>
-
-        </div>
-      </div>
-    </section>
-
-    <!-- SECTION 4: WHY CHOOSE JMT TRAVELS -->
-    <section style="background: linear-gradient(135deg, #07153B 0%, #0B286C 100%); padding: 85px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
-      <div class="shell">
-        <div style="text-align: center; max-width: 700px; margin: 0 auto 50px;">
-          <div style="font-size: 12px; font-weight: 800; letter-spacing: 2.5px; color: #00E676 !important; text-transform: uppercase; margin-bottom: 12px;">
-            WHY CHOOSE JMT TRAVELS?
-          </div>
-          <h2 style="font-size: clamp(28px, 3.8vw, 40px); font-weight: 800; color: #FFFFFF !important; margin: 0;">
-            A Travel Partner You Can Rely On
-          </h2>
-        </div>
-
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px;">
-          <div style="background: rgba(255, 255, 255, 0.06); border-radius: 18px; padding: 30px 24px; border-left: 4px solid #00E676; border-top: 1px solid rgba(255, 255, 255, 0.12); border-right: 1px solid rgba(255, 255, 255, 0.12); border-bottom: 1px solid rgba(255, 255, 255, 0.12); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25); backdrop-filter: blur(10px);">
-            <h3 style="font-size: 18px; font-weight: 800; color: #FFFFFF !important; margin-bottom: 10px;">Personalized Assistance</h3>
-            <p style="font-size: 14px; line-height: 1.6; color: #D6E0F4 !important; margin: 0;">Travel support designed around the customer's needs.</p>
-          </div>
-
-          <div style="background: rgba(255, 255, 255, 0.06); border-radius: 18px; padding: 30px 24px; border-left: 4px solid #00E676; border-top: 1px solid rgba(255, 255, 255, 0.12); border-right: 1px solid rgba(255, 255, 255, 0.12); border-bottom: 1px solid rgba(255, 255, 255, 0.12); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25); backdrop-filter: blur(10px);">
-            <h3 style="font-size: 18px; font-weight: 800; color: #FFFFFF !important; margin-bottom: 10px;">Convenient Experience</h3>
-            <p style="font-size: 14px; line-height: 1.6; color: #D6E0F4 !important; margin: 0;">Bring essential travel services together in one place.</p>
-          </div>
-
-          <div style="background: rgba(255, 255, 255, 0.06); border-radius: 18px; padding: 30px 24px; border-left: 4px solid #00E676; border-top: 1px solid rgba(255, 255, 255, 0.12); border-right: 1px solid rgba(255, 255, 255, 0.12); border-bottom: 1px solid rgba(255, 255, 255, 0.12); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25); backdrop-filter: blur(10px);">
-            <h3 style="font-size: 18px; font-weight: 800; color: #FFFFFF !important; margin-bottom: 10px;">Clear Guidance</h3>
-            <p style="font-size: 14px; line-height: 1.6; color: #D6E0F4 !important; margin: 0;">Make important travel and visa steps easier to understand.</p>
-          </div>
-
-          <div style="background: rgba(255, 255, 255, 0.06); border-radius: 18px; padding: 30px 24px; border-left: 4px solid #00E676; border-top: 1px solid rgba(255, 255, 255, 0.12); border-right: 1px solid rgba(255, 255, 255, 0.12); border-bottom: 1px solid rgba(255, 255, 255, 0.12); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25); backdrop-filter: blur(10px);">
-            <h3 style="font-size: 18px; font-weight: 800; color: #FFFFFF !important; margin-bottom: 10px;">Journey-Focused Service</h3>
-            <p style="font-size: 14px; line-height: 1.6; color: #D6E0F4 !important; margin: 0;">Support customers from planning through travel.</p>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- SECTION 5: OUR APPROACH (4-STAGE VISUAL JOURNEY) -->
-    <section style="background: linear-gradient(135deg, #0A225C 0%, #07153B 100%); padding: 85px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
-      <div class="shell">
-        <div style="text-align: center; max-width: 700px; margin: 0 auto 60px;">
-          <div style="font-size: 12px; font-weight: 800; letter-spacing: 2.5px; color: #00E676 !important; text-transform: uppercase; margin-bottom: 12px;">
-            OUR APPROACH
-          </div>
-          <h2 style="font-size: clamp(28px, 3.8vw, 40px); font-weight: 800; color: #FFFFFF !important; margin: 0;">
-            From Planning to Departure,<br>We're With You.
-          </h2>
-        </div>
-
-        <div class="jmt-about-timeline-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; position: relative;">
-
-          <!-- Stage 01 -->
-          <div style="background: rgba(255, 255, 255, 0.06); border-radius: 20px; padding: 30px 24px; border: 1px solid rgba(255, 255, 255, 0.15); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25); backdrop-filter: blur(10px); position: relative;">
-            <div style="font-size: 12px; font-weight: 800; color: #00E676 !important; letter-spacing: 1px; margin-bottom: 8px;">01</div>
-            <h3 style="font-size: 20px; font-weight: 800; color: #FFFFFF !important; margin-bottom: 12px;">Discover</h3>
-            <p style="font-size: 14px; line-height: 1.6; color: #D6E0F4 !important; margin: 0;">
-              Find the destination, service or travel experience that fits your plans.
+          <div style="background: rgba(255, 255, 255, 0.06); border-radius: 24px; padding: 40px 48px; border: 1px solid rgba(255, 255, 255, 0.15); box-shadow: 0 16px 40px rgba(0, 0, 0, 0.25); backdrop-filter: blur(10px); text-align: left; max-width: 860px; margin: 0 auto;">
+            <p style="font-size: 17px; line-height: 1.8; color: #D6E0F4 !important; margin-bottom: 20px;">
+              JMT Travels brings together essential travel services under one platform, helping customers plan and manage their journeys with greater convenience and confidence.
+            </p>
+            <p style="font-size: 17px; line-height: 1.8; color: #D6E0F4 !important; margin-bottom: 20px;">
+              From discovering destinations and arranging holidays to visa assistance, hotel accommodations and flight services, our goal is to make every stage of travel easier to navigate.
+            </p>
+            <p style="font-size: 17px; line-height: 1.8; color: #D6E0F4 !important; margin: 0;">
+              We combine personalized assistance with a modern digital experience so customers can spend less time dealing with travel complexity and more time looking forward to their journey.
             </p>
           </div>
-
-          <!-- Stage 02 -->
-          <div style="background: rgba(255, 255, 255, 0.06); border-radius: 20px; padding: 30px 24px; border: 1px solid rgba(255, 255, 255, 0.15); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25); backdrop-filter: blur(10px); position: relative;">
-            <div style="font-size: 12px; font-weight: 800; color: #00E676 !important; letter-spacing: 1px; margin-bottom: 8px;">02</div>
-            <h3 style="font-size: 20px; font-weight: 800; color: #FFFFFF !important; margin-bottom: 12px;">Plan</h3>
-            <p style="font-size: 14px; line-height: 1.6; color: #D6E0F4 !important; margin: 0;">
-              Choose the right travel services and prepare the necessary details.
-            </p>
-          </div>
-
-          <!-- Stage 03 -->
-          <div style="background: rgba(255, 255, 255, 0.06); border-radius: 20px; padding: 30px 24px; border: 1px solid rgba(255, 255, 255, 0.15); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25); backdrop-filter: blur(10px); position: relative;">
-            <div style="font-size: 12px; font-weight: 800; color: #00E676 !important; letter-spacing: 1px; margin-bottom: 8px;">03</div>
-            <h3 style="font-size: 20px; font-weight: 800; color: #FFFFFF !important; margin-bottom: 12px;">Prepare</h3>
-            <p style="font-size: 14px; line-height: 1.6; color: #D6E0F4 !important; margin: 0;">
-              Complete applications, bookings and travel arrangements with guidance.
-            </p>
-          </div>
-
-          <!-- Stage 04 -->
-          <div style="background: rgba(255, 255, 255, 0.06); border-radius: 20px; padding: 30px 24px; border: 1px solid rgba(255, 255, 255, 0.15); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25); backdrop-filter: blur(10px); position: relative;">
-            <div style="font-size: 12px; font-weight: 800; color: #00E676 !important; letter-spacing: 1px; margin-bottom: 8px;">04</div>
-            <h3 style="font-size: 20px; font-weight: 800; color: #FFFFFF !important; margin-bottom: 12px;">Travel</h3>
-            <p style="font-size: 14px; line-height: 1.6; color: #D6E0F4 !important; margin: 0;">
-              Move forward with greater confidence and a smoother journey.
-            </p>
-          </div>
-
         </div>
-      </div>
-    </section>
+      </section>
 
-    <!-- SECTION 6: OMAN — OUR HOME OF TRAVEL -->
-    <section style="background: linear-gradient(135deg, #07153B 0%, #0B286C 100%); padding: 90px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
-      <div class="shell">
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 48px; align-items: center;">
-          <div>
+      <!-- SECTION 3: WHAT JMT TRAVELS DOES (5 SERVICES) -->
+      <section style="background: #07153B !important; padding: 85px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.08);">
+        <div class="shell">
+          <div style="text-align: center; max-width: 700px; margin: 0 auto 50px;">
             <div style="font-size: 12px; font-weight: 800; letter-spacing: 2.5px; color: #00E676 !important; text-transform: uppercase; margin-bottom: 12px;">
-              OUR HOME OF TRAVEL
+              OUR SERVICES
             </div>
-            <h2 style="font-size: clamp(30px, 4vw, 42px); font-weight: 800; color: #FFFFFF !important; margin-bottom: 20px; line-height: 1.2;">
-              Discover Oman With JMT Travels
+            <h2 style="font-size: clamp(28px, 3.8vw, 40px); font-weight: 800; color: #FFFFFF !important; margin: 0;">
+              Everything You Need for Your Journey
             </h2>
-            <p style="font-size: 16px; line-height: 1.7; color: #D6E0F4 !important; margin-bottom: 24px;">
-              From Muscat's coastline and heritage to Nizwa's historic landmarks and Salalah's seasonal landscapes, Oman offers a remarkable mix of culture, nature and adventure.
-            </p>
-            <p style="font-size: 16px; line-height: 1.7; color: #D6E0F4 !important; margin-bottom: 32px;">
-              JMT Travels helps travelers discover and experience Oman through thoughtfully planned travel services and experiences.
-            </p>
-            <a href="/tourism" onclick="event.preventDefault(); navigate('/tourism')" style="background: linear-gradient(135deg, #00C875 0%, #009347 100%); color: #FFFFFF !important; padding: 14px 32px; font-size: 15px; border-radius: 99px; font-weight: 800; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 6px 18px rgba(0, 166, 81, 0.38);">
-              Explore Oman →
-            </a>
           </div>
 
-          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px;">
-            <img src="/assets/destinations/muscat-mutrah-waterfront.jpg" alt="Muscat Mutrah Waterfront, Oman" style="width: 100%; height: 220px; object-fit: cover; border-radius: 20px; border: 1px solid rgba(255, 255, 255, 0.15); box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);">
-            <img src="/assets/destinations/nizwa-fort.jpg" alt="Nizwa Fort, Oman" style="width: 100%; height: 220px; object-fit: cover; border-radius: 20px; border: 1px solid rgba(255, 255, 255, 0.15); box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35); margin-top: 24px;">
-            <img src="/assets/destinations/salalah-khreef-green-hills.jpg" alt="Salalah Khareef Green Hills, Oman" style="width: 100%; height: 220px; object-fit: cover; border-radius: 20px; border: 1px solid rgba(255, 255, 255, 0.15); box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35); margin-top: -24px;">
-            <img src="/assets/destinations/oman-coastal-landscape.jpg" alt="Oman Coastal Landscape" style="width: 100%; height: 220px; object-fit: cover; border-radius: 20px; border: 1px solid rgba(255, 255, 255, 0.15); box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px;">
+
+            <!-- Service 1: Oman Tours -->
+            <div style="background: rgba(255, 255, 255, 0.06); border-radius: 20px; padding: 32px 28px; border: 1px solid rgba(255, 255, 255, 0.15); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25); backdrop-filter: blur(10px); display: flex; flex-direction: column; justify-content: space-between;">
+              <div>
+                <div style="width: 48px; height: 48px; border-radius: 12px; background: rgba(0, 230, 118, 0.15); color: #00E676 !important; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 800; margin-bottom: 20px;">01</div>
+                <h3 style="font-size: 20px; font-weight: 800; color: #FFFFFF !important; margin-bottom: 12px;">Oman Tours &amp; Holidays</h3>
+                <p style="font-size: 14.5px; line-height: 1.6; color: #D6E0F4 !important; margin-bottom: 24px;">
+                  Explore Oman through carefully planned travel experiences, destinations and holiday packages.
+                </p>
+              </div>
+              <a href="/tourism" onclick="event.preventDefault(); navigate('/tourism')" style="color: #00E676 !important; font-weight: 800; font-size: 14.5px; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+                Explore →
+              </a>
+            </div>
+
+            <!-- Service 2: Oman Visa -->
+            <div style="background: rgba(255, 255, 255, 0.06); border-radius: 20px; padding: 32px 28px; border: 1px solid rgba(255, 255, 255, 0.15); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25); backdrop-filter: blur(10px); display: flex; flex-direction: column; justify-content: space-between;">
+              <div>
+                <div style="width: 48px; height: 48px; border-radius: 12px; background: rgba(0, 230, 118, 0.15); color: #00E676 !important; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 800; margin-bottom: 20px;">02</div>
+                <h3 style="font-size: 20px; font-weight: 800; color: #FFFFFF !important; margin-bottom: 12px;">Oman Visa Services</h3>
+                <p style="font-size: 14.5px; line-height: 1.6; color: #D6E0F4 !important; margin-bottom: 24px;">
+                  Assistance with Oman visa applications and related documentation.
+                </p>
+              </div>
+              <a href="/visa" onclick="event.preventDefault(); navigate('/visa')" style="color: #00E676 !important; font-weight: 800; font-size: 14.5px; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+                Explore →
+              </a>
+            </div>
+
+            <!-- Service 3: Schengen Visa -->
+            <div style="background: rgba(255, 255, 255, 0.06); border-radius: 20px; padding: 32px 28px; border: 1px solid rgba(255, 255, 255, 0.15); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25); backdrop-filter: blur(10px); display: flex; flex-direction: column; justify-content: space-between;">
+              <div>
+                <div style="width: 48px; height: 48px; border-radius: 12px; background: rgba(0, 230, 118, 0.15); color: #00E676 !important; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 800; margin-bottom: 20px;">03</div>
+                <h3 style="font-size: 20px; font-weight: 800; color: #FFFFFF !important; margin-bottom: 12px;">Schengen Visa Assistance</h3>
+                <p style="font-size: 14.5px; line-height: 1.6; color: #D6E0F4 !important; margin-bottom: 24px;">
+                  Guidance for customers planning travel to Schengen destinations.
+                </p>
+              </div>
+              <a href="/visa?service=schengen" onclick="event.preventDefault(); navigate('/visa?service=schengen')" style="color: #00E676 !important; font-weight: 800; font-size: 14.5px; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+                Explore →
+              </a>
+            </div>
+
+            <!-- Service 4: Hotels -->
+            <div style="background: rgba(255, 255, 255, 0.06); border-radius: 20px; padding: 32px 28px; border: 1px solid rgba(255, 255, 255, 0.15); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25); backdrop-filter: blur(10px); display: flex; flex-direction: column; justify-content: space-between;">
+              <div>
+                <div style="width: 48px; height: 48px; border-radius: 12px; background: rgba(0, 230, 118, 0.15); color: #00E676 !important; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 800; margin-bottom: 20px;">04</div>
+                <h3 style="font-size: 20px; font-weight: 800; color: #FFFFFF !important; margin-bottom: 12px;">Hotels</h3>
+                <p style="font-size: 14.5px; line-height: 1.6; color: #D6E0F4 !important; margin-bottom: 24px;">
+                  Hotel accommodation options for leisure, business, family and group travel.
+                </p>
+              </div>
+              <a href="/hotels" onclick="event.preventDefault(); navigate('/hotels')" style="color: #00E676 !important; font-weight: 800; font-size: 14.5px; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+                Explore →
+              </a>
+            </div>
+
+            <!-- Service 5: Flights -->
+            <div style="background: rgba(255, 255, 255, 0.06); border-radius: 20px; padding: 32px 28px; border: 1px solid rgba(255, 255, 255, 0.15); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25); backdrop-filter: blur(10px); display: flex; flex-direction: column; justify-content: space-between;">
+              <div>
+                <div style="width: 48px; height: 48px; border-radius: 12px; background: rgba(0, 230, 118, 0.15); color: #00E676 !important; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 800; margin-bottom: 20px;">05</div>
+                <h3 style="font-size: 20px; font-weight: 800; color: #FFFFFF !important; margin-bottom: 12px;">Flights</h3>
+                <p style="font-size: 14.5px; line-height: 1.6; color: #D6E0F4 !important; margin-bottom: 24px;">
+                  Flight search and travel assistance for domestic and international journeys.
+                </p>
+              </div>
+              <a href="/flights" onclick="event.preventDefault(); navigate('/flights')" style="color: #00E676 !important; font-weight: 800; font-size: 14.5px; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+                Explore →
+              </a>
+            </div>
+
           </div>
         </div>
-      </div>
-    </section>
+      </section>
 
-    <!-- SECTION 7: CUSTOMER-FIRST STATEMENT -->
-    <section style="background: linear-gradient(135deg, #0A225C 0%, #07153B 100%); padding: 80px 0; text-align: center; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
-      <div class="shell" style="max-width: 800px;">
-        <div style="background: rgba(255, 255, 255, 0.06); border-radius: 24px; padding: 48px 36px; border: 1px solid rgba(255, 255, 255, 0.18); box-shadow: 0 16px 40px rgba(0, 0, 0, 0.3); backdrop-filter: blur(10px);">
-          <blockquote style="font-size: clamp(26px, 3.5vw, 36px); font-weight: 800; color: #FFFFFF !important; line-height: 1.3; margin: 0 0 20px;">
-            “Travel should feel exciting —<br><span style="color: #00E676 !important;">not complicated.</span>”
-          </blockquote>
-          <p style="font-size: 16px; line-height: 1.7; color: #D6E0F4 !important; margin: 0; max-width: 640px; margin-left: auto; margin-right: auto;">
-            Our focus is to simplify the travel journey by bringing useful services, clear information and personalized assistance together in one experience.
-          </p>
-        </div>
-      </div>
-    </section>
-
-    <!-- SECTION 8: COMPANY VALUES (4 VALUES) -->
-    <section style="background: linear-gradient(135deg, #07153B 0%, #0B286C 100%); padding: 85px 0;">
-      <div class="shell">
-        <div style="text-align: center; max-width: 700px; margin: 0 auto 50px;">
-          <div style="font-size: 12px; font-weight: 800; letter-spacing: 2.5px; color: #00E676 !important; text-transform: uppercase; margin-bottom: 12px;">
-            OUR VALUES
-          </div>
-          <h2 style="font-size: clamp(28px, 3.8vw, 40px); font-weight: 800; color: #FFFFFF !important; margin: 0;">
-            Guided by Principles That Matter
-          </h2>
-        </div>
-
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 24px;">
-          <div style="background: rgba(255, 255, 255, 0.06); border-radius: 20px; padding: 32px 24px; border: 1px solid rgba(255, 255, 255, 0.15); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25); backdrop-filter: blur(10px);">
-            <h3 style="font-size: 20px; font-weight: 800; color: #FFFFFF !important; margin-bottom: 10px;">Trust</h3>
-            <p style="font-size: 14.5px; line-height: 1.6; color: #D6E0F4 !important; margin: 0;">
-              We aim to build every customer interaction around clarity and reliability.
-            </p>
+      <!-- SECTION 4: WHY CHOOSE JMT TRAVELS -->
+      <section style="background: #07153B !important; padding: 85px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.08);">
+        <div class="shell">
+          <div style="text-align: center; max-width: 700px; margin: 0 auto 50px;">
+            <div style="font-size: 12px; font-weight: 800; letter-spacing: 2.5px; color: #00E676 !important; text-transform: uppercase; margin-bottom: 12px;">
+              WHY CHOOSE JMT TRAVELS?
+            </div>
+            <h2 style="font-size: clamp(28px, 3.8vw, 40px); font-weight: 800; color: #FFFFFF !important; margin: 0;">
+              A Travel Partner You Can Rely On
+            </h2>
           </div>
 
-          <div style="background: rgba(255, 255, 255, 0.06); border-radius: 20px; padding: 32px 24px; border: 1px solid rgba(255, 255, 255, 0.15); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25); backdrop-filter: blur(10px);">
-            <h3 style="font-size: 20px; font-weight: 800; color: #FFFFFF !important; margin-bottom: 10px;">Care</h3>
-            <p style="font-size: 14.5px; line-height: 1.6; color: #D6E0F4 !important; margin: 0;">
-              We treat every journey as personal and every customer with attention.
-            </p>
-          </div>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px;">
+            <div style="background: rgba(255, 255, 255, 0.06); border-radius: 18px; padding: 30px 24px; border-left: 4px solid #00E676; border-top: 1px solid rgba(255, 255, 255, 0.12); border-right: 1px solid rgba(255, 255, 255, 0.12); border-bottom: 1px solid rgba(255, 255, 255, 0.12); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25); backdrop-filter: blur(10px);">
+              <h3 style="font-size: 18px; font-weight: 800; color: #FFFFFF !important; margin-bottom: 10px;">Personalized Assistance</h3>
+              <p style="font-size: 14px; line-height: 1.6; color: #D6E0F4 !important; margin: 0;">Travel support designed around the customer's needs.</p>
+            </div>
 
-          <div style="background: rgba(255, 255, 255, 0.06); border-radius: 20px; padding: 32px 24px; border: 1px solid rgba(255, 255, 255, 0.15); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25); backdrop-filter: blur(10px);">
-            <h3 style="font-size: 20px; font-weight: 800; color: #FFFFFF !important; margin-bottom: 10px;">Simplicity</h3>
-            <p style="font-size: 14.5px; line-height: 1.6; color: #D6E0F4 !important; margin: 0;">
-              We make complex travel processes easier to navigate.
-            </p>
-          </div>
+            <div style="background: rgba(255, 255, 255, 0.06); border-radius: 18px; padding: 30px 24px; border-left: 4px solid #00E676; border-top: 1px solid rgba(255, 255, 255, 0.12); border-right: 1px solid rgba(255, 255, 255, 0.12); border-bottom: 1px solid rgba(255, 255, 255, 0.12); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25); backdrop-filter: blur(10px);">
+              <h3 style="font-size: 18px; font-weight: 800; color: #FFFFFF !important; margin-bottom: 10px;">Convenient Experience</h3>
+              <p style="font-size: 14px; line-height: 1.6; color: #D6E0F4 !important; margin: 0;">Bring essential travel services together in one place.</p>
+            </div>
 
-          <div style="background: rgba(255, 255, 255, 0.06); border-radius: 20px; padding: 32px 24px; border: 1px solid rgba(255, 255, 255, 0.15); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25); backdrop-filter: blur(10px);">
-            <h3 style="font-size: 20px; font-weight: 800; color: #FFFFFF !important; margin-bottom: 10px;">Experience</h3>
-            <p style="font-size: 14.5px; line-height: 1.6; color: #D6E0F4 !important; margin: 0;">
-              We create travel experiences that customers can look forward to.
-            </p>
+            <div style="background: rgba(255, 255, 255, 0.06); border-radius: 18px; padding: 30px 24px; border-left: 4px solid #00E676; border-top: 1px solid rgba(255, 255, 255, 0.12); border-right: 1px solid rgba(255, 255, 255, 0.12); border-bottom: 1px solid rgba(255, 255, 255, 0.12); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25); backdrop-filter: blur(10px);">
+              <h3 style="font-size: 18px; font-weight: 800; color: #FFFFFF !important; margin-bottom: 10px;">Clear Guidance</h3>
+              <p style="font-size: 14px; line-height: 1.6; color: #D6E0F4 !important; margin: 0;">Make important travel and visa steps easier to understand.</p>
+            </div>
+
+            <div style="background: rgba(255, 255, 255, 0.06); border-radius: 18px; padding: 30px 24px; border-left: 4px solid #00E676; border-top: 1px solid rgba(255, 255, 255, 0.12); border-right: 1px solid rgba(255, 255, 255, 0.12); border-bottom: 1px solid rgba(255, 255, 255, 0.12); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25); backdrop-filter: blur(10px);">
+              <h3 style="font-size: 18px; font-weight: 800; color: #FFFFFF !important; margin-bottom: 10px;">Journey-Focused Service</h3>
+              <p style="font-size: 14px; line-height: 1.6; color: #D6E0F4 !important; margin: 0;">Support customers from planning through travel.</p>
+            </div>
           </div>
         </div>
-      </div>
-    </section>
+      </section>
 
-    <!-- SECTION 9: FINAL CALL TO ACTION -->
-    <section style="background: linear-gradient(135deg, #07153B 0%, #0B286C 100%); padding: 85px 0; color: #FFFFFF; text-align: center; border-top: 1px solid rgba(255, 255, 255, 0.1);">
+      <!-- SECTION 5: OUR APPROACH (4-STAGE VISUAL JOURNEY) -->
+      <section style="background: #07153B !important; padding: 85px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.08);">
+        <div class="shell">
+          <div style="text-align: center; max-width: 700px; margin: 0 auto 60px;">
+            <div style="font-size: 12px; font-weight: 800; letter-spacing: 2.5px; color: #00E676 !important; text-transform: uppercase; margin-bottom: 12px;">
+              OUR APPROACH
+            </div>
+            <h2 style="font-size: clamp(28px, 3.8vw, 40px); font-weight: 800; color: #FFFFFF !important; margin: 0;">
+              From Planning to Departure,<br>We're With You.
+            </h2>
+          </div>
+
+          <div class="jmt-about-timeline-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; position: relative;">
+
+            <!-- Stage 01 -->
+            <div style="background: rgba(255, 255, 255, 0.06); border-radius: 20px; padding: 30px 24px; border: 1px solid rgba(255, 255, 255, 0.15); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25); backdrop-filter: blur(10px); position: relative;">
+              <div style="font-size: 12px; font-weight: 800; color: #00E676 !important; letter-spacing: 1px; margin-bottom: 8px;">01</div>
+              <h3 style="font-size: 20px; font-weight: 800; color: #FFFFFF !important; margin-bottom: 12px;">Discover</h3>
+              <p style="font-size: 14px; line-height: 1.6; color: #D6E0F4 !important; margin: 0;">
+                Find the destination, service or travel experience that fits your plans.
+              </p>
+            </div>
+
+            <!-- Stage 02 -->
+            <div style="background: rgba(255, 255, 255, 0.06); border-radius: 20px; padding: 30px 24px; border: 1px solid rgba(255, 255, 255, 0.15); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25); backdrop-filter: blur(10px); position: relative;">
+              <div style="font-size: 12px; font-weight: 800; color: #00E676 !important; letter-spacing: 1px; margin-bottom: 8px;">02</div>
+              <h3 style="font-size: 20px; font-weight: 800; color: #FFFFFF !important; margin-bottom: 12px;">Plan</h3>
+              <p style="font-size: 14px; line-height: 1.6; color: #D6E0F4 !important; margin: 0;">
+                Choose the right travel services and prepare the necessary details.
+              </p>
+            </div>
+
+            <!-- Stage 03 -->
+            <div style="background: rgba(255, 255, 255, 0.06); border-radius: 20px; padding: 30px 24px; border: 1px solid rgba(255, 255, 255, 0.15); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25); backdrop-filter: blur(10px); position: relative;">
+              <div style="font-size: 12px; font-weight: 800; color: #00E676 !important; letter-spacing: 1px; margin-bottom: 8px;">03</div>
+              <h3 style="font-size: 20px; font-weight: 800; color: #FFFFFF !important; margin-bottom: 12px;">Prepare</h3>
+              <p style="font-size: 14px; line-height: 1.6; color: #D6E0F4 !important; margin: 0;">
+                Complete applications, bookings and travel arrangements with guidance.
+              </p>
+            </div>
+
+            <!-- Stage 04 -->
+            <div style="background: rgba(255, 255, 255, 0.06); border-radius: 20px; padding: 30px 24px; border: 1px solid rgba(255, 255, 255, 0.15); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25); backdrop-filter: blur(10px); position: relative;">
+              <div style="font-size: 12px; font-weight: 800; color: #00E676 !important; letter-spacing: 1px; margin-bottom: 8px;">04</div>
+              <h3 style="font-size: 20px; font-weight: 800; color: #FFFFFF !important; margin-bottom: 12px;">Travel</h3>
+              <p style="font-size: 14px; line-height: 1.6; color: #D6E0F4 !important; margin: 0;">
+                Move forward with greater confidence and a smoother journey.
+              </p>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION 6: OMAN — OUR HOME OF TRAVEL -->
+      <section style="background: #07153B !important; padding: 90px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.08);">
+        <div class="shell">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 48px; align-items: center;">
+            <div>
+              <div style="font-size: 12px; font-weight: 800; letter-spacing: 2.5px; color: #00E676 !important; text-transform: uppercase; margin-bottom: 12px;">
+                OUR HOME OF TRAVEL
+              </div>
+              <h2 style="font-size: clamp(30px, 4vw, 42px); font-weight: 800; color: #FFFFFF !important; margin-bottom: 20px; line-height: 1.2;">
+                Discover Oman With JMT Travels
+              </h2>
+              <p style="font-size: 16px; line-height: 1.7; color: #D6E0F4 !important; margin-bottom: 24px;">
+                From Muscat's coastline and heritage to Nizwa's historic landmarks and Salalah's seasonal landscapes, Oman offers a remarkable mix of culture, nature and adventure.
+              </p>
+              <p style="font-size: 16px; line-height: 1.7; color: #D6E0F4 !important; margin-bottom: 32px;">
+                JMT Travels helps travelers discover and experience Oman through thoughtfully planned travel services and experiences.
+              </p>
+              <a href="/tourism" onclick="event.preventDefault(); navigate('/tourism')" style="background: #00A651 !important; color: #FFFFFF !important; padding: 14px 32px; font-size: 15px; border-radius: 99px; font-weight: 800; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 6px 18px rgba(0, 166, 81, 0.38);">
+                Explore Oman →
+              </a>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px;">
+              <img src="/assets/destinations/muscat-mutrah-waterfront.jpg" alt="Muscat Mutrah Waterfront, Oman" style="width: 100%; height: 220px; object-fit: cover; border-radius: 20px; border: 1px solid rgba(255, 255, 255, 0.15); box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);">
+              <img src="/assets/destinations/nizwa-fort.jpg" alt="Nizwa Fort, Oman" style="width: 100%; height: 220px; object-fit: cover; border-radius: 20px; border: 1px solid rgba(255, 255, 255, 0.15); box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35); margin-top: 24px;">
+              <img src="/assets/destinations/salalah-khreef-green-hills.jpg" alt="Salalah Khareef Green Hills, Oman" style="width: 100%; height: 220px; object-fit: cover; border-radius: 20px; border: 1px solid rgba(255, 255, 255, 0.15); box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35); margin-top: -24px;">
+              <img src="/assets/destinations/oman-coastal-landscape.jpg" alt="Oman Coastal Landscape" style="width: 100%; height: 220px; object-fit: cover; border-radius: 20px; border: 1px solid rgba(255, 255, 255, 0.15); box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);">
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION 7: CUSTOMER-FIRST STATEMENT -->
+      <section style="background: #07153B !important; padding: 80px 0; text-align: center; border-bottom: 1px solid rgba(255, 255, 255, 0.08);">
+        <div class="shell" style="max-width: 800px;">
+          <div style="background: rgba(255, 255, 255, 0.06); border-radius: 24px; padding: 48px 36px; border: 1px solid rgba(255, 255, 255, 0.18); box-shadow: 0 16px 40px rgba(0, 0, 0, 0.3); backdrop-filter: blur(10px);">
+            <blockquote style="font-size: clamp(26px, 3.5vw, 36px); font-weight: 800; color: #FFFFFF !important; line-height: 1.3; margin: 0 0 20px;">
+              “Travel should feel exciting —<br><span style="color: #00E676 !important;">not complicated.</span>”
+            </blockquote>
+            <p style="font-size: 16px; line-height: 1.7; color: #D6E0F4 !important; margin: 0; max-width: 640px; margin-left: auto; margin-right: auto;">
+              Our focus is to simplify the travel journey by bringing useful services, clear information and personalized assistance together in one experience.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION 8: COMPANY VALUES (4 VALUES) -->
+      <section style="background: #07153B !important; padding: 85px 0;">
+        <div class="shell">
+          <div style="text-align: center; max-width: 700px; margin: 0 auto 50px;">
+            <div style="font-size: 12px; font-weight: 800; letter-spacing: 2.5px; color: #00E676 !important; text-transform: uppercase; margin-bottom: 12px;">
+              OUR VALUES
+            </div>
+            <h2 style="font-size: clamp(28px, 3.8vw, 40px); font-weight: 800; color: #FFFFFF !important; margin: 0;">
+              Guided by Principles That Matter
+            </h2>
+          </div>
+
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 24px;">
+            <div style="background: rgba(255, 255, 255, 0.06); border-radius: 20px; padding: 32px 24px; border: 1px solid rgba(255, 255, 255, 0.15); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25); backdrop-filter: blur(10px);">
+              <h3 style="font-size: 20px; font-weight: 800; color: #FFFFFF !important; margin-bottom: 10px;">Trust</h3>
+              <p style="font-size: 14.5px; line-height: 1.6; color: #D6E0F4 !important; margin: 0;">
+                We aim to build every customer interaction around clarity and reliability.
+              </p>
+            </div>
+
+            <div style="background: rgba(255, 255, 255, 0.06); border-radius: 20px; padding: 32px 24px; border: 1px solid rgba(255, 255, 255, 0.15); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25); backdrop-filter: blur(10px);">
+              <h3 style="font-size: 20px; font-weight: 800; color: #FFFFFF !important; margin-bottom: 10px;">Care</h3>
+              <p style="font-size: 14.5px; line-height: 1.6; color: #D6E0F4 !important; margin: 0;">
+                We treat every journey as personal and every customer with attention.
+              </p>
+            </div>
+
+            <div style="background: rgba(255, 255, 255, 0.06); border-radius: 20px; padding: 32px 24px; border: 1px solid rgba(255, 255, 255, 0.15); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25); backdrop-filter: blur(10px);">
+              <h3 style="font-size: 20px; font-weight: 800; color: #FFFFFF !important; margin-bottom: 10px;">Simplicity</h3>
+              <p style="font-size: 14.5px; line-height: 1.6; color: #D6E0F4 !important; margin: 0;">
+                We make complex travel processes easier to navigate.
+              </p>
+            </div>
+
+            <div style="background: rgba(255, 255, 255, 0.06); border-radius: 20px; padding: 32px 24px; border: 1px solid rgba(255, 255, 255, 0.15); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25); backdrop-filter: blur(10px);">
+              <h3 style="font-size: 20px; font-weight: 800; color: #FFFFFF !important; margin-bottom: 10px;">Experience</h3>
+              <p style="font-size: 14.5px; line-height: 1.6; color: #D6E0F4 !important; margin: 0;">
+                We create travel experiences that customers can look forward to.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION 9: FINAL CALL TO ACTION -->
+      <section style="background: linear-gradient(135deg, #07153B 0%, #0B286C 100%); padding: 85px 0; color: #FFFFFF; text-align: center; border-top: 1px solid rgba(255, 255, 255, 0.1);">
       <div class="shell" style="max-width: 800px;">
         <h2 style="font-size: clamp(32px, 4.5vw, 48px); font-weight: 800; margin-bottom: 20px; color: #FFFFFF; line-height: 1.2;">
           Ready to Start Your Journey?
@@ -12403,11 +12556,13 @@ function renderPolicyPage(container, type) {
   announceToSR(`Navigated to ${titleText}`);
 
   container.innerHTML = `
-    <div class="shell" style="padding: 60px 0; max-width: 800px;">
-      <h1 style="color: var(--primary); margin-bottom: 16px;">${escapeHTML(titleText)}</h1>
-      <div class="card">
-        <p style="margin-bottom: 16px;">JMT Travel &amp; Tourism is committed to protecting your data and delivering clear, transparent travel services across Oman and the GCC.</p>
-        <p style="color: var(--text-muted); font-size: 14px;">For complete legal policy documentation or case inquiries, please contact <a href="https://mail.google.com/mail/?view=cm&fs=1&to=info%40jmttravels.com" target="_blank" rel="noopener noreferrer" aria-label="Email JMT Travels via Gmail" class="jmt-email-link" style="color: #00A651; font-weight: 700; text-decoration: underline;">info@jmttravels.com</a> or visit our Muscat office.</p>
+    <div style="background: #07153B !important; min-height: 100vh; color: #FFFFFF !important;">
+      <div class="shell" style="padding: 60px 20px; max-width: 800px;">
+        <h1 style="color: #00E676 !important; margin-bottom: 20px; font-weight: 800; font-size: 32px;">${escapeHTML(titleText)}</h1>
+        <div class="jmt-card" style="background: #0B286C !important; border: 1px solid rgba(255, 255, 255, 0.15) !important; color: #FFFFFF !important; border-radius: 20px; padding: 32px;">
+          <p style="margin-bottom: 16px; color: #FFFFFF !important; font-size: 16px; line-height: 1.7;">JMT Travel &amp; Tourism is committed to protecting your data and delivering clear, transparent travel services across Oman and the GCC.</p>
+          <p style="color: #E2E8F0 !important; font-size: 14.5px; line-height: 1.6;">For complete legal policy documentation or case inquiries, please contact <a href="https://mail.google.com/mail/?view=cm&fs=1&to=info%40jmttravels.com" target="_blank" rel="noopener noreferrer" aria-label="Email JMT Travels via Gmail" class="jmt-email-link" style="color: #00E676 !important; font-weight: 700; text-decoration: underline;">info@jmttravels.com</a> or visit our Muscat office.</p>
+        </div>
       </div>
     </div>
   `;

@@ -33,8 +33,8 @@ class ChatToolsService {
         {
           question: isArabic ? 'أين يقع مكتب JMT للسفر؟' : 'Where is the JMT Travels office located?',
           answer: isArabic
-            ? '📍 مسقط، سلطنة عمان - بالقرب من دوار مازدا، بجوار مطعم يحيى، مبنى 512.\n📞 الهاتف: +968 7113 2424 | واتساب: +968 9760 8999'
-            : '📍 Muscat, Sultanate of Oman (Near Mazda R/A, 512 Oman).\n📞 Phone: +968 7113 2424 | WhatsApp: +968 9760 8999'
+            ? '📍 مسقط، سلطنة عمان - بالقرب من دوار مازدا، بجوار مطعم يحيى، مبنى 512.\n📞 الهاتف: +968 25655177 / +968 25655711 | واتساب: +968 9760 8999'
+            : '📍 Muscat, Sultanate of Oman (Near Mazda R/A, 512 Oman).\n📞 Phone: +968 25655177 / +968 25655711 | WhatsApp: +968 9760 8999'
         },
         {
           question: isArabic ? 'ما هي طرق الدفع المتاحة؟' : 'What payment methods are supported?',

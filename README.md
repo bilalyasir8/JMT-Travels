@@ -139,8 +139,8 @@ Tests cover:
 
 ## 6. Official Brand & Contact
 
-- **Company**: JMT Travel & Tourism (Oman)
-- **Location**: near Mazda R/A, next to Yahar Restaurant, 512, Muscat, Oman
-- **Call**: [+968 7113 2424](tel:+96871132424)
+- **Company**: JMT Travel & Tourism
+- **Location**: [near Mazda R/A, next to Yahar Restaurant, 512, Oman](https://maps.app.goo.gl/3xDLiEdchqgivn1Z7)
+- **Call**: [+968 25655177](tel:+96825655177) / [+968 25655711](tel:+96825655711)
 - **WhatsApp**: [+968 9760 8999](https://wa.me/96897608999)
 - **Email**: [info@jmttravels.com](mailto:info@jmttravels.com)
