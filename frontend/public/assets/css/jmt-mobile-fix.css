@@ -37,9 +37,11 @@ img, video, iframe { max-width: 100%; }
   .mobile-nav-drawer { padding: 14px 16px 20px !important; }
   .mobile-nav-links a { min-height: 42px; display: flex !important; align-items: center; }
 
-  /* Top contact strip: prevent cramped desktop content on phones. */
+  /* Top contact strip: convert desktop row into a compact mobile stack. */
   body > div:first-child .shell,
   body > .shell { flex-wrap: wrap !important; }
+  body > div:first-child .shell > div:last-child { width: 100%; justify-content: flex-start !important; gap: 8px !important; flex-wrap: wrap !important; }
+  body > div:first-child .shell > div:first-child { width: 100%; line-height: 1.4; }
 
   /* Generic grids collapse cleanly. */
   .card-grid,
@@ -55,17 +57,42 @@ img, video, iframe { max-width: 100%; }
   .shell, .container,
   #view-container > .shell { width: 100% !important; max-width: 100% !important; padding-inline: 16px !important; }
 
-  .hero-slideshow-wrap { height: clamp(360px, 72vw, 500px) !important; }
+  /* Common page section spacing. */
+  #view-container section { margin-inline: 0 !important; }
+  #view-container .section,
+  #view-container .section-pad,
+  #view-container .page-section { padding-block: 38px !important; }
+
+  /* Hero and image safety. */
+  .hero-slideshow-wrap { height: clamp(360px, 72vw, 500px) !important; min-height: 360px !important; }
+  .hero-slide-item { background-position: center center !important; }
   .oman-promo-card { grid-template-columns: 1fr !important; margin: 40px 0 !important; }
   .oman-promo-content { padding: 28px 20px !important; }
   .oman-promo-image { min-height: 240px !important; max-height: 320px; }
 
-  /* Prevent wide form rows from overflowing. */
-  form, .search-form, .flight-search, .hotel-search { max-width: 100% !important; }
-  form > *, .search-form > *, .flight-search > *, .hotel-search > * { min-width: 0 !important; max-width: 100%; }
+  /* Search panels: one comfortable field per row. */
+  form, .search-form, .flight-search, .hotel-search,
+  .hero-search-card, .jmt-hotel-search-panel { max-width: 100% !important; width: 100% !important; }
+  form > *, .search-form > *, .flight-search > *, .hotel-search > *,
+  .hero-search-card > *, .jmt-hotel-search-panel > * { min-width: 0 !important; max-width: 100% !important; }
+  form .form-row, form .search-row,
+  .search-form .form-row, .search-form .search-row,
+  .flight-search .form-row, .flight-search .search-row,
+  .hotel-search .form-row, .hotel-search .search-row { grid-template-columns: 1fr !important; display: grid !important; }
   input, select, textarea, button { max-width: 100%; }
+  form button, .search-form button, .flight-search button, .hotel-search button { width: 100%; }
 
-  .chatbot-drawer { left: 12px !important; right: 12px !important; bottom: 76px !important; width: auto !important; max-width: none !important; height: min(70vh, 520px) !important; }
+  /* Prevent fixed-width cards/components from creating horizontal scroll. */
+  .card, .jmt-card, .jmt-panel, .card-subtle, .jmt-card-subtle,
+  .destination-card, .dest-card-box { min-width: 0 !important; max-width: 100% !important; }
+  .destination-card { height: 300px !important; }
+
+  /* Buttons wrap instead of forcing the viewport wider. */
+  .btn-group, .hero-actions, .cta-actions, .action-row { flex-wrap: wrap !important; }
+  .btn-group .btn, .hero-actions .btn, .cta-actions .btn { max-width: 100%; }
+
+  /* Chatbot stays inside the safe mobile viewport. */
+  .chatbot-drawer { left: 12px !important; right: 12px !important; bottom: 76px !important; width: auto !important; max-width: none !important; height: min(70vh, 520px) !important; border-radius: 16px !important; }
   .chatbot-trigger { right: 16px !important; bottom: 16px !important; }
 
   /* Tables become horizontally scrollable instead of breaking the viewport. */
@@ -81,20 +108,28 @@ img, video, iframe { max-width: 100%; }
   h2 { font-size: clamp(24px, 7vw, 34px) !important; line-height: 1.15 !important; }
   h3 { font-size: clamp(19px, 5.5vw, 26px) !important; }
 
-  .hero-slideshow-wrap { height: 390px !important; }
+  .hero-slideshow-wrap { height: 390px !important; min-height: 390px !important; }
+  .hero-search-card { margin-inline: 0 !important; border-radius: 16px !important; }
+  .jmt-hotel-search-panel { padding: 18px !important; border-radius: 16px !important; }
   .cta-banner-wrapper { padding: 38px 18px !important; margin-top: 40px !important; }
 
   /* Keep fixed chat controls clear of phone safe areas. */
   .chatbot-trigger { bottom: max(16px, env(safe-area-inset-bottom)) !important; }
+  .chatbot-drawer { bottom: max(76px, calc(env(safe-area-inset-bottom) + 68px)) !important; }
+
+  /* Comfortable tap targets on phones. */
+  button, a.btn, input, select, textarea { min-height: 44px; }
 }
 
 @media (max-width: 380px) {
   .brand-title { display: none !important; }
   .header-nav .shell, header[style] .shell { padding-inline: 12px !important; }
   .mobile-menu-btn { width: 40px; height: 40px; }
+  .shell, .container, #view-container > .shell { padding-inline: 12px !important; }
 }
 
 /* Respect users who request reduced motion. */
 @media (prefers-reduced-motion: reduce) {
   .hero-slide-item, .destination-card, .card, .jmt-card, * { scroll-behavior: auto !important; }
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
 }
