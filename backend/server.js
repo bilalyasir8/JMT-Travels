@@ -427,34 +427,6 @@ async function seedInitialData() {
       eligibility: 'Resident sponsor proof or family relation proof.',
       requiredDocuments: ['Passport Copy', 'Sponsor Resident Card', 'Relationship Proof'],
       published: true
-    },
-    {
-      slug: 'oman-work-visa',
-      country: 'Oman',
-      visaType: 'Work & Employment',
-      validity: '2 Years Resident',
-      processingTime: '3–5 Business Days',
-      entryType: 'Resident Work Permit',
-      priceMinor: 60000,
-      currency: 'OMR',
-      overview: 'End-to-end assistance with employment visa clearance, Ministry labor approvals, and residence permit processing.',
-      eligibility: 'Oman Ministry labor clearance approval & job offer contract.',
-      requiredDocuments: ['Passport Copy', 'Medical Fitness Certificate', 'Labor Approval'],
-      published: true
-    },
-    {
-      slug: 'oman-transit-visa',
-      country: 'Oman',
-      visaType: 'Transit',
-      validity: '72 Hours',
-      processingTime: '12–24 Hours',
-      entryType: 'Single Transit Entry',
-      priceMinor: 12000,
-      currency: 'OMR',
-      overview: 'Short stopover visa clearance for international travellers transiting through Muscat International Airport (MCT).',
-      eligibility: 'Confirmed onward flight ticket to third destination.',
-      requiredDocuments: ['Passport Copy', 'Onward Flight Ticket', 'Destination Visa (if required)'],
-      published: true
     }
   ];
 

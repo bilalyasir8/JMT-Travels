@@ -5,6 +5,13 @@
 html, body { max-width: 100%; overflow-x: hidden; }
 img, video, iframe { max-width: 100%; }
 
+/* Service Card Hover Elevation */
+.jmt-service-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 40px rgba(0, 230, 118, 0.15) !important;
+  border-color: rgba(0, 230, 118, 0.4) !important;
+}
+
 /* Tablet / small laptop */
 @media (max-width: 1100px) {
   .header-nav .shell,
@@ -96,6 +103,7 @@ img, video, iframe { max-width: 100%; }
   #flight-search-panel-container .jmt-flight-fields-grid > * { min-width: 0 !important; width: 100% !important; }
 
   input, select, textarea, button { max-width: 100%; box-sizing: border-box; }
+  input, select, textarea { font-size: 16px; }
   form button, .search-form button, .flight-search button, .hotel-search button { width: 100%; }
 
   /* Prevent fixed-width cards/components from creating horizontal scroll. */
@@ -156,3 +164,93 @@ img, video, iframe { max-width: 100%; }
   .hero-slide-item, .destination-card, .card, .jmt-card, * { scroll-behavior: auto !important; }
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
 }
+
+/* V2.9 Unified Enquiry Modal & Mobile CTA Styles */
+.jmt-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(7, 21, 59, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.jmt-modal-card {
+  background: linear-gradient(135deg, #07153B 0%, #0B286C 100%);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+  width: 100%;
+  max-width: 540px;
+  max-height: 90vh;
+  overflow-y: auto;
+  color: #FFFFFF;
+  padding: 28px;
+  position: relative;
+}
+
+.jmt-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.jmt-modal-close {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #FFFFFF;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  font-size: 22px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.jmt-modal-close:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+/* Global Contact Helper Banner */
+.jmt-global-helper-banner {
+  background: linear-gradient(135deg, #07153B 0%, #0B286C 100%);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 18px;
+  padding: 24px 30px;
+  margin-top: 36px;
+  margin-bottom: 36px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  box-shadow: 0 10px 30px rgba(7, 21, 59, 0.2);
+}
+
+@media (max-width: 600px) {
+  .jmt-global-helper-banner {
+    flex-direction: column;
+    text-align: center;
+    padding: 20px 16px;
+  }
+  .jmt-global-helper-banner > div:last-child {
+    width: 100%;
+    flex-direction: column;
+  }
+  .jmt-global-helper-banner a,
+  .jmt-global-helper-banner button {
+    width: 100%;
+    justify-content: center;
+  }
+}
+

@@ -1,6 +1,9 @@
 User-agent: *
 Allow: /
 Disallow: /admin
+Disallow: /account
+Disallow: /visa-apply
+Disallow: /book
 Disallow: /api/documents/
 
 Sitemap: https://jmttravels.com/sitemap.xml
