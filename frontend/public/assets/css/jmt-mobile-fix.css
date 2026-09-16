@@ -64,7 +64,8 @@ img, video, iframe { max-width: 100%; }
   #view-container .page-section { padding-block: 38px !important; }
 
   /* Hero and image safety. */
-  .hero-slideshow-wrap { height: clamp(360px, 72vw, 500px) !important; min-height: 360px !important; }
+  .hero-slideshow-wrap { height: clamp(360px, 72vw, 500px) !important; min-height: 360px !important; overflow: hidden !important; }
+  .hero-slideshow-wrap .shell { width: 100% !important; max-width: 100% !important; padding-inline: 16px !important; }
   .hero-slide-item { background-position: center center !important; }
   .oman-promo-card { grid-template-columns: 1fr !important; margin: 40px 0 !important; }
   .oman-promo-content { padding: 28px 20px !important; }
@@ -72,14 +73,14 @@ img, video, iframe { max-width: 100%; }
 
   /* Search panels: one comfortable field per row. */
   form, .search-form, .flight-search, .hotel-search,
-  .hero-search-card, .jmt-hotel-search-panel { max-width: 100% !important; width: 100% !important; }
+  .hero-search-card, .jmt-hotel-search-panel { max-width: 100% !important; width: 100% !important; box-sizing: border-box !important; }
   form > *, .search-form > *, .flight-search > *, .hotel-search > *,
-  .hero-search-card > *, .jmt-hotel-search-panel > * { min-width: 0 !important; max-width: 100% !important; }
+  .hero-search-card > *, .jmt-hotel-search-panel > * { min-width: 0 !important; max-width: 100% !important; box-sizing: border-box !important; }
   form .form-row, form .search-row,
   .search-form .form-row, .search-form .search-row,
   .flight-search .form-row, .flight-search .search-row,
   .hotel-search .form-row, .hotel-search .search-row { grid-template-columns: 1fr !important; display: grid !important; }
-  input, select, textarea, button { max-width: 100%; }
+  input, select, textarea, button { max-width: 100%; box-sizing: border-box; }
   form button, .search-form button, .flight-search button, .hotel-search button { width: 100%; }
 
   /* Prevent fixed-width cards/components from creating horizontal scroll. */
@@ -119,6 +120,13 @@ img, video, iframe { max-width: 100%; }
 
   /* Comfortable tap targets on phones. */
   button, a.btn, input, select, textarea { min-height: 44px; }
+
+  /* Avoid long labels/phone numbers forcing horizontal overflow. */
+  .shell *, .container * { min-width: 0; }
+  .top-strip, .contact-strip { line-height: 1.35 !important; }
+  .top-strip a, .contact-strip a { overflow-wrap: anywhere; }
+  .hero-slideshow-wrap .hero-content,
+  .hero-slideshow-wrap .hero-copy { max-width: 100% !important; }
 }
 
 @media (max-width: 380px) {
