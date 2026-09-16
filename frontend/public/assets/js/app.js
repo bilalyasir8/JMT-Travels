@@ -11813,7 +11813,7 @@ function renderContactPage(container) {
                   </div>
                   <div>
                     <strong style="color: #FFFFFF !important; display:block; margin-bottom:2px;">Office Location:</strong>
-                    <a href="https://maps.app.goo.gl/3xDLiEdchqgivn1Z7" target="_blank" rel="noopener noreferrer" style="color:#00E676 !important; font-weight:700; text-decoration:underline;" title="Open in Google Maps">near Mazda R/A, next to Yahar Restaurant, 512, Oman</a>
+                    <a href="https://maps.app.goo.gl/3xDLiEdchqgivn1Z7" target="_blank" rel="noopener noreferrer" style="color:#00E676 !important; font-weight:700; text-decoration:none !important;" title="Open in Google Maps">near Mazda R/A, next to Yahar Restaurant, 512, Oman</a>
                   </div>
                 </div>
 
@@ -11846,7 +11846,7 @@ function renderContactPage(container) {
                   </div>
                   <div>
                     <strong style="color: #FFFFFF !important; display:block; margin-bottom:2px;">Email Address:</strong>
-                    <a href="https://mail.google.com/mail/?view=cm&fs=1&to=info%40jmttravels.com" target="_blank" rel="noopener noreferrer" aria-label="Email JMT Travels via Gmail" class="jmt-email-link" style="color:#00E676 !important; font-weight:700; text-decoration:underline;">info@jmttravels.com</a>
+                    <a href="https://mail.google.com/mail/?view=cm&fs=1&to=info%40jmttravels.com" target="_blank" rel="noopener noreferrer" aria-label="Email JMT Travels via Gmail" class="jmt-email-link" style="color:#00E676 !important; font-weight:700; text-decoration:none !important;">info@jmttravels.com</a>
                   </div>
                 </div>
 
