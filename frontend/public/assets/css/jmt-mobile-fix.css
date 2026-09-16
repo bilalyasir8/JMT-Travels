@@ -73,13 +73,28 @@ img, video, iframe { max-width: 100%; }
 
   /* Search panels: one comfortable field per row. */
   form, .search-form, .flight-search, .hotel-search,
-  .hero-search-card, .jmt-hotel-search-panel { max-width: 100% !important; width: 100% !important; box-sizing: border-box !important; }
+  .hero-search-card, .jmt-hotel-search-panel,
+  #home-flight-panel, #home-flight-search-form,
+  #flight-search-panel-container { max-width: 100% !important; width: 100% !important; box-sizing: border-box !important; }
   form > *, .search-form > *, .flight-search > *, .hotel-search > *,
-  .hero-search-card > *, .jmt-hotel-search-panel > * { min-width: 0 !important; max-width: 100% !important; box-sizing: border-box !important; }
+  .hero-search-card > *, .jmt-hotel-search-panel > *,
+  #home-flight-panel > *, #home-flight-search-form > *,
+  #flight-search-panel-container > * { min-width: 0 !important; max-width: 100% !important; box-sizing: border-box !important; }
+
   form .form-row, form .search-row,
   .search-form .form-row, .search-form .search-row,
   .flight-search .form-row, .flight-search .search-row,
   .hotel-search .form-row, .hotel-search .search-row { grid-template-columns: 1fr !important; display: grid !important; }
+
+  /* Flight search has its own desktop grid; force a single-column phone layout
+     without changing the markup or search behaviour. */
+  #home-flight-panel .jmt-flight-fields-grid,
+  #home-flight-search-form .jmt-flight-fields-grid,
+  #flight-search-panel-container .jmt-flight-fields-grid { grid-template-columns: 1fr !important; display: grid !important; gap: 12px !important; }
+  #home-flight-panel .jmt-flight-fields-grid > *,
+  #home-flight-search-form .jmt-flight-fields-grid > *,
+  #flight-search-panel-container .jmt-flight-fields-grid > * { min-width: 0 !important; width: 100% !important; }
+
   input, select, textarea, button { max-width: 100%; box-sizing: border-box; }
   form button, .search-form button, .flight-search button, .hotel-search button { width: 100%; }
 
