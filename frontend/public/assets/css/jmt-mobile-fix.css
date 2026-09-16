@@ -1,0 +1,100 @@
+/* JMT TRAVELS — Mobile Responsive Foundation
+ * Additive responsive layer. Preserves desktop styling and existing application logic.
+ */
+
+html, body { max-width: 100%; overflow-x: hidden; }
+img, video, iframe { max-width: 100%; }
+
+/* Tablet / small laptop */
+@media (max-width: 1100px) {
+  .header-nav .shell,
+  header[style] .shell { gap: 12px !important; padding-inline: 20px !important; }
+  .nav-links { gap: 12px !important; }
+  .nav-links a { font-size: 12px !important; }
+  .nav-actions { gap: 8px !important; }
+}
+
+/* Phones */
+@media (max-width: 900px) {
+  .header-nav .shell,
+  header[style] .shell {
+    min-height: 68px !important;
+    height: auto !important;
+    padding: 10px 16px !important;
+  }
+
+  .brand-logo { min-width: 0; gap: 8px !important; }
+  .brand-logo img { width: 42px !important; height: 42px !important; }
+  .brand-title b { font-size: 17px !important; }
+  .brand-title small { font-size: 7px !important; letter-spacing: 1px !important; }
+
+  .nav-links { display: none !important; }
+  .nav-actions { margin-left: auto; }
+  .nav-actions #nav-auth { display: none !important; }
+  .nav-actions .theme-toggle-btn { display: none !important; }
+  .mobile-menu-btn { display: inline-flex !important; align-items: center; justify-content: center; color: #fff !important; background: #0B286C !important; border-radius: 10px !important; width: 42px; height: 42px; }
+
+  .mobile-nav-drawer { padding: 14px 16px 20px !important; }
+  .mobile-nav-links a { min-height: 42px; display: flex !important; align-items: center; }
+
+  /* Top contact strip: prevent cramped desktop content on phones. */
+  body > div:first-child .shell,
+  body > .shell { flex-wrap: wrap !important; }
+
+  /* Generic grids collapse cleanly. */
+  .card-grid,
+  .reviews-grid,
+  .timeline-grid,
+  .destinations-grid,
+  .destination-grid,
+  .packages-grid,
+  .hotel-grid,
+  .flight-grid,
+  .footer-grid { grid-template-columns: 1fr !important; }
+
+  .shell, .container,
+  #view-container > .shell { width: 100% !important; max-width: 100% !important; padding-inline: 16px !important; }
+
+  .hero-slideshow-wrap { height: clamp(360px, 72vw, 500px) !important; }
+  .oman-promo-card { grid-template-columns: 1fr !important; margin: 40px 0 !important; }
+  .oman-promo-content { padding: 28px 20px !important; }
+  .oman-promo-image { min-height: 240px !important; max-height: 320px; }
+
+  /* Prevent wide form rows from overflowing. */
+  form, .search-form, .flight-search, .hotel-search { max-width: 100% !important; }
+  form > *, .search-form > *, .flight-search > *, .hotel-search > * { min-width: 0 !important; max-width: 100%; }
+  input, select, textarea, button { max-width: 100%; }
+
+  .chatbot-drawer { left: 12px !important; right: 12px !important; bottom: 76px !important; width: auto !important; max-width: none !important; height: min(70vh, 520px) !important; }
+  .chatbot-trigger { right: 16px !important; bottom: 16px !important; }
+
+  /* Tables become horizontally scrollable instead of breaking the viewport. */
+  .table-responsive, .table-wrap { max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table { max-width: 100%; }
+}
+
+@media (max-width: 600px) {
+  .footer-grid { gap: 24px !important; }
+  .card, .jmt-card, .jmt-panel, .card-subtle, .jmt-card-subtle { padding: 18px !important; }
+
+  h1 { font-size: clamp(30px, 9vw, 42px) !important; line-height: 1.1 !important; }
+  h2 { font-size: clamp(24px, 7vw, 34px) !important; line-height: 1.15 !important; }
+  h3 { font-size: clamp(19px, 5.5vw, 26px) !important; }
+
+  .hero-slideshow-wrap { height: 390px !important; }
+  .cta-banner-wrapper { padding: 38px 18px !important; margin-top: 40px !important; }
+
+  /* Keep fixed chat controls clear of phone safe areas. */
+  .chatbot-trigger { bottom: max(16px, env(safe-area-inset-bottom)) !important; }
+}
+
+@media (max-width: 380px) {
+  .brand-title { display: none !important; }
+  .header-nav .shell, header[style] .shell { padding-inline: 12px !important; }
+  .mobile-menu-btn { width: 40px; height: 40px; }
+}
+
+/* Respect users who request reduced motion. */
+@media (prefers-reduced-motion: reduce) {
+  .hero-slide-item, .destination-card, .card, .jmt-card, * { scroll-behavior: auto !important; }
+}
