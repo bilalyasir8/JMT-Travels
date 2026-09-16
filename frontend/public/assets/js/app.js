@@ -328,8 +328,8 @@ async function renderRoute() {
       authNav.innerHTML = userHtml;
       if (mobileAuthNav) mobileAuthNav.innerHTML = userHtml;
     } else {
-      authNav.innerHTML = `<a href="/login" onclick="event.preventDefault(); navigate('/login')" class="nav-signin-link" style="font-weight:700; font-size:14px; text-decoration:none; margin-right:4px;">Sign In</a> <a href="/register" onclick="event.preventDefault(); navigate('/register')" class="btn-create-account" style="background: linear-gradient(135deg, #07153B 0%, #0B286C 100%); color:#FFFFFF !important; padding:10px 22px; border-radius:99px; font-weight:700; font-size:13px; text-decoration:none; display:inline-flex; align-items:center; gap:6px; box-shadow: 0 4px 14px rgba(7, 21, 59, 0.35); white-space:nowrap;">Create Account →</a>`;
-      if (mobileAuthNav) mobileAuthNav.innerHTML = `<a href="/login" onclick="event.preventDefault(); toggleMobileMenu(); navigate('/login')" class="btn btn-outline nav-signin-link" style="flex:1; text-align:center;">Sign In</a> <a href="/register" onclick="event.preventDefault(); toggleMobileMenu(); navigate('/register')" class="btn btn-create-account" style="flex:1; text-align:center; background: linear-gradient(135deg, #07153B 0%, #0B286C 100%); color:#FFFFFF !important;">Register</a>`;
+      authNav.innerHTML = `<a href="/login" onclick="event.preventDefault(); navigate('/login')" class="nav-signin-link" style="color:#FFFFFF !important; font-weight:700; font-size:14px; text-decoration:none; margin-right:4px;">Sign In</a> <a href="/register" onclick="event.preventDefault(); navigate('/register')" class="btn-create-account" style="background: linear-gradient(135deg, #07153B 0%, #0B286C 100%); color:#FFFFFF !important; padding:10px 22px; border-radius:99px; font-weight:700; font-size:13px; text-decoration:none; display:inline-flex; align-items:center; gap:6px; box-shadow: 0 4px 14px rgba(7, 21, 59, 0.35); white-space:nowrap;">Create Account →</a>`;
+      if (mobileAuthNav) mobileAuthNav.innerHTML = `<a href="/login" onclick="event.preventDefault(); toggleMobileMenu(); navigate('/login')" class="btn btn-outline nav-signin-link" style="flex:1; text-align:center; color:#FFFFFF !important;">Sign In</a> <a href="/register" onclick="event.preventDefault(); toggleMobileMenu(); navigate('/register')" class="btn btn-create-account" style="flex:1; text-align:center; background: linear-gradient(135deg, #07153B 0%, #0B286C 100%); color:#FFFFFF !important;">Register</a>`;
     }
   }
 
@@ -649,7 +649,7 @@ function renderHomePage(container) {
             <!-- Passengers & Cabin -->
             <div style="position: relative;">
               <button type="button" class="jmt-flight-pax-btn" id="flight-pax-pill" onclick="toggleFlightPopover('passengers')">
-                <span><span style="color: #00E676; margin-right: 6px;">👤</span> <span id="flight-pax-label">1 Passenger, Economy</span></span>
+                <span><span id="flight-pax-label">1 Passenger, Economy</span></span>
                 <span style="font-size: 10px; color: #00E676; margin-left: 6px;">▼</span>
               </button>
               <div class="jmt-flight-popover" id="popover-passengers" style="display: none; width: 300px; padding: 20px; background: linear-gradient(135deg, #07153B 0%, #0B286C 100%); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 16px; box-shadow: 0 16px 40px rgba(0,0,0,0.5); color: #FFFFFF; position: absolute; top: calc(100% + 8px); right: 0; z-index: 120;">
@@ -727,17 +727,14 @@ function renderHomePage(container) {
               <!-- From -->
               <div id="from-airport-container" style="position: relative;">
                 <div class="jmt-search-field-box" onclick="focusAirportInput('from')">
-                  <span class="jmt-field-icon" style="font-size: 19px; color: #00E676;">🛫</span>
-                  <div style="flex: 1; display: flex; flex-direction: column; justify-content: center;">
-                    <div class="jmt-field-label">FROM</div>
-                    <input type="text" id="flight-from-input" class="jmt-field-input"
-                           placeholder="Select origin"
-                           value="Muscat International Airport (MCT)"
-                           onfocus="openAirportDropdown('from')"
-                           oninput="filterAirportDropdown('from', this.value)"
-                           onkeydown="handleAirportKeydown('from', event)"
-                           autocomplete="off">
-                  </div>
+                  <div class="jmt-field-label">FROM</div>
+                  <input type="text" id="flight-from-input" class="jmt-field-input"
+                         placeholder="Select origin"
+                         value="Muscat International Airport (MCT)"
+                         onfocus="openAirportDropdown('from')"
+                         oninput="filterAirportDropdown('from', this.value)"
+                         onkeydown="handleAirportKeydown('from', event)"
+                         autocomplete="off">
                 </div>
                 <div class="jmt-airport-dropdown" id="from-airport-dropdown" style="display: none;"></div>
               </div>
@@ -750,42 +747,33 @@ function renderHomePage(container) {
               <!-- To -->
               <div id="to-airport-container" style="position: relative;">
                 <div class="jmt-search-field-box" onclick="focusAirportInput('to')">
-                  <span class="jmt-field-icon" style="font-size: 19px; color: #00E676;">🛬</span>
-                  <div style="flex: 1; display: flex; flex-direction: column; justify-content: center;">
-                    <div class="jmt-field-label">TO</div>
-                    <input type="text" id="flight-to-input" class="jmt-field-input"
-                           placeholder="Select destination"
-                           value="Dubai International Airport (DXB)"
-                           onfocus="openAirportDropdown('to')"
-                           oninput="filterAirportDropdown('to', this.value)"
-                           onkeydown="handleAirportKeydown('to', event)"
-                           autocomplete="off">
-                  </div>
+                  <div class="jmt-field-label">TO</div>
+                  <input type="text" id="flight-to-input" class="jmt-field-input"
+                         placeholder="Select destination"
+                         value="Dubai International Airport (DXB)"
+                         onfocus="openAirportDropdown('to')"
+                         oninput="filterAirportDropdown('to', this.value)"
+                         onkeydown="handleAirportKeydown('to', event)"
+                         autocomplete="off">
                 </div>
                 <div class="jmt-airport-dropdown" id="to-airport-dropdown" style="display: none;"></div>
               </div>
 
               <!-- Departure Date -->
               <div class="jmt-search-field-box">
-                <span class="jmt-field-icon" style="font-size: 19px; color: #00E676;">📅</span>
-                <div style="flex: 1; display: flex; flex-direction: column; justify-content: center;">
-                  <div class="jmt-field-label">DEPARTURE</div>
-                  <input type="date" id="flight-dept-input" required class="jmt-field-input">
-                </div>
+                <div class="jmt-field-label">DEPARTURE</div>
+                <input type="date" id="flight-dept-input" required class="jmt-field-input">
               </div>
 
               <!-- Return Date -->
               <div class="jmt-search-field-box" id="flight-return-box">
-                <span class="jmt-field-icon" style="font-size: 19px; color: #00E676;">📅</span>
-                <div style="flex: 1; display: flex; flex-direction: column; justify-content: center;">
-                  <div class="jmt-field-label">RETURN</div>
-                  <input type="date" id="flight-return-input" required class="jmt-field-input">
-                </div>
+                <div class="jmt-field-label">RETURN</div>
+                <input type="date" id="flight-return-input" required class="jmt-field-input">
               </div>
 
               <!-- CTA Submit Button -->
-              <button type="submit" class="search-submit-btn" style="white-space: nowrap;">
-                🔍 Search Flights →
+              <button type="submit" class="search-submit-btn jmt-flight-search-submit-btn">
+                Search Flights →
               </button>
             </div>
             <div id="flight-search-error" style="color: #DC2626; font-size: 13px; font-weight: 600; margin-top: 10px; display: none;"></div>
@@ -8766,7 +8754,7 @@ async function renderFlightsPage(container) {
             <!-- Passengers & Cabin Class Selector -->
             <div style="position: relative;">
               <button type="button" onclick="toggleFlightPassengersPopover(event)" id="flight-pax-summary-btn" class="jmt-flight-pax-btn">
-                <span><span style="color: #00E676; margin-right: 6px;">👤</span> <span id="flight-pax-summary-text">${adults + children + infants} Passenger${(adults + children + infants) > 1 ? 's' : ''}, ${cabinClass}</span></span>
+                <span><span id="flight-pax-summary-text">${adults + children + infants} Passenger${(adults + children + infants) > 1 ? 's' : ''}, ${cabinClass}</span></span>
                 <span style="font-size: 10px; color: #00E676; margin-left: 6px;">▼</span>
               </button>
 
@@ -8821,19 +8809,16 @@ async function renderFlightsPage(container) {
           <form id="flights-page-search-form" onsubmit="handleHomeFlightSearch(event)">
             <div class="jmt-flight-fields-grid">
               <!-- From -->
-              <div class="jmt-airport-field-box" id="from-airport-container" style="position: relative;">
+              <div id="from-airport-container" style="position: relative;">
                 <div class="jmt-search-field-box" onclick="focusAirportInput('from')">
-                  <span class="jmt-field-icon" style="font-size: 19px; color: #00E676;">🛫</span>
-                  <div style="flex: 1; display: flex; flex-direction: column; justify-content: center;">
-                    <div class="jmt-field-label">FROM</div>
-                    <input type="text" id="flight-from-input" class="jmt-field-input"
-                           placeholder="Select origin"
-                           value="${escapeHTML(fromDisplay)}"
-                           onfocus="openAirportDropdown('from')"
-                           oninput="filterAirportDropdown('from', this.value)"
-                           onkeydown="handleAirportKeydown('from', event)"
-                           autocomplete="off">
-                  </div>
+                  <div class="jmt-field-label">FROM</div>
+                  <input type="text" id="flight-from-input" class="jmt-field-input"
+                         placeholder="Select origin"
+                         value="${escapeHTML(fromDisplay)}"
+                         onfocus="openAirportDropdown('from')"
+                         oninput="filterAirportDropdown('from', this.value)"
+                         onkeydown="handleAirportKeydown('from', event)"
+                         autocomplete="off">
                 </div>
                 <div class="jmt-airport-dropdown" id="from-airport-dropdown" style="display: none;"></div>
               </div>
@@ -8844,44 +8829,35 @@ async function renderFlightsPage(container) {
               </button>
 
               <!-- To -->
-              <div class="jmt-airport-field-box" id="to-airport-container" style="position: relative;">
+              <div id="to-airport-container" style="position: relative;">
                 <div class="jmt-search-field-box" onclick="focusAirportInput('to')">
-                  <span class="jmt-field-icon" style="font-size: 19px; color: #00E676;">🛬</span>
-                  <div style="flex: 1; display: flex; flex-direction: column; justify-content: center;">
-                    <div class="jmt-field-label">TO</div>
-                    <input type="text" id="flight-to-input" class="jmt-field-input"
-                           placeholder="Select destination"
-                           value="${escapeHTML(toDisplay)}"
-                           onfocus="openAirportDropdown('to')"
-                           oninput="filterAirportDropdown('to', this.value)"
-                           onkeydown="handleAirportKeydown('to', event)"
-                           autocomplete="off">
-                  </div>
+                  <div class="jmt-field-label">TO</div>
+                  <input type="text" id="flight-to-input" class="jmt-field-input"
+                         placeholder="Select destination"
+                         value="${escapeHTML(toDisplay)}"
+                         onfocus="openAirportDropdown('to')"
+                         oninput="filterAirportDropdown('to', this.value)"
+                         onkeydown="handleAirportKeydown('to', event)"
+                         autocomplete="off">
                 </div>
                 <div class="jmt-airport-dropdown" id="to-airport-dropdown" style="display: none;"></div>
               </div>
 
               <!-- Departure Date -->
               <div class="jmt-search-field-box">
-                <span class="jmt-field-icon" style="font-size: 19px; color: #00E676;">📅</span>
-                <div style="flex: 1; display: flex; flex-direction: column; justify-content: center;">
-                  <div class="jmt-field-label">DEPARTURE</div>
-                  <input type="date" id="flight-dept-input" required value="${deptDate}" min="${tomorrow}" class="jmt-field-input">
-                </div>
+                <div class="jmt-field-label">DEPARTURE</div>
+                <input type="date" id="flight-dept-input" required value="${deptDate}" min="${tomorrow}" class="jmt-field-input">
               </div>
 
               <!-- Return Date -->
               <div class="jmt-search-field-box" id="flight-return-box" style="display: ${tripType === 'one-way' ? 'none' : 'flex'};">
-                <span class="jmt-field-icon" style="font-size: 19px; color: #00E676;">📅</span>
-                <div style="flex: 1; display: flex; flex-direction: column; justify-content: center;">
-                  <div class="jmt-field-label">RETURN</div>
-                  <input type="date" id="flight-return-input" value="${returnDate}" min="${deptDate}" class="jmt-field-input">
-                </div>
+                <div class="jmt-field-label">RETURN</div>
+                <input type="date" id="flight-return-input" value="${returnDate}" min="${deptDate}" class="jmt-field-input">
               </div>
 
               <!-- CTA Submit Button -->
-              <button type="submit" class="search-submit-btn jmt-btn-primary" style="white-space: nowrap;">
-                🔍 Search Flights →
+              <button type="submit" class="search-submit-btn jmt-flight-search-submit-btn">
+                Search Flights →
               </button>
             </div>
             <div id="flight-search-error" style="color: #DC2626; font-size: 13px; font-weight: 600; margin-top: 10px; display: none;"></div>
@@ -11244,8 +11220,8 @@ async function renderTourismListPage(container) {
               <div class="jmt-region-hero-img-wrap">
                 <img src="/assets/destinations/muscat-mutrah-waterfront.jpg" alt="Mutrah waterfront in Muscat, Oman" loading="lazy" class="jmt-region-hero-img">
                 <div class="jmt-region-hero-overlay">
-                  <span class="jmt-region-tag">CAPITAL &amp; COAST</span>
-                  <h3 class="jmt-region-title">Muscat</h3>
+                  <span class="jmt-region-tag" style="color: #FFFFFF !important;">CAPITAL &amp; COAST</span>
+                  <h3 class="jmt-region-title" style="color: #FFFFFF !important;">Muscat</h3>
                   <p class="jmt-region-sub">Culture • Coast • Heritage</p>
                 </div>
               </div>
@@ -11270,8 +11246,8 @@ async function renderTourismListPage(container) {
               <div class="jmt-region-hero-img-wrap">
                 <img src="/assets/destinations/nizwa-fort-roof-minaret.jpg" alt="Nizwa fort citadel rooftop and mosque minaret view" loading="lazy" class="jmt-region-hero-img" style="object-position: center center;">
                 <div class="jmt-region-hero-overlay">
-                  <span class="jmt-region-tag">CULTURAL CAPITAL</span>
-                  <h3 class="jmt-region-title">Nizwa &amp; Heritage</h3>
+                  <span class="jmt-region-tag" style="color: #FFFFFF !important;">CULTURAL CAPITAL</span>
+                  <h3 class="jmt-region-title" style="color: #FFFFFF !important;">Nizwa &amp; Heritage</h3>
                   <p class="jmt-region-sub">Forts • Souqs • Ancient Towns</p>
                 </div>
               </div>
@@ -11296,8 +11272,8 @@ async function renderTourismListPage(container) {
               <div class="jmt-region-hero-img-wrap">
                 <img src="/assets/destinations/salalah-waterfalls-canyon.jpg" alt="Salalah Khareef cascading waterfalls and green canyons" loading="lazy" class="jmt-region-hero-img">
                 <div class="jmt-region-hero-overlay">
-                  <span class="jmt-region-tag">DHOFAR TROPICAL RETREAT</span>
-                  <h3 class="jmt-region-title">Salalah Khareef</h3>
+                  <span class="jmt-region-tag" style="color: #FFFFFF !important;">DHOFAR TROPICAL RETREAT</span>
+                  <h3 class="jmt-region-title" style="color: #FFFFFF !important;">Salalah Khareef</h3>
                   <p class="jmt-region-sub">Misty Hills • Waterfalls • Springs</p>
                 </div>
               </div>
@@ -11362,28 +11338,28 @@ async function renderTourismListPage(container) {
 
         <!-- 6. WHY OMAN SHOULD BE YOUR NEXT DESTINATION (EDITORIAL SPLIT WITH OMAN COASTAL LANDSCAPE) -->
         <div class="jmt-editorial-block">
-          <div class="jmt-why-oman-split">
+          <div class="jmt-why-oman-split" style="background: #0B286C !important; color: #FFFFFF !important; border: 1px solid rgba(255, 255, 255, 0.18) !important; border-radius: 24px; padding: 40px; box-shadow: 0 16px 40px rgba(0,0,0,0.35);">
             <div>
-              <img src="/assets/destinations/salalah-palm-beach-promenade.jpg" alt="Salalah tropical palm promenade and coastal lawn" loading="lazy" decoding="async" class="jmt-why-oman-img" style="object-position: center center;" onerror="this.onerror=null;this.src='/assets/destinations/oman-coastal-landscape.jpg';">
+              <img src="/assets/destinations/salalah-palm-beach-promenade.jpg" alt="Salalah tropical palm promenade and coastal lawn" loading="lazy" decoding="async" class="jmt-why-oman-img" style="width: 100%; height: 360px; object-fit: cover; border-radius: 20px; border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 12px 30px rgba(0,0,0,0.35);" onerror="this.onerror=null;this.src='/assets/destinations/oman-coastal-landscape.jpg';">
             </div>
 
             <div class="jmt-why-oman-content">
-              <h3>Why Oman Should Be Your Next Destination</h3>
-              <p>
+              <h3 style="color: #00E676 !important; font-size: 28px; font-weight: 800; margin: 0 0 16px; text-shadow: 0 0 16px rgba(0, 230, 118, 0.35);">Why Oman Should Be Your Next Destination</h3>
+              <p style="color: #FFFFFF !important; font-size: 15px; line-height: 1.65; margin: 0 0 14px; font-weight: 500;">
                 Oman is a land of contrasts, combining rugged mountains, golden deserts, azure waters, peaceful beaches, historic towns, and lush landscapes.
               </p>
-              <p>
+              <p style="color: #FFFFFF !important; font-size: 15px; line-height: 1.65; margin: 0 0 14px; font-weight: 500;">
                 Its rich cultural heritage, warm hospitality, dramatic scenery, and relatively unspoiled natural beauty make Oman an ideal destination for travelers looking for a combination of relaxation, culture, and adventure.
               </p>
-              <p>
+              <p style="color: #FFFFFF !important; font-size: 15px; line-height: 1.65; margin: 0 0 16px; font-weight: 500;">
                 From Muscat and Nizwa to Wahiba Sands, Jebel Akhdar, and Salalah, every region offers a different side of the Sultanate.
               </p>
 
-              <div class="jmt-why-oman-tags">
-                <span class="jmt-why-tag">🏔️ Mountains</span>
-                <span class="jmt-why-tag">🏜️ Deserts</span>
-                <span class="jmt-why-tag">🏖️ Beaches</span>
-                <span class="jmt-why-tag">🏰 Heritage</span>
+              <div class="jmt-why-oman-tags" style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 18px;">
+                <span class="jmt-why-tag" style="background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(0, 230, 118, 0.4); color: #FFFFFF !important; font-size: 13px; font-weight: 700; padding: 7px 16px; border-radius: 99px;">🏔️ Mountains</span>
+                <span class="jmt-why-tag" style="background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(0, 230, 118, 0.4); color: #FFFFFF !important; font-size: 13px; font-weight: 700; padding: 7px 16px; border-radius: 99px;">🏜️ Deserts</span>
+                <span class="jmt-why-tag" style="background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(0, 230, 118, 0.4); color: #FFFFFF !important; font-size: 13px; font-weight: 700; padding: 7px 16px; border-radius: 99px;">🏖️ Beaches</span>
+                <span class="jmt-why-tag" style="background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(0, 230, 118, 0.4); color: #FFFFFF !important; font-size: 13px; font-weight: 700; padding: 7px 16px; border-radius: 99px;">🏰 Heritage</span>
               </div>
             </div>
           </div>
@@ -11683,91 +11659,114 @@ function renderBookPage(container) {
 
 function renderContactPage(container) {
   updateSEO({
-    title: "Let's Plan Your Journey | Contact JMT Travels Al Buraimi",
-    description: 'Get in touch with JMT Travels in Al Buraimi, Oman. Call +968 25655711 / +968 25655177 or chat on WhatsApp.',
+    title: "Contact JMT Travels | Travel & Visa Services in Al Buraimi",
+    description: "Contact JMT Travels in Al Buraimi, Oman for visa services, tour packages, flights, hotel bookings and travel assistance.",
     canonicalUrl: '/contact',
     noindex: false
   });
   announceToSR('Navigated to Contact Page');
 
   container.innerHTML = `
-    <div class="shell" style="padding: 30px 20px 0px;">
-      <!-- SLEEK EXECUTIVE CONTACT HERO BANNER WITH VISUAL DEPTH & QUICK HIGHLIGHTS -->
-      <div class="jmt-hero" style="background: linear-gradient(135deg, rgba(7, 21, 59, 0.94) 0%, rgba(11, 40, 108, 0.88) 100%), url('/assets/destinations/hero_hd_muscat_waterfront.jpg') center/cover no-repeat !important; color: #FFFFFF !important; border-radius: 24px; padding: 36px 40px; margin-bottom: 0 !important; box-shadow: 0 20px 50px rgba(7, 21, 59, 0.25); border: 1px solid rgba(255, 255, 255, 0.15); position: relative; overflow: hidden;">
-        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 28px; position: relative; z-index: 2;">
-          <!-- LEFT CONTENT -->
-          <div style="flex: 1 1 480px; max-width: 600px;">
-            <span class="jmt-hero-eyebrow" style="background: rgba(0, 230, 118, 0.18) !important; color: #00E676 !important; border: 1px solid rgba(0, 230, 118, 0.5) !important; padding: 6px 16px; font-size: 11.5px; font-weight: 800; letter-spacing: 1.5px; border-radius: 99px; display: inline-block; margin-bottom: 14px;">JMT TRAVELS — AL BURAIMI HEADQUARTERS</span>
-            <h1 class="jmt-hero-title" style="color: #FFFFFF !important; font-size: clamp(30px, 4vw, 42px); font-weight: 800; line-height: 1.15; margin-bottom: 12px; letter-spacing: -0.5px;">Let's Plan Your Journey</h1>
-            <p class="jmt-hero-sub" style="color: #E2E8F0 !important; font-size: 14.5px; line-height: 1.6; margin: 0;">Tell us what you need and our travel specialists in Al Buraimi will help customize your visa clearing, tour packages, flights, or hotel stays.</p>
-          </div>
+    <!-- MAIN CONTACT PAGE WRAPPER WITH CONTINUOUS PREMIUM DARK BLUE BRANDING -->
+    <div style="background: #07153B; color: #FFFFFF; min-height: 100vh; padding: 24px 0 60px;">
+      <div class="shell">
 
-          <!-- RIGHT QUICK HIGHLIGHT CHIPS (FILLING EMPTY SPACE ELEGANTLY) -->
-          <div style="flex: 1 1 300px; max-width: 420px; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px;">
-            <div style="background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 16px; padding: 12px 16px; display: flex; align-items: center; gap: 12px;">
-              <span style="font-size: 20px; flex-shrink: 0;">📞</span>
-              <div>
-                <small style="display: block; font-size: 10px; text-transform: uppercase; font-weight: 700; color: #00E676; letter-spacing: 0.5px;">Call Us</small>
-                <a href="tel:+96825655711" style="font-size: 12.5px; font-weight: 800; color: #FFFFFF; text-decoration: none;">+968 25655711</a>
-              </div>
+        <!-- 1. HERO BANNER WITH VISUAL DEPTH & QUICK CONTACT CHIPS -->
+        <div class="jmt-contact-hero" style="background: linear-gradient(135deg, rgba(7, 21, 59, 0.94) 0%, rgba(11, 40, 108, 0.88) 100%), url('/assets/destinations/hero_hd_muscat_waterfront.jpg') center/cover no-repeat !important; border-radius: 24px; padding: 40px 44px; margin-bottom: 32px; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.15); position: relative; overflow: hidden;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 32px; position: relative; z-index: 2;">
+            
+            <!-- LEFT HERO HEADER CONTENT -->
+            <div style="flex: 1 1 480px; max-width: 620px;">
+              <span class="jmt-hero-eyebrow" style="background: rgba(0, 230, 118, 0.15) !important; color: #00E676 !important; border: 1.5px solid #00E676 !important; padding: 6px 18px; font-size: 11.5px; font-weight: 800; letter-spacing: 1.5px; border-radius: 99px; display: inline-block; margin-bottom: 16px; text-transform: uppercase; box-shadow: 0 0 14px rgba(0, 230, 118, 0.25);">JMT TRAVELS — AL BURAIMI HEADQUARTERS</span>
+              <h1 style="color: #FFFFFF !important; font-size: clamp(32px, 4.2vw, 48px); font-weight: 800; line-height: 1.15; margin: 0 0 14px; letter-spacing: -0.5px;">Let's Plan Your <span style="color: #00E676; text-shadow: 0 0 20px rgba(0, 230, 118, 0.4);">Journey Together</span></h1>
+              <p style="color: #E2E8F0 !important; font-size: 15.5px; line-height: 1.6; margin: 0; max-width: 540px;">Tell us what you need and our travel specialists in Al Buraimi will help customize your visa clearing, tour packages, flights, or hotel stays.</p>
             </div>
-            <div style="background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 16px; padding: 12px 16px; display: flex; align-items: center; gap: 12px;">
-              <span style="font-size: 20px; flex-shrink: 0;">💬</span>
-              <div>
-                <small style="display: block; font-size: 10px; text-transform: uppercase; font-weight: 700; color: #00E676; letter-spacing: 0.5px;">WhatsApp 24/7</small>
-                <a href="https://wa.me/96897608999" target="_blank" rel="noopener" style="font-size: 12.5px; font-weight: 800; color: #FFFFFF; text-decoration: none;">+968 9760 8999</a>
+
+            <!-- RIGHT 2x2 QUICK CONTACT CHIPS GRID -->
+            <div class="jmt-hero-chips-grid" style="flex: 1 1 320px; max-width: 440px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px;">
+              <div style="background: rgba(11, 40, 108, 0.7); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.18); border-radius: 16px; padding: 14px 18px; display: flex; align-items: center; gap: 12px; transition: transform 0.2s ease;">
+                <span style="display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 50%; background: #07153B; border: 1.5px solid #00E676; flex-shrink: 0;">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                </span>
+                <div>
+                  <small style="display: block; font-size: 10px; text-transform: uppercase; font-weight: 800; color: #00E676 !important; letter-spacing: 0.8px;">CALL US</small>
+                  <a href="tel:+96825655711" style="font-size: 13px; font-weight: 800; color: #FFFFFF; text-decoration: none;">+968 25655711</a>
+                </div>
               </div>
-            </div>
-            <div style="background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 16px; padding: 12px 16px; display: flex; align-items: center; gap: 12px;">
-              <span style="font-size: 20px; flex-shrink: 0;">📍</span>
-              <div>
-                <small style="display: block; font-size: 10px; text-transform: uppercase; font-weight: 700; color: #00E676; letter-spacing: 0.5px;">Location</small>
-                <span style="font-size: 12px; font-weight: 700; color: #FFFFFF;">Al Buraimi, Oman</span>
+              <div style="background: rgba(11, 40, 108, 0.7); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.18); border-radius: 16px; padding: 14px 18px; display: flex; align-items: center; gap: 12px; transition: transform 0.2s ease;">
+                <span style="display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 50%; background: #07153B; border: 1.5px solid #00E676; flex-shrink: 0;">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#00E676" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+                </span>
+                <div>
+                  <small style="display: block; font-size: 10px; text-transform: uppercase; font-weight: 800; color: #00E676 !important; letter-spacing: 0.8px;">WHATSAPP 24/7</small>
+                  <a href="https://wa.me/96897608999" target="_blank" rel="noopener" style="font-size: 13px; font-weight: 800; color: #FFFFFF; text-decoration: none;">+968 9760 8999</a>
+                </div>
               </div>
-            </div>
-            <div style="background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 16px; padding: 12px 16px; display: flex; align-items: center; gap: 12px;">
-              <span style="font-size: 20px; flex-shrink: 0;">⚡</span>
-              <div>
-                <small style="display: block; font-size: 10px; text-transform: uppercase; font-weight: 700; color: #00E676; letter-spacing: 0.5px;">Support</small>
-                <span style="font-size: 12px; font-weight: 700; color: #FFFFFF;">Fast 24h Response</span>
+              <div style="background: rgba(11, 40, 108, 0.7); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.18); border-radius: 16px; padding: 14px 18px; display: flex; align-items: center; gap: 12px; transition: transform 0.2s ease;">
+                <span style="display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 50%; background: #07153B; border: 1.5px solid #00E676; flex-shrink: 0;">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                </span>
+                <div>
+                  <small style="display: block; font-size: 10px; text-transform: uppercase; font-weight: 800; color: #00E676 !important; letter-spacing: 0.8px;">LOCATION</small>
+                  <span style="font-size: 13px; font-weight: 800; color: #FFFFFF;">Al Buraimi, Oman</span>
+                </div>
+              </div>
+              <div style="background: rgba(11, 40, 108, 0.7); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.18); border-radius: 16px; padding: 14px 18px; display: flex; align-items: center; gap: 12px; transition: transform 0.2s ease;">
+                <span style="display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 50%; background: #07153B; border: 1.5px solid #00E676; flex-shrink: 0;">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#00E676" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+                </span>
+                <div>
+                  <small style="display: block; font-size: 10px; text-transform: uppercase; font-weight: 800; color: #00E676 !important; letter-spacing: 0.8px;">SUPPORT</small>
+                  <span style="font-size: 12.5px; font-weight: 800; color: #FFFFFF;">Fast 24h Response</span>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 32px; align-items: start; margin-top: 32px; position: relative; z-index: 2;">
-          <!-- LEFT INQUIRY FORM (DARK BLUE BACKGROUND, WHITE FONT, GREEN HEADING) -->
-          <form id="contact-form" class="jmt-card" style="background: rgba(7, 21, 59, 0.88) !important; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); color: #FFFFFF !important; border: 1px solid rgba(255, 255, 255, 0.2) !important; border-radius: 20px; padding: 32px; box-shadow: 0 16px 40px rgba(7, 21, 59, 0.35);">
-            <h2 style="font-size: 24px; color: #00E676 !important; font-weight: 800; margin-bottom: 8px;">Send Us a Message</h2>
-            <p style="color: #D6E0F4 !important; font-size: 14px; margin-bottom: 24px;">Fill in your details below and our team will get back to you within 24 hours.</p>
+        <!-- 2. MAIN 2-COLUMN SECTION: CONTACT FORM (LEFT) & OFFICE INFO CARDS (RIGHT) -->
+        <div class="jmt-contact-main-grid" style="display: grid; grid-template-columns: 1.25fr 1fr; gap: 32px; align-items: start; margin-bottom: 40px;">
+          
+          <!-- LEFT INQUIRY FORM CARD -->
+          <form id="contact-form" class="jmt-card" style="background: #0B286C !important; color: #FFFFFF !important; border: 1px solid rgba(255, 255, 255, 0.18) !important; border-radius: 20px; padding: 36px; box-shadow: 0 16px 40px rgba(0,0,0,0.35);">
+            <div style="margin-bottom: 24px;">
+              <small style="display: block; font-size: 11.5px; font-weight: 800; color: #00E676 !important; text-transform: uppercase; letter-spacing: 1.4px; margin-bottom: 6px;">SEND US A MESSAGE</small>
+              <h2 style="font-size: 28px; color: #00E676 !important; font-weight: 800; margin: 0 0 8px; text-shadow: 0 0 16px rgba(0, 230, 118, 0.35);">Send Us a Message</h2>
+              <p style="color: #E2E8F0 !important; font-size: 14px; margin: 0; line-height: 1.5;">Fill in your details below and our team will get back to you within 24 hours.</p>
+            </div>
 
-            <div style="margin-bottom: 18px;">
-              <label for="contact-name" style="display:block; font-weight:700; font-size:13.5px; color:#FFFFFF !important; margin-bottom:6px;">Your Name <span style="color:#00E676;" aria-hidden="true">*</span></label>
-              <div style="position:relative; display:flex; align-items:center;">
-                <span style="position:absolute; left:14px; pointer-events:none; display:flex; align-items:center; z-index:2; color:#07153B;">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#07153B" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-                </span>
-                <input type="text" id="contact-name" name="name" class="chat-input" placeholder="Enter your full name" style="width:100%; padding:14px 16px 14px 44px; border:1.5px solid #D1D5DB; border-radius:12px; font-size:14.5px; background:#FFFFFF !important; color:#07153B !important; outline:none; transition:border-color 0.2s;" onfocus="this.style.borderColor='#00A651'; this.style.boxShadow='0 0 0 3px rgba(0,166,81,0.2)'" onblur="this.style.borderColor='#D1D5DB'; this.style.boxShadow='none'" required aria-required="true">
+            <!-- 2-COLUMN INPUT FIELDS FOR NAME & CONTACT -->
+            <div class="jmt-form-row-2col" style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 18px;">
+              <div>
+                <label for="contact-name" style="display:block; font-weight:700; font-size:13px; color:#FFFFFF !important; margin-bottom:6px;">Your Name <span style="color:#00E676 !important; font-weight:800;" aria-hidden="true">*</span></label>
+                <div style="position:relative; display:flex; align-items:center;">
+                  <span style="position:absolute; left:14px; pointer-events:none; display:flex; align-items:center; z-index:2; color:#07153B;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#07153B" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                  </span>
+                  <input type="text" id="contact-name" name="name" placeholder="Enter your full name" style="width:100%; padding:13px 16px 13px 44px; border:1.5px solid #CBD5E1; border-radius:12px; font-size:14px; background:#FFFFFF !important; color:#07153B !important; outline:none; transition:all 0.2s ease;" onfocus="this.style.borderColor='#00E676'; this.style.boxShadow='0 0 0 4px rgba(0,230,118,0.35)'" onblur="this.style.borderColor='#CBD5E1'; this.style.boxShadow='none'" required aria-required="true">
+                </div>
+              </div>
+
+              <div>
+                <label for="contact-input" style="display:block; font-weight:700; font-size:13px; color:#FFFFFF !important; margin-bottom:6px;">Contact Email / Phone <span style="color:#00E676 !important; font-weight:800;" aria-hidden="true">*</span></label>
+                <div style="position:relative; display:flex; align-items:center;">
+                  <span style="position:absolute; left:14px; pointer-events:none; display:flex; align-items:center; gap:4px; z-index:2; color:#07153B;">
+                    <span style="font-family:sans-serif; font-weight:800; font-size:14px; line-height:1; color:#07153B;">@</span>
+                  </span>
+                  <input type="text" id="contact-input" name="contact" placeholder="email@domain.com or phone number" style="width:100%; padding:13px 16px 13px 40px; border:1.5px solid #CBD5E1; border-radius:12px; font-size:14px; background:#FFFFFF !important; color:#07153B !important; outline:none; transition:all 0.2s ease;" onfocus="this.style.borderColor='#00E676'; this.style.boxShadow='0 0 0 4px rgba(0,230,118,0.35)'" onblur="this.style.borderColor='#CBD5E1'; this.style.boxShadow='none'" required aria-required="true">
+                </div>
               </div>
             </div>
+
+            <!-- INQUIRY TYPE SELECT -->
             <div style="margin-bottom: 18px;">
-              <label for="contact-input" style="display:block; font-weight:700; font-size:13.5px; color:#FFFFFF !important; margin-bottom:6px;">Contact Email / Phone <span style="color:#00E676;" aria-hidden="true">*</span></label>
-              <div style="position:relative; display:flex; align-items:center;">
-                <span style="position:absolute; left:14px; pointer-events:none; display:flex; align-items:center; gap:4px; z-index:2; color:#07153B;">
-                  <span style="font-family:sans-serif; font-weight:700; font-size:15px; line-height:1; color:#07153B;">@</span>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#07153B" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
-                </span>
-                <input type="text" id="contact-input" name="contact" class="chat-input" placeholder="email@domain.com or phone number" style="width:100%; padding:14px 16px 14px 54px; border:1.5px solid #D1D5DB; border-radius:12px; font-size:14.5px; background:#FFFFFF !important; color:#07153B !important; outline:none; transition:border-color 0.2s;" onfocus="this.style.borderColor='#00A651'; this.style.boxShadow='0 0 0 3px rgba(0,166,81,0.2)'" onblur="this.style.borderColor='#D1D5DB'; this.style.boxShadow='none'" required aria-required="true">
-              </div>
-            </div>
-            <div style="margin-bottom: 18px;">
-              <label for="contact-type" style="display:block; font-weight:700; font-size:13.5px; color:#FFFFFF !important; margin-bottom:6px;">Inquiry Type</label>
+              <label for="contact-type" style="display:block; font-weight:700; font-size:13px; color:#FFFFFF !important; margin-bottom:6px;">Inquiry Type</label>
               <div style="position:relative; display:flex; align-items:center;">
                 <span style="position:absolute; left:14px; pointer-events:none; display:flex; align-items:center; gap:8px; z-index:2; color:#07153B;">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#07153B" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="9" y1="13" x2="15" y2="13"></line><polyline points="12 10 15 13 12 16"></polyline></svg>
-                  <span style="width:1px; height:18px; background:rgba(7,21,59,0.3); display:inline-block;"></span>
+                  <span style="width:1px; height:18px; background:rgba(7,21,59,0.25); display:inline-block;"></span>
                 </span>
-                <select id="contact-type" name="type" class="chat-input" style="width:100%; padding:14px 16px 14px 54px; border:1.5px solid #D1D5DB; border-radius:12px; font-size:14.5px; background:#FFFFFF !important; color:#07153B !important; outline:none; transition:border-color 0.2s;" onfocus="this.style.borderColor='#00A651'; this.style.boxShadow='0 0 0 3px rgba(0,166,81,0.2)'" onblur="this.style.borderColor='#D1D5DB'; this.style.boxShadow='none'">
+                <select id="contact-type" name="type" style="width:100%; padding:13px 16px 13px 48px; border:1.5px solid #CBD5E1; border-radius:12px; font-size:14px; background:#FFFFFF !important; color:#07153B !important; outline:none; transition:all 0.2s ease; cursor:pointer;" onfocus="this.style.borderColor='#00E676'; this.style.boxShadow='0 0 0 4px rgba(0,230,118,0.35)'" onblur="this.style.borderColor='#CBD5E1'; this.style.boxShadow='none'">
                   <option value="visa" style="background:#FFFFFF; color:#07153B;">Visa Services Inquiry</option>
                   <option value="tours" style="background:#FFFFFF; color:#07153B;">Holiday & Tour Packages</option>
                   <option value="hotels" style="background:#FFFFFF; color:#07153B;">Hotel & Accommodations</option>
@@ -11776,54 +11775,167 @@ function renderContactPage(container) {
                 </select>
               </div>
             </div>
-            <div style="margin-bottom: 26px;">
-              <label for="contact-msg" style="display:block; font-weight:700; font-size:13.5px; color:#FFFFFF !important; margin-bottom:6px;">Message <span style="color:#00E676;" aria-hidden="true">*</span></label>
+
+            <!-- MESSAGE TEXTAREA -->
+            <div style="margin-bottom: 24px;">
+              <label for="contact-msg" style="display:block; font-weight:700; font-size:13px; color:#FFFFFF !important; margin-bottom:6px;">Message <span style="color:#00E676 !important; font-weight:800;" aria-hidden="true">*</span></label>
               <div style="position:relative; display:flex;">
-                <span style="position:absolute; left:14px; top:16px; pointer-events:none; display:flex; align-items:center; z-index:2; color:#07153B;">
+                <span style="position:absolute; left:14px; top:15px; pointer-events:none; display:flex; align-items:center; z-index:2; color:#07153B;">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#07153B" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
                 </span>
-                <textarea id="contact-msg" name="message" rows="4" class="chat-input" placeholder="How can we assist you?" style="width:100%; padding:14px 16px 14px 44px; border:1.5px solid #D1D5DB; border-radius:12px; font-size:14.5px; background:#FFFFFF !important; color:#07153B !important; outline:none; transition:border-color 0.2s;" onfocus="this.style.borderColor='#00A651'; this.style.boxShadow='0 0 0 3px rgba(0,166,81,0.2)'" onblur="this.style.borderColor='#D1D5DB'; this.style.boxShadow='none'" required aria-required="true"></textarea>
+                <textarea id="contact-msg" name="message" rows="4" placeholder="How can we assist you?" style="width:100%; padding:13px 16px 13px 44px; border:1.5px solid #CBD5E1; border-radius:12px; font-size:14px; background:#FFFFFF !important; color:#07153B !important; outline:none; transition:all 0.2s ease; font-family:inherit;" onfocus="this.style.borderColor='#00E676'; this.style.boxShadow='0 0 0 4px rgba(0,230,118,0.35)'" onblur="this.style.borderColor='#CBD5E1'; this.style.boxShadow='none'" required aria-required="true"></textarea>
               </div>
             </div>
-            <button type="submit" class="jmt-btn-primary" style="width:100%; justify-content:center; padding:15px; font-size:16px; font-weight:800; background:#00A651 !important; color:#FFFFFF !important; border-radius:12px;">Send Inquiry →</button>
+
+            <!-- CTA SUBMIT BUTTON -->
+            <button type="submit" class="jmt-btn-primary" style="width:100%; justify-content:center; padding:16px; font-size:16px; font-weight:800; background:#00E676 !important; color:#07153B !important; border-radius:14px; border:none; cursor:pointer; box-shadow:0 8px 25px rgba(0, 230, 118, 0.45); transition:all 0.25s ease;">Send Inquiry →</button>
+            
+            <div style="text-align:center; font-size:12px; color:#94A3B8; margin-top:14px; display:flex; align-items:center; justify-content:center; gap:6px;">
+              <span style="display:inline-flex; align-items:center; gap:6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#00E676" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg> Your information is safe with us. We never share your details.</span>
+            </div>
+
             <div id="contact-result" style="margin-top:16px;" aria-live="polite"></div>
           </form>
 
-          <!-- RIGHT CONTACT DETAILS (DARK BLUE BACKGROUND, WHITE FONT, GREEN HEADING) -->
+          <!-- RIGHT OFFICE INFO CARDS -->
           <div style="display: flex; flex-direction: column; gap: 24px;">
-            <div class="jmt-card" style="background: rgba(7, 21, 59, 0.88) !important; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); color: #FFFFFF !important; border: 1px solid rgba(255, 255, 255, 0.2) !important; border-left: 5px solid #00E676 !important; border-radius: 20px; padding: 32px; box-shadow: 0 16px 40px rgba(7, 21, 59, 0.35);">
-              <h2 style="font-size: 22px; color: #00E676 !important; font-weight: 800; margin-bottom: 20px;">JMT Travels — Al Buraimi Office</h2>
-              <div style="display: flex; flex-direction: column; gap: 16px; font-size: 14.5px; color: #D6E0F4 !important;">
+            
+            <!-- CARD 1: OFFICE DETAILS -->
+            <div class="jmt-card" style="background: #0B286C !important; color: #FFFFFF !important; border: 2px solid #00E676 !important; border-radius: 20px; padding: 32px; box-shadow: 0 16px 40px rgba(0,0,0,0.35), 0 0 20px rgba(0, 230, 118, 0.2); position:relative;">
+              <h2 style="font-size: 24px; color: #00E676 !important; font-weight: 800; margin: 0 0 20px; letter-spacing: -0.3px; text-shadow: 0 0 16px rgba(0, 230, 118, 0.35);">JMT Travels — Al Buraimi Office</h2>
+              
+              <div style="display: flex; flex-direction: column; gap: 18px; font-size: 14.5px; color: #E2E8F0 !important;">
+                
+                <!-- LOCATION -->
+                <div style="display: flex; gap: 14px; align-items: flex-start; padding-bottom: 14px; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                  <div style="width:38px; height:38px; border-radius:50%; background:#07153B; border:1.5px solid #00E676; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                  </div>
+                  <div>
+                    <strong style="color: #FFFFFF !important; display:block; margin-bottom:2px;">Office Location:</strong>
+                    <a href="https://maps.app.goo.gl/3xDLiEdchqgivn1Z7" target="_blank" rel="noopener noreferrer" style="color:#00E676 !important; font-weight:700; text-decoration:underline;" title="Open in Google Maps">near Mazda R/A, next to Yahar Restaurant, 512, Oman</a>
+                  </div>
+                </div>
+
+                <!-- PHONE -->
+                <div style="display: flex; gap: 14px; align-items: center; padding-bottom: 14px; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                  <div style="width:38px; height:38px; border-radius:50%; background:#07153B; border:1.5px solid #00E676; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                  </div>
+                  <div>
+                    <strong style="color: #FFFFFF !important; display:block; margin-bottom:2px;">Landline Phone:</strong>
+                    <a href="tel:+96825655711" style="color:#FFFFFF !important; font-weight:700; text-decoration:none;">+968 25655711</a> / <a href="tel:+96825655177" style="color:#FFFFFF !important; font-weight:700; text-decoration:none;">+968 25655177</a>
+                  </div>
+                </div>
+
+                <!-- WHATSAPP -->
+                <div style="display: flex; gap: 14px; align-items: center; padding-bottom: 14px; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                  <div style="width:38px; height:38px; border-radius:50%; background:#07153B; border:1.5px solid #00E676; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+                  </div>
+                  <div>
+                    <strong style="color: #FFFFFF !important; display:block; margin-bottom:2px;">WhatsApp Support:</strong>
+                    <a href="https://wa.me/96897608999" target="_blank" rel="noopener" style="color:#00E676 !important; font-weight:700; text-decoration:none;">+968 9760 8999</a>
+                  </div>
+                </div>
+
+                <!-- EMAIL -->
+                <div style="display: flex; gap: 14px; align-items: center; padding-bottom: 14px; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                  <div style="width:38px; height:38px; border-radius:50%; background:#07153B; border:1.5px solid #00E676; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                  </div>
+                  <div>
+                    <strong style="color: #FFFFFF !important; display:block; margin-bottom:2px;">Email Address:</strong>
+                    <a href="https://mail.google.com/mail/?view=cm&fs=1&to=info%40jmttravels.com" target="_blank" rel="noopener noreferrer" aria-label="Email JMT Travels via Gmail" class="jmt-email-link" style="color:#00E676 !important; font-weight:700; text-decoration:underline;">info@jmttravels.com</a>
+                  </div>
+                </div>
+
+                <!-- WORKING HOURS -->
                 <div style="display: flex; gap: 14px; align-items: flex-start;">
-                  <span style="font-size: 20px;">📍</span>
-                  <div><b style="color: #FFFFFF !important;">Office Location:</b><br><a href="https://maps.app.goo.gl/3xDLiEdchqgivn1Z7" target="_blank" rel="noopener noreferrer" style="color:#FFFFFF !important; font-weight:700; text-decoration:underline;" title="Open in Google Maps">near Mazda R/A, next to Yahar Restaurant, 512, Oman</a></div>
+                  <div style="width:38px; height:38px; border-radius:50%; background:#07153B; border:1.5px solid #00E676; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                  </div>
+                  <div>
+                    <strong style="color: #FFFFFF !important; display:block; margin-bottom:2px;">Working Hours:</strong>
+                    <span style="color: #E2E8F0 !important; font-size:13.5px; line-height:1.5;">Saturday – Thursday: 8:30 AM – 1:30 PM &amp; 4:30 PM – 9:30 PM<br>Friday: 4:30 PM – 9:30 PM</span>
+                  </div>
                 </div>
-                <div style="display: flex; gap: 14px; align-items: center;">
-                  <span style="font-size: 20px;">📞</span>
-                  <div><b style="color: #FFFFFF !important;">Landline Phone:</b> <a href="tel:+96825655711" style="color:#FFFFFF !important; font-weight:700; text-decoration:none;">+968 25655711</a> / <a href="tel:+96825655177" style="color:#FFFFFF !important; font-weight:700; text-decoration:none;">+968 25655177</a></div>
-                </div>
-                <div style="display: flex; gap: 14px; align-items: center;">
-                  <span style="font-size: 20px;">💬</span>
-                  <div><b style="color: #FFFFFF !important;">WhatsApp Support:</b> <a href="https://wa.me/96897608999" target="_blank" rel="noopener" style="color:#00E676 !important; font-weight:700; text-decoration:none;">+968 9760 8999</a></div>
-                </div>
-                <div style="display: flex; gap: 14px; align-items: center;">
-                  <span style="font-size: 20px;">✉️</span>
-                  <div><b style="color: #FFFFFF !important;">Email Address:</b> <a href="https://mail.google.com/mail/?view=cm&fs=1&to=info%40jmttravels.com" target="_blank" rel="noopener noreferrer" aria-label="Email JMT Travels via Gmail" class="jmt-email-link" style="color:#00E676 !important; font-weight:700; text-decoration:underline;">info@jmttravels.com</a></div>
-                </div>
-                <div style="display: flex; gap: 14px; align-items: flex-start;">
-                  <span style="font-size: 20px;">🕐</span>
-                  <div><b style="color: #FFFFFF !important;">Working Hours:</b><br><span style="color: #D6E0F4 !important;">Saturday – Thursday: 8:30 AM – 1:30 PM &amp; 4:30 PM – 9:30 PM<br>Friday: 4:30 PM – 9:30 PM</span></div>
-                </div>
+
               </div>
             </div>
 
-            <div class="jmt-card" style="text-align: center; background: rgba(7, 21, 59, 0.88) !important; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); color: #FFFFFF !important; border: 1px solid rgba(255, 255, 255, 0.2) !important; border-radius: 20px; padding: 28px; box-shadow: 0 16px 40px rgba(7, 21, 59, 0.35);">
-              <h3 style="font-size: 18px; color: #00E676 !important; font-weight: 800; margin-bottom: 8px;">Visit Our Office in Al Buraimi</h3>
-              <p style="font-size: 14px; color: #D6E0F4 !important; margin-bottom: 20px; line-height: 1.5;">Located centrally near Mazda Roundabout for in-person visa clearing and travel consultations.</p>
-              <a href="https://maps.app.goo.gl/3xDLiEdchqgivn1Z7" target="_blank" rel="noopener" class="jmt-btn-primary" style="width:100%; justify-content:center; padding:15px; font-size:15px; font-weight:800; background:#00A651 !important; color:#FFFFFF !important; border-radius:12px; text-decoration:none; display:inline-flex; align-items:center; gap:8px; box-shadow: 0 6px 18px rgba(0, 166, 81, 0.35) !important;">📍 Open in Google Maps</a>
+            <!-- CARD 2: VISIT OFFICE & GOOGLE MAPS CTA -->
+            <div class="jmt-card" style="text-align: center; background: #0B286C !important; color: #FFFFFF !important; border: 1px solid rgba(255, 255, 255, 0.18) !important; border-radius: 20px; padding: 28px; box-shadow: 0 16px 40px rgba(0,0,0,0.35);">
+              <h3 style="font-size: 22px; color: #00E676 !important; font-weight: 800; margin: 0 0 8px; text-shadow: 0 0 14px rgba(0, 230, 118, 0.3);">Visit Our Office in Al Buraimi</h3>
+              <p style="font-size: 14px; color: #E2E8F0 !important; margin: 0 0 20px; line-height: 1.5;">Located centrally near Mazda Roundabout for in-person visa clearing and travel consultations.</p>
+              <a href="https://maps.app.goo.gl/3xDLiEdchqgivn1Z7" target="_blank" rel="noopener" class="jmt-btn-primary" style="width:100%; justify-content:center; padding:15px; font-size:15px; font-weight:800; background:#00E676 !important; color:#07153B !important; border-radius:12px; text-decoration:none; display:inline-flex; align-items:center; gap:8px; box-shadow: 0 8px 25px rgba(0, 230, 118, 0.45) !important;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#07153B" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                Open in Google Maps
+              </a>
             </div>
+
+          </div>
+
+        </div>
+
+        <!-- 3. SERVICES HIGHLIGHT STRIP (4 EQUAL COLUMNS) -->
+        <div style="margin-bottom: 40px;">
+          <div class="jmt-services-strip-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px;">
+            
+            <div style="background: #0B286C; border: 1.5px solid rgba(255,255,255,0.15); border-radius: 18px; padding: 22px 20px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.25); transition: all 0.25s ease;">
+              <div style="display:flex; justify-content:center; align-items:center; margin-bottom: 12px;">
+                <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#00E676" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3.5c-.5-.5-2.5 0-4 1.5L13.5 8.5 5.3 6.7c-.5-.1-.9.1-1.1.5l-.8 1.4c-.2.4 0 .9.4 1.1l5.5 3.3-3.3 3.3-2.6-.7c-.4-.1-.8.1-1 .4l-.6.7c-.2.3-.1.8.2 1l3.5 2.5 2.5 3.5c.2.3.7.4 1 .2l.7-.6c.3-.2.5-.6.4-1l-.7-2.6 3.3-3.3 3.3 5.5c.2.4.7.6 1.1.4l1.4-.8c.4-.2.6-.6.5-1.1z"></path></svg>
+              </div>
+              <h4 style="font-size: 17px; font-weight: 800; color: #00E676 !important; margin: 0 0 4px;">Visa Services</h4>
+              <p style="font-size: 13px; color: #E2E8F0; margin: 0;">Fast &amp; Hassle-Free Clearing</p>
+            </div>
+
+            <div style="background: #0B286C; border: 1.5px solid rgba(255,255,255,0.15); border-radius: 18px; padding: 22px 20px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.25); transition: all 0.25s ease;">
+              <div style="display:flex; justify-content:center; align-items:center; margin-bottom: 12px;">
+                <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#00E676" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="15" rx="2"></rect><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg>
+              </div>
+              <h4 style="font-size: 17px; font-weight: 800; color: #00E676 !important; margin: 0 0 4px;">Tour Packages</h4>
+              <p style="font-size: 13px; color: #E2E8F0; margin: 0;">Explore Oman &amp; GCC Wonders</p>
+            </div>
+
+            <div style="background: #0B286C; border: 1.5px solid rgba(255,255,255,0.15); border-radius: 18px; padding: 22px 20px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.25); transition: all 0.25s ease;">
+              <div style="display:flex; justify-content:center; align-items:center; margin-bottom: 12px;">
+                <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#00E676" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4v16"></path><path d="M2 8h18a2 2 0 0 1 2 2v10"></path><path d="M2 17h20"></path><path d="M6 8v9"></path></svg>
+              </div>
+              <h4 style="font-size: 17px; font-weight: 800; color: #00E676 !important; margin: 0 0 4px;">Hotel Bookings</h4>
+              <p style="font-size: 13px; color: #E2E8F0; margin: 0;">Comfort Stay Worldwide</p>
+            </div>
+
+            <div style="background: #0B286C; border: 1.5px solid rgba(255,255,255,0.15); border-radius: 18px; padding: 22px 20px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.25); transition: all 0.25s ease;">
+              <div style="display:flex; justify-content:center; align-items:center; margin-bottom: 12px;">
+                <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#00E676" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18v-6a9 9 0 0 1 18 0v6"></path><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"></path></svg>
+              </div>
+              <h4 style="font-size: 17px; font-weight: 800; color: #00E676 !important; margin: 0 0 4px;">24/7 Support</h4>
+              <p style="font-size: 13px; color: #E2E8F0; margin: 0;">We're Always Here to Help</p>
+            </div>
+
           </div>
         </div>
+
+        <!-- 4. INTERACTIVE GOOGLE MAP SECTION -->
+        <div style="background: #0B286C; border: 1px solid rgba(255,255,255,0.18); border-radius: 24px; padding: 32px; box-shadow: 0 16px 40px rgba(0,0,0,0.35);">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 20px;">
+            <div>
+              <small style="display: block; font-size: 11.5px; font-weight: 800; color: #00E676 !important; text-transform: uppercase; letter-spacing: 1.4px; margin-bottom: 4px;">VISIT OUR OFFICE</small>
+              <h3 style="font-size: 24px; font-weight: 800; color: #FFFFFF; margin: 0;">Find Us in Al Buraimi</h3>
+            </div>
+            <a href="https://maps.app.goo.gl/3xDLiEdchqgivn1Z7" target="_blank" rel="noopener noreferrer" style="background: #00E676 !important; color: #07153B !important; padding: 12px 24px; border-radius: 99px; font-weight: 800; font-size: 14px; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 6px 20px rgba(0,230,118,0.45);">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#07153B" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+              Open in Google Maps →
+            </a>
+          </div>
+
+          <!-- EMBEDDED GOOGLE MAP IFRAME -->
+          <div style="border-radius: 18px; overflow: hidden; height: 380px; width: 100%; border: 1.5px solid rgba(255,255,255,0.2); box-shadow: inset 0 0 20px rgba(0,0,0,0.2);">
+            <iframe title="JMT Travels Al Buraimi Office Map Location" src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3623.504856983756!2d55.7923483!3d24.2503527!2m3!1f0!0!f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3e8ab15b59eb4f47%3A0x2ff259b3427f7f98!2sAl%20Buraimi%2C%20Oman!5e0!3m2!1sen!2s!4v1700000000000!5m2!1sen!2s" width="100%" height="100%" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+          </div>
+        </div>
+
       </div>
     </div>
   `;
@@ -11834,11 +11946,11 @@ function renderContactPage(container) {
     const resDiv = document.getElementById('contact-result');
     try {
       const res = await apiCall('/api/feedback', 'POST', data);
-      resDiv.innerHTML = `<div style="background: #DCFCE7; color: #15803D; padding: 14px; border-radius: 12px; font-weight:700;">✅ ${escapeHTML(res.message || 'Inquiry sent successfully!')}</div>`;
+      resDiv.innerHTML = `<div style="background: rgba(0, 230, 118, 0.15); color: #00E676; border: 1px solid #00E676; padding: 14px; border-radius: 12px; font-weight:700;">✅ ${escapeHTML(res.message || 'Inquiry sent successfully!')}</div>`;
       announceToSR('Inquiry sent successfully');
       e.target.reset();
     } catch (err) {
-      resDiv.innerHTML = `<div style="background: #FEE2E2; color: #DC2626; padding: 14px; border-radius: 12px; font-weight:700;">${escapeHTML(err.message)}</div>`;
+      resDiv.innerHTML = `<div style="background: rgba(220, 38, 38, 0.15); color: #FF5252; border: 1px solid #FF5252; padding: 14px; border-radius: 12px; font-weight:700;">${escapeHTML(err.message)}</div>`;
       announceToSR(`Inquiry error: ${err.message}`);
     }
   };

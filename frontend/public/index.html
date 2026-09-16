@@ -72,14 +72,14 @@
   </div>
 
   <!-- MAIN HEADER NAVIGATION -->
-  <header style="position:sticky; top:0; z-index:100; background:rgba(193,212,228,0.92); backdrop-filter:blur(12px); border-bottom:1px solid rgba(8,43,82,0.08); box-shadow: 0 2px 10px rgba(0,0,0,0.03);">
-    <nav class="header-nav" aria-label="Main Navigation" style="border:0; shadow:none;">
-      <div class="shell" style="height:76px; display:flex; align-items:center; justify-content:space-between; gap:20px;">
-        <a class="brand-logo" href="/" onclick="event.preventDefault(); navigate('/')">
-          <img src="/assets/logo.png" alt="JMT TRAVELS Logo" style="height:44px; width:auto;">
-          <span class="brand-title">
-            <b style="font-size:20px; color:#0B286C; font-weight:800; tracking:-0.5px;">JMT TRAVELS</b>
-            <small style="color:#00A651; font-size:9px; font-weight:700; letter-spacing:1.2px;">JOURNEY MORE TOGETHER</small>
+  <header style="position:sticky; top:0; z-index:100; background:rgba(7,21,59,0.95); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); border-bottom:1px solid rgba(255,255,255,0.12); box-shadow: 0 4px 20px rgba(0,0,0,0.35);">
+    <nav class="header-nav" aria-label="Main Navigation" style="border:0; shadow:none; background:transparent;">
+      <div class="shell" style="height:84px; display:flex; align-items:center; justify-content:space-between; gap:20px;">
+        <a class="brand-logo" href="/" onclick="event.preventDefault(); navigate('/')" style="display:flex; align-items:center; gap:12px; text-decoration:none;">
+          <img src="/assets/logo.png" alt="JMT TRAVELS Logo" style="height:64px; width:auto; max-height:64px; object-fit:contain;">
+          <span class="brand-title" style="display:flex; flex-direction:column;">
+            <b style="font-size:22px; color:#FFFFFF !important; font-weight:800; letter-spacing:-0.5px; line-height:1.1;">JMT TRAVELS</b>
+            <small style="color:#00E676 !important; font-size:9.5px; font-weight:700; letter-spacing:1.2px; margin-top:2px;">JOURNEY MORE TOGETHER</small>
           </span>
         </a>
 
@@ -90,7 +90,6 @@
           <li><a href="/visa?service=schengen" onclick="event.preventDefault(); navigate('/visa?service=schengen')" class="nav-link-item" data-nav="schengen">Schengen Visa</a></li>
           <li><a href="/hotels" onclick="event.preventDefault(); navigate('/hotels')" class="nav-link-item" data-nav="hotels">Hotels</a></li>
           <li><a href="/flights" onclick="event.preventDefault(); navigate('/flights')" class="nav-link-item" data-nav="flights">Flights</a></li>
-          <li><a href="/about" onclick="event.preventDefault(); navigate('/about')" class="nav-link-item" data-nav="about">About Us</a></li>
         </ul>
 
         <div class="nav-actions" style="display:flex; align-items:center; gap:14px;">
@@ -98,7 +97,7 @@
             <span id="theme-toggle-icon" style="display:inline-flex; align-items:center; justify-content:center;"><svg width="18" height="18" viewBox="0 0 24 24" fill="#FFFFFF" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.389 5.389 0 0 1-4.4 2.26 5.403 5.403 0 0 1-5.4-5.4c0-1.81.89-3.42 2.26-4.4C12.92 3.04 12.46 3 12 3z"/></svg></span><span id="theme-toggle-label" style="display:none !important;">Dark</span>
           </button>
           <div id="nav-auth" style="display:flex; align-items:center; gap:10px;">
-            <a href="/login" id="nav-signin-link" onclick="event.preventDefault(); navigate('/login')" class="nav-signin-link" style="font-weight:700; font-size:14px; text-decoration:none; margin-right:4px;">Sign In</a>
+            <a href="/login" id="nav-signin-link" onclick="event.preventDefault(); navigate('/login')" class="nav-signin-link" style="font-weight:700; font-size:14px; text-decoration:none; margin-right:4px; color:#FFFFFF !important;">Sign In</a>
             <a href="/register" onclick="event.preventDefault(); navigate('/register')" class="btn-create-account" style="background: linear-gradient(135deg, #07153B 0%, #0B286C 100%); color:#FFFFFF !important; padding:10px 22px; border-radius:99px; font-weight:700; font-size:13px; text-decoration:none; display:inline-flex; align-items:center; gap:6px; box-shadow: 0 4px 14px rgba(7, 21, 59, 0.35); white-space:nowrap;">Create Account →</a>
           </div>
           <button class="mobile-menu-btn" onclick="toggleMobileMenu()" aria-label="Toggle Mobile Navigation Menu" aria-expanded="false" style="display:none; background:none; border:0; font-size:24px; cursor:pointer; color:#0B286C; padding:4px;">
@@ -116,7 +115,6 @@
           <li><a href="/visa?service=schengen" onclick="event.preventDefault(); toggleMobileMenu(); navigate('/visa?service=schengen')" class="nav-link-item" data-nav="schengen" style="font-size:15px; font-weight:600; color:#0B286C; text-decoration:none; display:block; padding:8px 0;">Schengen Visa</a></li>
           <li><a href="/hotels" onclick="event.preventDefault(); toggleMobileMenu(); navigate('/hotels')" class="nav-link-item" data-nav="hotels" style="font-size:15px; font-weight:600; color:#0B286C; text-decoration:none; display:block; padding:8px 0;">Hotels</a></li>
           <li><a href="/flights" onclick="event.preventDefault(); toggleMobileMenu(); navigate('/flights')" class="nav-link-item" data-nav="flights" style="font-size:15px; font-weight:600; color:#0B286C; text-decoration:none; display:block; padding:8px 0;">Flights</a></li>
-          <li><a href="/about" onclick="event.preventDefault(); toggleMobileMenu(); navigate('/about')" class="nav-link-item" data-nav="about" style="font-size:15px; font-weight:600; color:#0B286C; text-decoration:none; display:block; padding:8px 0;">About Us</a></li>
         </ul>
         <div style="border-top:1px solid rgba(8,43,82,0.1); padding-top:16px; display:flex; flex-direction:column; gap:12px;">
           <div id="mobile-nav-auth" style="display:flex; gap:12px;">
@@ -205,7 +203,7 @@
           <h3 class="jmt-footer-heading">Explore</h3>
           <ul class="jmt-footer-list">
             <li><a href="/tourism" onclick="event.preventDefault(); navigate('/tourism')" class="jmt-footer-link">Oman Tours</a></li>
-            <li><a href="/tourism" onclick="event.preventDefault(); navigate('/tourism')" class="jmt-footer-link">Destinations</a></li>
+            <li><a href="/visa" onclick="event.preventDefault(); navigate('/visa')" class="jmt-footer-link">Schengen Visas</a></li>
             <li><a href="/visa" onclick="event.preventDefault(); navigate('/visa')" class="jmt-footer-link">Visa Services</a></li>
             <li><a href="/tourism" onclick="event.preventDefault(); navigate('/tourism')" class="jmt-footer-link">Tour Packages</a></li>
             <li><a href="/hotels" onclick="event.preventDefault(); navigate('/hotels')" class="jmt-footer-link">Hotels</a></li>
