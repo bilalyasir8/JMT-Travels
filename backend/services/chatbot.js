@@ -219,13 +219,20 @@ class ChatbotService {
     let conversationHistory = [];
     if (conversationId) {
       try {
-        const rawHistory = await db.chatMessages.find({ conversationId });
-        if (Array.isArray(rawHistory) && rawHistory.length > 0) {
-          rawHistory.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-          conversationHistory = rawHistory.slice(-12).map(m => ({
-            sender: m.sender === 'CUSTOMER' ? 'user' : 'assistant',
-            text: (m.text || '').trim()
-          }));
+        const conv = await db.chatConversations.findById(conversationId);
+        if (conv) {
+          const isStaff = user && ['ADMIN', 'SUPER_ADMIN', 'STAFF'].includes(user.role);
+          const isOwner = user && conv.customerId === user.id;
+          if (isOwner || isStaff || !conv.customerId) {
+            const rawHistory = await db.chatMessages.find({ conversationId: conv.id });
+            if (Array.isArray(rawHistory) && rawHistory.length > 0) {
+              rawHistory.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+              conversationHistory = rawHistory.slice(-12).map(m => ({
+                sender: m.sender === 'CUSTOMER' ? 'user' : 'assistant',
+                text: (m.text || '').trim()
+              }));
+            }
+          }
         }
       } catch (err) {
         // Non-blocking history retrieval failure

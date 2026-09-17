@@ -190,20 +190,27 @@ class ProductionAIProvider extends AIProvider {
       // Add current user prompt
       messages.push({ role: 'user', content: (prompt || '').trim() });
 
-      // Create bounded timeout call with OpenAI API
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('AI Provider request timed out (15s limit)')), this.timeoutMs);
-      });
+      // Call OpenAI API (Using official OpenAI Responses API with clean SDK timeout)
+      let response = null;
+      const systemContent = `${JMT_SYSTEM_INSTRUCTIONS}\n\nCurrent User Locale: ${isArabic ? 'Arabic (ar, RTL)' : 'English (en)'}`;
 
-      const apiPromise = this.client.chat.completions.create({
-        model: this.model,
-        messages,
-        max_tokens: 500,
-        temperature: 0.7
-      });
+      if (this.client.responses && typeof this.client.responses.create === 'function') {
+        response = await this.client.responses.create({
+          model: this.model,
+          instructions: systemContent,
+          input: messages,
+          max_output_tokens: 500
+        }, { timeout: this.timeoutMs });
+      } else {
+        response = await this.client.chat.completions.create({
+          model: this.model,
+          messages,
+          max_tokens: 500,
+          temperature: 0.7
+        }, { timeout: this.timeoutMs });
+      }
 
-      const response = await Promise.race([apiPromise, timeoutPromise]);
-      const replyContent = response.choices?.[0]?.message?.content;
+      const replyContent = response.output_text || response.output?.[0]?.content?.[0]?.text || response.choices?.[0]?.message?.content;
 
       if (!replyContent || typeof replyContent !== 'string') {
         throw new Error('Empty or malformed completion response from OpenAI API');
