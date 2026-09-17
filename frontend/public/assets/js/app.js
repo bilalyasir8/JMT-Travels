@@ -12997,11 +12997,32 @@ function setupChatbot() {
     }
   });
 
-  const appendMsg = (text, isUser = false) => {
+  const appendMsg = (text, isUser = false, quickReplies = []) => {
     const bubble = document.createElement('div');
     bubble.className = `chat-bubble ${isUser ? 'user' : 'bot'}`;
     bubble.textContent = text;
     body.appendChild(bubble);
+
+    if (!isUser && Array.isArray(quickReplies) && quickReplies.length > 0) {
+      const qrContainer = document.createElement('div');
+      qrContainer.className = 'chat-quick-replies';
+      qrContainer.style.cssText = 'display:flex; flex-wrap:wrap; gap:6px; margin:8px 0;';
+      quickReplies.forEach(qr => {
+        const btn = document.createElement('button');
+        btn.className = 'quick-reply-btn';
+        btn.style.cssText = 'background:rgba(0,230,118,0.12); border:1px solid #00E676; color:#00E676; font-size:12px; padding:5px 12px; border-radius:14px; cursor:pointer; font-weight:600; transition:all 0.2s ease;';
+        btn.textContent = qr;
+        btn.onclick = () => {
+          if (input) {
+            input.value = qr;
+            handleSend();
+          }
+        };
+        qrContainer.appendChild(btn);
+      });
+      body.appendChild(qrContainer);
+    }
+
     body.scrollTop = body.scrollHeight;
 
     if (!isUser) {
@@ -13015,6 +13036,9 @@ function setupChatbot() {
     appendMsg(msg, true);
     input.value = '';
 
+    if (sendBtn) sendBtn.disabled = true;
+    if (input) input.disabled = true;
+
     try {
       let endpoint = '/api/chat';
       let payload = { message: msg };
@@ -13026,10 +13050,17 @@ function setupChatbot() {
 
       const res = await apiCall(endpoint, 'POST', payload);
 
-      const botText = res.reply || (res.assistantMessage ? res.assistantMessage.text : null) || 'Thank you for contacting JMT Travels!';
-      appendMsg(botText, false);
+      const botText = res.reply || (res.aiResponse ? res.aiResponse.text : null) || (res.assistantMessage ? res.assistantMessage.text : null) || 'Thank you for contacting JMT Travels!';
+      const qReplies = res.quickReplies || (res.aiResponse && res.aiResponse.metadata ? res.aiResponse.metadata.quickReplies : []);
+      appendMsg(botText, false, qReplies);
     } catch (err) {
-      appendMsg('Sorry, I am having trouble connecting right now. Please WhatsApp us at +968 9760 8999.');
+      appendMsg('Sorry, I am having trouble connecting right now. Please WhatsApp us at +968 9760 8999.', false);
+    } finally {
+      if (sendBtn) sendBtn.disabled = false;
+      if (input) {
+        input.disabled = false;
+        input.focus();
+      }
     }
   };
 

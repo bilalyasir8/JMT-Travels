@@ -185,7 +185,7 @@ class ChatbotService {
     }
 
     // 5. PUBLIC FAQ & CATALOGUE RETRIEVAL
-    if (textLower.includes('visa') || textLower.includes('permit') || textLower.includes('تأشيرة')) {
+    if (textLower.includes('visa') || textLower.includes('permit') || textLower.includes('تأشيرة') || textLower.includes('تأشير')) {
       const publicVisas = await chatTools.getPublicVisaServices(normLocale);
       const vList = publicVisas.services.map(s => `• ${s.country} (${s.visaType} Visa - Fee: ${s.fee} ${s.currency})`).join('\n');
       return {
@@ -216,8 +216,25 @@ class ChatbotService {
     }
 
     // 6. AI PROVIDER GATEWAY EXECUTION
+    let conversationHistory = [];
+    if (conversationId) {
+      try {
+        const rawHistory = await db.chatMessages.find({ conversationId });
+        if (Array.isArray(rawHistory) && rawHistory.length > 0) {
+          rawHistory.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+          conversationHistory = rawHistory.slice(-12).map(m => ({
+            sender: m.sender === 'CUSTOMER' ? 'user' : 'assistant',
+            text: (m.text || '').trim()
+          }));
+        }
+      } catch (err) {
+        // Non-blocking history retrieval failure
+      }
+    }
+
     const aiResult = await this.aiProvider.generateResponse({
       prompt: cleanMessage,
+      conversationHistory,
       context: { user: user ? { id: user.id, role: user.role } : null },
       language: normLocale
     });
