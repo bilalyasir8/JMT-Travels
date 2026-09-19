@@ -224,10 +224,14 @@ class ChatbotService {
           const isStaff = user && ['ADMIN', 'SUPER_ADMIN', 'STAFF'].includes(user.role);
           const isOwner = user && conv.customerId === user.id;
           if (isOwner || isStaff || !conv.customerId) {
-            const rawHistory = await db.chatMessages.find({ conversationId: conv.id });
+            const rawHistory = await db.chatMessages.find(
+              { conversationId: conv.id },
+              'sender text createdAt',
+              { sort: { createdAt: -1 }, limit: 12 }
+            );
             if (Array.isArray(rawHistory) && rawHistory.length > 0) {
-              rawHistory.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-              conversationHistory = rawHistory.slice(-12).map(m => ({
+              const chronological = [...rawHistory].reverse();
+              conversationHistory = chronological.map(m => ({
                 sender: m.sender === 'CUSTOMER' ? 'user' : 'assistant',
                 text: (m.text || '').trim()
               }));

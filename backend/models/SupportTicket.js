@@ -24,4 +24,7 @@ const SupportTicketSchema = new mongoose.Schema({
   timestamps: true
 });
 
+SupportTicketSchema.index({ userId: 1, status: 1, createdAt: -1 });
+SupportTicketSchema.index({ ticketNumber: 1 });
+
 module.exports = mongoose.models.SupportTicket || mongoose.model('SupportTicket', SupportTicketSchema);
