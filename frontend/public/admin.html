@@ -62,11 +62,11 @@
       
       <div style="margin-bottom:16px;">
         <label style="display:block; font-size:12px; margin-bottom:6px; font-weight:700;">Email Address</label>
-        <input type="text" id="admin-email" class="chat-input" style="width:100%; width:-webkit-fill-available; padding:10px; border-radius:6px; border:1px solid #3A506B; background:#0B132B; color:#FFF;" required value="admin@jmttravels.com">
+        <input type="email" id="admin-email" class="chat-input" style="width:100%; width:-webkit-fill-available; padding:10px; border-radius:6px; border:1px solid #3A506B; background:#0B132B; color:#FFF;" required placeholder="admin@jmttravels.com" autocomplete="username">
       </div>
       <div style="margin-bottom:24px;">
         <label style="display:block; font-size:12px; margin-bottom:6px; font-weight:700;">Password</label>
-        <input type="password" id="admin-password" class="chat-input" style="width:100%; width:-webkit-fill-available; padding:10px; border-radius:6px; border:1px solid #3A506B; background:#0B132B; color:#FFF;" required value="JMTAdmin2026!">
+        <input type="password" id="admin-password" class="chat-input" style="width:100%; width:-webkit-fill-available; padding:10px; border-radius:6px; border:1px solid #3A506B; background:#0B132B; color:#FFF;" required placeholder="••••••••••••" autocomplete="current-password">
       </div>
       <button type="submit" class="btn btn-primary" style="width:100%; padding:12px; background:#5BC0BE; color:#0B132B; border:none; font-weight:700; border-radius:6px; cursor:pointer;">Open Staff Console</button>
       <div id="admin-login-error" style="margin-top:16px; color:#FF6B6B; font-size:13px; font-weight:700;"></div>
@@ -189,21 +189,29 @@
 
   <script>
     let adminToken = localStorage.getItem('jmt_token') || '';
-    const api = (url, method='GET', body=null) => fetch(url, {
-      method,
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + adminToken, 'x-admin-key': 'JMTAdmin2026!' },
-      body: body ? JSON.stringify(body) : null
-    }).then(r => r.json());
+    const api = (url, method='GET', body=null) => {
+      const headers = { 'Content-Type': 'application/json' };
+      if (adminToken) headers['Authorization'] = 'Bearer ' + adminToken;
+      return fetch(url, {
+        method,
+        headers,
+        body: body ? JSON.stringify(body) : null
+      }).then(r => r.json());
+    };
 
     document.getElementById('admin-login-form').onsubmit = async (e) => {
       e.preventDefault();
       const email = document.getElementById('admin-email').value;
       const password = document.getElementById('admin-password').value;
       const errDiv = document.getElementById('admin-login-error');
+      errDiv.textContent = '';
 
       try {
         const res = await api('/api/auth/login', 'POST', { email, password });
         if (!res.success) throw new Error(res.error?.message || 'Login failed');
+        if (!res.user || !['STAFF', 'ADMIN', 'SUPER_ADMIN'].includes(res.user.role)) {
+          throw new Error('Access denied: Administrator privileges required.');
+        }
         adminToken = res.token;
         localStorage.setItem('jmt_token', res.token);
         openAdminWorkspace(res.user);
@@ -516,8 +524,14 @@
       api('/api/auth/me').then(res => {
         if (res.user && ['STAFF','ADMIN','SUPER_ADMIN'].includes(res.user.role)) {
           openAdminWorkspace(res.user);
+        } else {
+          localStorage.removeItem('jmt_token');
+          adminToken = '';
         }
-      }).catch(() => {});
+      }).catch(() => {
+        localStorage.removeItem('jmt_token');
+        adminToken = '';
+      });
     }
   </script>
 </body>

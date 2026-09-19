@@ -29,7 +29,11 @@ const zlib = require('./services/cache') && require('zlib');
 const app = express();
 const PORT = process.env.PORT || 3000;
 const NODE_ENV = process.env.NODE_ENV || 'development';
-const AUTH_SECRET = process.env.AUTH_SECRET || 'local-development-jmt-jwt-secret-key';
+const AUTH_SECRET = process.env.AUTH_SECRET || (NODE_ENV !== 'production' ? 'local-development-jmt-jwt-secret-key' : null);
+if (!AUTH_SECRET && NODE_ENV === 'production') {
+  console.error('[FATAL SECURITY ERROR] AUTH_SECRET environment variable is missing in production. Application cannot start securely.');
+  process.exit(1);
+}
 
 // -------------------------------------------------------------
 // TRUST PROXY CONFIGURATION FOR RENDER / REVERSE PROXIES
@@ -44,19 +48,44 @@ const trustProxyConfig = process.env.TRUST_PROXY
 app.set('trust proxy', trustProxyConfig);
 
 // -------------------------------------------------------------
-// HELMET & SECURITY HEADERS (Task #2 Section 15)
+// HELMET & SECURITY HEADERS (Phase 0F Hardened CSP)
 // -------------------------------------------------------------
 app.disable('x-powered-by');
 app.use(helmet({
-  contentSecurityPolicy: false, // Preserves inline styles for current SPA setup
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrcAttr: ["'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+      styleSrcAttr: ["'unsafe-inline'"],
+      fontSrc: ["'self'", 'https://fonts.gstatic.com', 'data:'],
+      imgSrc: ["'self'", 'data:', 'blob:', 'https:'],
+      connectSrc: ["'self'", 'https://jmttravels.com', 'https://www.jmttravels.com', 'https://secure.paytabs.com', 'https://checkout.thawani.om'],
+      frameSrc: ["'self'", 'https://www.google.com', 'https://maps.google.com', 'https://secure.paytabs.com', 'https://checkout.thawani.om'],
+      frameAncestors: ["'self'"],
+      baseUri: ["'self'"],
+      objectSrc: ["'none'"],
+      upgradeInsecureRequests: NODE_ENV === 'production' ? [] : null
+    }
+  },
   crossOriginResourcePolicy: { policy: 'cross-origin' },
   frameguard: { action: 'sameorigin' },
   noSniff: true,
   referrerPolicy: { policy: 'strict-origin-when-cross-origin' }
 }));
 
-// Environment-driven CORS configuration (Task #2 Section 14)
-const allowedOrigins = process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : ['http://localhost:3000', 'http://127.0.0.1:3000'];
+// Environment-driven CORS configuration (Phase 0E)
+const configuredOrigins = process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim()) : [];
+const defaultAllowedOrigins = [
+  'https://jmttravels.com',
+  'https://www.jmttravels.com'
+];
+if (NODE_ENV !== 'production') {
+  defaultAllowedOrigins.push('http://localhost:3000', 'http://127.0.0.1:3000');
+}
+const allowedOrigins = Array.from(new Set([...defaultAllowedOrigins, ...configuredOrigins]));
+
 app.use(cors({
   origin: (origin, callback) => {
     if (!origin || NODE_ENV === 'development' || allowedOrigins.includes(origin)) {
@@ -260,6 +289,15 @@ const submissionLimiter = rateLimit({
   message: { success: false, error: { code: 'RATE_LIMITED', message: 'Too many submissions. Please wait 15 minutes.' } }
 });
 
+const adminLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 150,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: { code: 'RATE_LIMITED', message: 'Too many administrative requests. Please wait 15 minutes.' } }
+});
+
+app.use('/api/admin/', adminLimiter);
 app.use('/api/', globalLimiter);
 
 // -------------------------------------------------------------
@@ -453,7 +491,16 @@ async function seedInitialData() {
   const adminEmail = (process.env.ADMIN_EMAIL || 'admin@jmttravels.com').toLowerCase();
   const existingAdmin = await db.users.findOne({ email: adminEmail });
   if (!existingAdmin) {
-    const passwordHash = bcrypt.hashSync(process.env.ADMIN_PASSWORD || 'JMTAdmin2026!', 12);
+    let adminPass = process.env.ADMIN_PASSWORD;
+    if (!adminPass) {
+      if (NODE_ENV === 'production') {
+        console.warn('[Security Warning] ADMIN_PASSWORD environment variable not set. Admin account seeding skipped in production.');
+        return;
+      }
+      // Safe development/test-only fallback (never used in production)
+      adminPass = 'JMTAdmin2026!';
+    }
+    const passwordHash = bcrypt.hashSync(adminPass, 12);
     await db.users.create({
       name: 'JMT Super Admin',
       email: adminEmail,
@@ -486,7 +533,7 @@ async function authenticate(req, res, next) {
       token = decodeURIComponent(cookieHeader.split('jmt_session=')[1].split(';')[0]);
     } else {
       const adminKey = req.get('x-admin-key');
-      if (adminKey && process.env.ADMIN_ACCESS_KEY && adminKey === process.env.ADMIN_ACCESS_KEY) {
+      if (adminKey && process.env.ADMIN_ACCESS_KEY && process.env.ADMIN_ACCESS_KEY.length >= 16 && adminKey === process.env.ADMIN_ACCESS_KEY) {
         req.user = { id: 'admin-key-user', role: 'ADMIN', name: 'Staff Access Key', status: 'ACTIVE' };
         return next();
       }
@@ -610,13 +657,20 @@ function authorize(...allowedRoles) {
 
 async function logAudit(req, action, entityType, entityId, metadata = {}) {
   try {
+    const cleanMeta = metadata && typeof metadata === 'object' ? { ...metadata } : {};
+    const sensitiveKeys = ['password', 'passwordHash', 'token', 'secret', 'apiKey', 'key', 'authHeader', 'authorization', 'cookie', 'passportNumber'];
+    for (const k of Object.keys(cleanMeta)) {
+      if (sensitiveKeys.some(s => k.toLowerCase().includes(s.toLowerCase()))) {
+        cleanMeta[k] = '[REDACTED]';
+      }
+    }
     await db.auditLogs.create({
       actorId: req.user ? req.user.id : 'ANONYMOUS',
       actorRole: req.user ? req.user.role : 'GUEST',
       action,
       entityType,
       entityId,
-      metadata
+      metadata: cleanMeta
     });
   } catch (err) {
     console.error('[Audit Log Error]:', err.message);
@@ -1576,6 +1630,27 @@ app.get('/api/support/tickets', authenticate, async (req, res) => {
   const filter = isStaff ? {} : { userId: req.user.id };
   const tickets = await db.supportTickets.find(filter);
   res.json({ success: true, tickets });
+});
+
+// GET INDIVIDUAL SUPPORT TICKET (IDOR RESTRICTED)
+app.get('/api/support/tickets/:id', authenticate, async (req, res) => {
+  try {
+    const ticket = await db.supportTickets.findById(req.params.id) ||
+      await db.supportTickets.findOne({ ticketId: req.params.id }) ||
+      await db.supportTickets.findOne({ ticketNumber: req.params.id });
+    if (!ticket) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Support ticket not found.' } });
+
+    const isStaff = ['STAFF', 'ADMIN', 'SUPER_ADMIN'].includes(req.user.role);
+    if (!isStaff && ticket.userId !== req.user.id) {
+      await logAudit(req, 'SUSPICIOUS_IDOR_SUPPORT_ATTEMPT', 'SUPPORT_TICKET', req.params.id);
+      return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Access denied: You do not own this support ticket.' } });
+    }
+
+    const messages = await db.chatMessages.find({ conversationId: ticket.conversationId || ticket.id });
+    res.json({ success: true, ticket, messages });
+  } catch (err) {
+    res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: err.message } });
+  }
 });
 
 // --- 8. REVIEWS & FEEDBACK ---

@@ -67,7 +67,10 @@ class StorageService {
     if (!storageKey || typeof storageKey !== 'string') {
       throw new Error('Invalid storage key.');
     }
-    // Prevent directory traversal attacks (../ or ..\)
+    // Prevent directory traversal attacks (../, ..\, absolute paths, or null bytes)
+    if (storageKey.includes('..') || storageKey.includes('/') || storageKey.includes('\\') || storageKey.includes('\0')) {
+      throw new Error('Security Error: Path traversal attempt detected.');
+    }
     const baseName = path.basename(storageKey);
     const resolvedPath = path.resolve(this.storageDir, baseName);
     if (!resolvedPath.startsWith(path.resolve(this.storageDir))) {
