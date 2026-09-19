@@ -19,6 +19,7 @@ yarn-error.log*
 # Local application data
 backend/data/
 backend/data/**
+!backend/data/evaluation_dataset.json
 backend/private-uploads/
 backend/private-uploads/**
 

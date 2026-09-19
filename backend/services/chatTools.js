@@ -90,6 +90,136 @@ class ChatToolsService {
     };
   }
 
+  async getHotelInformation(locale = 'en') {
+    const isArabic = locale === 'ar';
+    return {
+      success: true,
+      hotels: [
+        { name: 'Shangri-La Barr Al Jissah, Muscat', location: 'Muscat', rating: 5, category: 'Luxury Resort' },
+        { name: 'Al Bustan Palace, a Ritz-Carlton Hotel', location: 'Muscat', rating: 5, category: 'Luxury Palace' },
+        { name: 'Anantara Al Jabal Al Akhdar Resort', location: 'Nizwa / Green Mountain', rating: 5, category: 'Mountain Resort' },
+        { name: 'Al Baleed Resort Salalah by Anantara', location: 'Salalah', rating: 5, category: 'Beachfront Resort' }
+      ],
+      info: {
+        summary: isArabic
+          ? 'تقدم JMT Travels استشارات وحجوزات الفنادق في مسقط، صلالة، دبي، والوجهات العالمية الأخرى، وتشمل الفنادق الفاخرة، المنتجات الشاطئية، والأجنحة العائلية.'
+          : 'JMT Travels assists with hotel bookings in Muscat, Salalah, Dubai, and worldwide destinations, including luxury resorts, beachside properties, and family suites.',
+        popularLocations: isArabic ? ['مسقط', 'صلالة', 'دبي', 'مكة المكرمة'] : ['Muscat', 'Salalah', 'Dubai', 'Makkah'],
+        bookingGuidance: isArabic
+          ? 'يمكنك تصفح الفنادق عبر صفحة الفنادق في موقعنا أو التواصل مع قسم الحجوزات لتخصيص إقامتك.'
+          : 'You can browse hotel options on our Hotels page or contact our booking desk for custom arrangements.'
+      }
+    };
+  }
+
+  async getFlightInformation(locale = 'en') {
+    const isArabic = locale === 'ar';
+    return {
+      success: true,
+      routes: [
+        { origin: 'Muscat (MCT)', destination: 'Dubai (DXB)', frequency: 'Daily Multiple Flights', averageDuration: '1h 10m' },
+        { origin: 'Muscat (MCT)', destination: 'Salalah (SLL)', frequency: 'Daily Direct Flights', averageDuration: '1h 35m' },
+        { origin: 'Muscat (MCT)', destination: 'Jeddah (JED)', frequency: 'Daily Flights', averageDuration: '3h 15m' }
+      ],
+      airlines: ['Oman Air', 'SalamAir', 'Flydubai', 'Emirates', 'Qatar Airways'],
+      info: {
+        summary: isArabic
+          ? 'توفر JMT Travels خدمة إصدار وتأكيد تذاكر الطيران للرحلات الداخلية والدولية عبر الطيران العماني، طيران السلام، طيران الإمارات، والخطوط القطري وغيرها.'
+          : 'JMT Travels provides flight ticketing services for domestic and international routes via Oman Air, SalamAir, Emirates, Qatar Airways, and major carriers.',
+        hubs: isArabic ? ['مطار مسقط الدولي (MCT)', 'مطار صلالة (SLL)', 'مطار دبي الدولي (DXB)'] : ['Muscat International Airport (MCT)', 'Salalah Airport (SLL)', 'Dubai International Airport (DXB)'],
+        bookingGuidance: isArabic
+          ? 'يمكنك البحث عن الرحلات عبر صفحة الرحلات الجوية أو الاستفسار المباشر عبر موظفي الحجز.'
+          : 'Search available flights via our Flights page or contact our ticketing team for flight availability and itineraries.'
+      }
+    };
+  }
+
+  async getTravelPlanningSuggestions({ duration, destination, budget, category } = {}, locale = 'en') {
+    const isArabic = locale === 'ar';
+    let pkgs = await db.tourPackages.find({ published: true });
+
+    if (destination) {
+      const rx = new RegExp(destination.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&'), 'i');
+      pkgs = pkgs.filter(p => rx.test(p.destination) || rx.test(p.title) || rx.test(p.summary || ''));
+    }
+
+    if (category) {
+      const rxCat = new RegExp(category.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&'), 'i');
+      pkgs = pkgs.filter(p => rxCat.test(p.category || ''));
+    }
+
+    const suggestions = pkgs.slice(0, 4).map(p => ({
+      id: p.id,
+      title: p.title,
+      destination: p.destination,
+      duration: p.duration,
+      summary: p.summary,
+      priceFormatted: i18nService.formatCurrency(p.priceMinor || p.price * 1000, p.currency || 'OMR', locale)
+    }));
+
+    return {
+      success: true,
+      count: suggestions.length,
+      suggestions,
+      guidance: suggestions.length > 0
+        ? (isArabic ? 'إليك الباقات المتاحة لتخطيط رحلتك لدى JMT:' : 'Here are available JMT holiday packages matching your travel plan:')
+        : (isArabic ? 'لا تتوفر باقات جاهزة تطابق المعايير تماماً، لكن يمكننا تصميم برنامج سياحي مخصص لك عبر تواصلك مع موظف السفر.' : 'No pre-set packages match all exact parameters, but JMT can customize a travel itinerary for you upon request.')
+    };
+  }
+
+  async getDomainKnowledgeContext({ intent, query = '', user = null, locale = 'en' }) {
+    const context = {
+      intent,
+      locale,
+      authenticated: !!user,
+      publicData: {},
+      userData: null
+    };
+
+    const qLower = (query || '').toLowerCase();
+
+    // Fetch relevant public knowledge based on intent and query
+    if (intent === 'VISA' || qLower.includes('visa') || qLower.includes('تأشير')) {
+      const visas = await this.getPublicVisaServices(locale);
+      context.publicData.visaServices = visas.services.slice(0, 5);
+    }
+
+    if (intent === 'TOURISM' || intent === 'TRAVEL_PLANNING' || qLower.includes('tour') || qLower.includes('package') || qLower.includes('باقة') || qLower.includes('رحلة')) {
+      const pkgs = await this.searchPublicTourPackages({}, locale);
+      context.publicData.packages = pkgs.packages.slice(0, 5);
+      const dests = await this.searchPublicDestinations(locale);
+      context.publicData.destinations = dests.destinations.slice(0, 5);
+    }
+
+    if (intent === 'HOTEL' || qLower.includes('hotel') || qLower.includes('فندق')) {
+      const hotelInfo = await this.getHotelInformation(locale);
+      context.publicData.hotelInfo = hotelInfo.info;
+    }
+
+    if (intent === 'FLIGHT' || qLower.includes('flight') || qLower.includes('ticket') || qLower.includes('طيران') || qLower.includes('رحلات')) {
+      const flightInfo = await this.getFlightInformation(locale);
+      context.publicData.flightInfo = flightInfo.info;
+    }
+
+    if (intent === 'CONTACT' || qLower.includes('office') || qLower.includes('location') || qLower.includes('contact') || qLower.includes('مكتب') || qLower.includes('موقع')) {
+      const faqs = await this.getFAQs('contact', locale);
+      context.publicData.contactFaqs = faqs.faqs;
+    }
+
+    // Include authorized user records ONLY if requested for own identity
+    if (user && user.id) {
+      if (intent === 'VISA' && (qLower.includes('my visa') || qLower.includes('تأشيرتي'))) {
+        context.userData = { visaStatus: await this.getMyVisaStatus(user) };
+      } else if (intent === 'BOOKING' && (qLower.includes('my booking') || qLower.includes('حجوزاتي'))) {
+        context.userData = { bookings: await this.getMyBookings(user) };
+      } else if (intent === 'PAYMENT' && (qLower.includes('my payment') || qLower.includes('مدفوعاتي'))) {
+        context.userData = { payments: await this.getMyPaymentStatus(user) };
+      }
+    }
+
+    return context;
+  }
+
   // -------------------------------------------------------------
   // 2. AUTHORIZED CUSTOMER CONTEXT TOOLS (IDENTITY ENFORCED)
   // -------------------------------------------------------------
