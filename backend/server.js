@@ -32,6 +32,18 @@ const NODE_ENV = process.env.NODE_ENV || 'development';
 const AUTH_SECRET = process.env.AUTH_SECRET || 'local-development-jmt-jwt-secret-key';
 
 // -------------------------------------------------------------
+// TRUST PROXY CONFIGURATION FOR RENDER / REVERSE PROXIES
+// -------------------------------------------------------------
+// Render operates behind a reverse proxy (1 hop). Setting 'trust proxy' to 1 (or process.env.TRUST_PROXY)
+// allows Express to securely parse client IP from the 1st proxy hop (Render load balancer),
+// preventing express-rate-limit ERR_ERL_UNEXPECTED_X_FORWARDED_FOR validation errors in production
+// without blindly trusting arbitrary client header chains.
+const trustProxyConfig = process.env.TRUST_PROXY
+  ? (/^\d+$/.test(process.env.TRUST_PROXY) ? parseInt(process.env.TRUST_PROXY, 10) : (process.env.TRUST_PROXY === 'true' ? true : process.env.TRUST_PROXY))
+  : 1;
+app.set('trust proxy', trustProxyConfig);
+
+// -------------------------------------------------------------
 // HELMET & SECURITY HEADERS (Task #2 Section 15)
 // -------------------------------------------------------------
 app.disable('x-powered-by');

@@ -1880,8 +1880,18 @@ async function runTestSuite() {
     assert.strictEqual(idorVisaStatus.error, 'FORBIDDEN');
     console.log('  ✅ Conversation ownership & IDOR protection PASSED');
 
+    // 121. Task: Production Reverse Proxy Trust Proxy & X-Forwarded-For Rate Limiter
+    console.log('\n[121] Testing Production Reverse Proxy Trust Proxy & X-Forwarded-For Rate Limiter...');
+    assert.ok(app.get('trust proxy') !== false);
+    const proxyTestRes = await request('/health', {
+      headers: { 'x-forwarded-for': '203.0.113.195' }
+    });
+    assert.strictEqual(proxyTestRes.status, 200);
+    assert.strictEqual(proxyTestRes.body.status, 'ok');
+    console.log('  ✅ Production proxy client IP handling & express-rate-limit compatibility PASSED');
+
     console.log('\n================================================================');
-    console.log('🎉 ALL AUTOMATED TESTS PASSED SUCCESSFULLY! (120/120)');
+    console.log('🎉 ALL AUTOMATED TESTS PASSED SUCCESSFULLY! (121/121)');
     console.log('================================================================');
   } catch (err) {
     console.error('\n❌ Test Failure Details:', err);
