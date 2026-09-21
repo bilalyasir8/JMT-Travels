@@ -39,10 +39,111 @@ img, video, iframe { max-width: 100%; }
   .nav-actions { margin-left: auto; }
   .nav-actions #nav-auth { display: none !important; }
   .nav-actions .theme-toggle-btn { display: none !important; }
-  .mobile-menu-btn { display: inline-flex !important; align-items: center; justify-content: center; color: #fff !important; background: #0B286C !important; border-radius: 10px !important; width: 42px; height: 42px; }
+  .mobile-menu-btn { display: inline-flex !important; align-items: center; justify-content: center; color: #fff !important; background: rgba(255, 255, 255, 0.12) !important; border: 1px solid rgba(255, 255, 255, 0.25) !important; border-radius: 10px !important; width: 42px; height: 42px; font-size: 20px; transition: all 0.2s ease; }
+  .mobile-menu-btn:hover { background: rgba(255, 255, 255, 0.2) !important; }
 
-  .mobile-nav-drawer { padding: 14px 16px 20px !important; }
-  .mobile-nav-links a { min-height: 42px; display: flex !important; align-items: center; }
+  .mobile-nav-drawer {
+    background: linear-gradient(180deg, rgba(7, 21, 59, 0.98) 0%, rgba(11, 40, 108, 0.98) 100%) !important;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.14) !important;
+    padding: 16px 20px 24px !important;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.45) !important;
+  }
+
+  .mobile-nav-links {
+    list-style: none !important;
+    padding: 0 !important;
+    margin: 0 0 16px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+
+  .mobile-nav-links li {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .mobile-nav-links a {
+    min-height: 44px !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    padding: 10px 16px !important;
+    border-radius: 12px !important;
+    font-size: 15px !important;
+    font-weight: 600 !important;
+    color: #F1F5F9 !important;
+    text-decoration: none !important;
+    background: rgba(255, 255, 255, 0.04) !important;
+    border: 1px solid rgba(255, 255, 255, 0.06) !important;
+    transition: all 0.2s ease !important;
+  }
+
+  .mobile-nav-links a:hover,
+  .mobile-nav-links a:focus {
+    background: rgba(255, 255, 255, 0.1) !important;
+    color: #FFFFFF !important;
+    transform: translateX(4px);
+  }
+
+  .mobile-nav-links a.active {
+    background: linear-gradient(90deg, rgba(0, 230, 118, 0.2) 0%, rgba(0, 230, 118, 0.04) 100%) !important;
+    border-left: 3px solid #00E676 !important;
+    color: #00E676 !important;
+    font-weight: 700 !important;
+  }
+
+  [dir="rtl"] .mobile-nav-links a.active {
+    border-left: none !important;
+    border-right: 3px solid #00E676 !important;
+  }
+
+  [dir="rtl"] .mobile-nav-links a:hover,
+  [dir="rtl"] .mobile-nav-links a:focus {
+    transform: translateX(-4px);
+  }
+
+  .mobile-auth-signin {
+    background: rgba(255, 255, 255, 0.12) !important;
+    border: 1px solid rgba(255, 255, 255, 0.28) !important;
+    color: #FFFFFF !important;
+    border-radius: 12px !important;
+    font-weight: 700 !important;
+    padding: 12px 16px !important;
+    text-decoration: none !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: all 0.2s ease !important;
+  }
+
+  .mobile-auth-signin:hover {
+    background: rgba(255, 255, 255, 0.2) !important;
+    border-color: rgba(255, 255, 255, 0.5) !important;
+  }
+
+  .mobile-auth-register {
+    background: linear-gradient(135deg, #00E676 0%, #00C853 100%) !important;
+    color: #07153B !important;
+    font-weight: 800 !important;
+    border-radius: 12px !important;
+    padding: 12px 16px !important;
+    text-decoration: none !important;
+    box-shadow: 0 4px 16px rgba(0, 230, 118, 0.35) !important;
+    border: 0 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: all 0.2s ease !important;
+  }
+
+  .mobile-auth-register:hover {
+    box-shadow: 0 6px 20px rgba(0, 230, 118, 0.5) !important;
+    transform: translateY(-1px);
+  }
 
   /* Top contact strip: convert desktop row into a compact mobile stack. */
   body > div:first-child .shell,

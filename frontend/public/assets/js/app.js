@@ -394,8 +394,13 @@ window.toggleMobileMenu = function() {
   const btn = document.querySelector('.mobile-menu-btn');
   if (!drawer) return;
   const isExpanded = btn?.getAttribute('aria-expanded') === 'true';
-  drawer.style.display = isExpanded ? 'none' : 'block';
-  btn?.setAttribute('aria-expanded', isExpanded ? 'false' : 'true');
+  const nextExpanded = !isExpanded;
+  drawer.style.display = nextExpanded ? 'block' : 'none';
+  if (btn) {
+    btn.setAttribute('aria-expanded', nextExpanded ? 'true' : 'false');
+    btn.innerHTML = nextExpanded ? '✕' : '☰';
+    btn.setAttribute('aria-label', nextExpanded ? 'Close Mobile Navigation Menu' : 'Open Mobile Navigation Menu');
+  }
 };
 
 function updateNavActiveState(path) {
@@ -452,12 +457,12 @@ async function renderRoute() {
   const mobileAuthNav = document.getElementById('mobile-nav-auth');
   if (authNav) {
     if (state.user) {
-      const userHtml = `<a href="/account" onclick="event.preventDefault(); navigate('/account')" class="btn btn-outline">My Account (${escapeHTML(state.user.name.split(' ')[0])})</a> <button onclick="logoutUser()" class="btn btn-sm">Sign Out</button>`;
+      const userHtml = `<a href="/account" onclick="event.preventDefault(); navigate('/account')" class="btn btn-outline" style="background:rgba(255,255,255,0.12) !important; color:#FFFFFF !important; border:1px solid rgba(255,255,255,0.3) !important; border-radius:12px;">My Account (${escapeHTML(state.user.name.split(' ')[0])})</a> <button onclick="logoutUser()" class="btn btn-sm" style="background:#EF4444 !important; color:#FFFFFF !important; border-radius:12px;">Sign Out</button>`;
       authNav.innerHTML = userHtml;
       if (mobileAuthNav) mobileAuthNav.innerHTML = userHtml;
     } else {
       authNav.innerHTML = `<a href="/login" onclick="event.preventDefault(); navigate('/login')" class="nav-signin-link" style="color:#FFFFFF !important; font-weight:700; font-size:14px; text-decoration:none; margin-right:4px;">Sign In</a> <a href="/register" onclick="event.preventDefault(); navigate('/register')" class="btn-create-account" style="background: linear-gradient(135deg, #07153B 0%, #0B286C 100%); color:#FFFFFF !important; padding:10px 22px; border-radius:99px; font-weight:700; font-size:13px; text-decoration:none; display:inline-flex; align-items:center; gap:6px; box-shadow: 0 4px 14px rgba(7, 21, 59, 0.35); white-space:nowrap;">Create Account →</a>`;
-      if (mobileAuthNav) mobileAuthNav.innerHTML = `<a href="/login" onclick="event.preventDefault(); toggleMobileMenu(); navigate('/login')" class="btn btn-outline nav-signin-link" style="flex:1; text-align:center; color:#FFFFFF !important;">Sign In</a> <a href="/register" onclick="event.preventDefault(); toggleMobileMenu(); navigate('/register')" class="btn btn-create-account" style="flex:1; text-align:center; background: linear-gradient(135deg, #07153B 0%, #0B286C 100%); color:#FFFFFF !important;">Register</a>`;
+      if (mobileAuthNav) mobileAuthNav.innerHTML = `<a href="/login" onclick="event.preventDefault(); toggleMobileMenu(); navigate('/login')" class="btn mobile-auth-signin" style="flex:1; text-align:center; background:rgba(255,255,255,0.12) !important; border:1px solid rgba(255,255,255,0.3) !important; color:#FFFFFF !important; border-radius:12px; font-weight:700; padding:12px 16px; text-decoration:none;">Sign In</a> <a href="/register" onclick="event.preventDefault(); toggleMobileMenu(); navigate('/register')" class="btn mobile-auth-register" style="flex:1; text-align:center; background:linear-gradient(135deg, #00E676 0%, #00C853 100%) !important; color:#07153B !important; font-weight:800; border-radius:12px; padding:12px 16px; text-decoration:none; box-shadow:0 4px 16px rgba(0,230,118,0.35); border:0;">Register</a>`;
     }
   }
 
@@ -13069,7 +13074,14 @@ function setupChatbot() {
 }
 
 // Global App Init
-document.addEventListener('DOMContentLoaded', () => {
+function initApp() {
   renderRoute();
   setupChatbot();
-});
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initApp);
+} else {
+  // DOM is already ready (deferred script, cached execution, or late script execution)
+  initApp();
+}
