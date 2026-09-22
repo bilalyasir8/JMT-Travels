@@ -576,67 +576,67 @@ function renderHomePage(container) {
       <button class="hero-arrow-btn hero-arrow-prev" onclick="changeHeroSlide(-1)" aria-label="Previous Slide">‹</button>
       <button class="hero-arrow-btn hero-arrow-next" onclick="changeHeroSlide(1)" aria-label="Next Slide">›</button>
 
-      <div class="shell" style="position: relative; z-index: 15; height: 100%; display: flex; flex-direction: column; justify-content: center; padding: 40px 20px 80px;">
-        <div style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 30px;">
+      <div class="shell hero-slideshow-shell">
+        <div class="hero-content-row">
 
           <!-- LEFT HERO CONTENT -->
-          <div style="max-width: 620px;">
-            <div style="font-size: 13px; font-weight: 700; letter-spacing: 2.5px; color: #00E676; text-transform: uppercase; margin-bottom: 14px; display: flex; align-items: center; gap: 8px;">
-              <span style="width: 8px; height: 8px; border-radius: 50%; background: #00E676; display: inline-block;"></span> OMAN &amp; GCC TRAVEL SPECIALISTS
+          <div class="hero-copy-column">
+            <div class="hero-eyebrow">
+              <span class="hero-eyebrow-dot"></span> OMAN &amp; GCC TRAVEL SPECIALISTS
             </div>
 
-            <h1 style="font-size: clamp(40px, 5.5vw, 68px); font-weight: 800; line-height: 1.1; margin-bottom: 18px; color: #FFFFFF; letter-spacing: -0.5px;">
+            <h1 class="hero-headline">
               Your Next<br>
-              <span style="color: #00E676;">Journey</span> Awaits
+              <span class="hero-headline-accent">Journey</span> Awaits
             </h1>
 
-            <p style="font-size: 16px; color: #E2E8F0; margin-bottom: 32px; line-height: 1.6; max-width: 520px;">
+            <p class="hero-subtext">
               Discover breathtaking destinations, seamless visa services, luxury hotel bookings, and international flight ticketing with JMT Travels — 20+ years of trusted experience.
             </p>
 
-            <div style="display: flex; gap: 14px; align-items: center; flex-wrap: wrap; margin-bottom: 36px;">
-              <a href="/tourism" onclick="event.preventDefault(); navigate('/tourism')" style="background: #00E676; color: #07153B; padding: 14px 30px; font-size: 15px; border-radius: 999px; font-weight: 800; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 6px 20px rgba(0, 230, 118, 0.35);">
+            <div class="hero-cta-group">
+              <a href="/tourism" onclick="event.preventDefault(); navigate('/tourism')" class="btn-hero-primary">
                 Explore Tour Packages →
               </a>
-              <a href="/visa" onclick="event.preventDefault(); navigate('/visa')" style="background: rgba(255, 255, 255, 0.12); border: 1.5px solid rgba(255, 255, 255, 0.4); color: #FFFFFF; padding: 14px 26px; font-size: 15px; border-radius: 999px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; backdrop-filter: blur(8px);">
+              <a href="/visa" onclick="event.preventDefault(); navigate('/visa')" class="btn-hero-secondary">
                 Get Visa Assistance
               </a>
             </div>
 
             <!-- HERO TRUST STRIP -->
-            <div style="display: flex; gap: 28px; flex-wrap: wrap; align-items: center; padding-top: 20px; border-top: 1px solid rgba(255, 255, 255, 0.18);">
-              <div style="display: flex; align-items: center; gap: 10px;">
-                <div style="width: 36px; height: 36px; border-radius: 50%; background: rgba(0, 230, 118, 0.15); display: flex; align-items: center; justify-content: center; color: #00E676;">✓</div>
+            <div class="hero-trust-strip">
+              <div class="hero-trust-item">
+                <div class="hero-trust-badge">✓</div>
                 <div>
-                  <div style="font-size: 13.5px; font-weight: 800; color: #FFFFFF; line-height: 1.1;">20+ Years Trust</div>
-                  <div style="font-size: 11px; color: #CBD5E1;">Muscat &amp; Worldwide</div>
+                  <div class="hero-trust-title">20+ Years Trust</div>
+                  <div class="hero-trust-sub">Muscat &amp; Worldwide</div>
                 </div>
               </div>
 
-              <div style="display: flex; align-items: center; gap: 10px;">
-                <div style="width: 36px; height: 36px; border-radius: 50%; background: rgba(0, 230, 118, 0.15); display: flex; align-items: center; justify-content: center; color: #00E676;">✓</div>
+              <div class="hero-trust-item">
+                <div class="hero-trust-badge">✓</div>
                 <div>
-                  <div style="font-size: 13.5px; font-weight: 800; color: #FFFFFF; line-height: 1.1;">Visa Clearing</div>
-                  <div style="font-size: 11px; color: #CBD5E1;">Oman &amp; Schengen</div>
+                  <div class="hero-trust-title">Visa Clearing</div>
+                  <div class="hero-trust-sub">Oman &amp; Schengen</div>
                 </div>
               </div>
 
-              <div style="display: flex; align-items: center; gap: 10px;">
-                <div style="width: 36px; height: 36px; border-radius: 50%; background: rgba(0, 230, 118, 0.15); display: flex; align-items: center; justify-content: center; color: #00E676;">✓</div>
+              <div class="hero-trust-item">
+                <div class="hero-trust-badge">✓</div>
                 <div>
-                  <div style="font-size: 13.5px; font-weight: 800; color: #FFFFFF; line-height: 1.1;">24/7 Care</div>
-                  <div style="font-size: 11px; color: #CBD5E1;">WhatsApp &amp; AI Support</div>
+                  <div class="hero-trust-title">24/7 Care</div>
+                  <div class="hero-trust-sub">WhatsApp &amp; AI Support</div>
                 </div>
               </div>
             </div>
           </div>
 
           <!-- RIGHT HERO SCRIPT TEXT -->
-          <div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end;">
-            <div style="font-family: 'Caveat', cursive; font-size: 76px; color: rgba(255,255,255,0.95); line-height: 0.95; transform: rotate(-4deg); text-shadow: 0 4px 16px rgba(0,0,0,0.4);">
+          <div class="hero-aside-script">
+            <div class="hero-script-oman">
               Oman
             </div>
-            <div style="font-size: 15px; font-weight: 700; color: #00E676; letter-spacing: 1px; margin-top: 4px; text-transform: uppercase;">
+            <div class="hero-script-tagline">
               More Than a Destination
             </div>
           </div>
@@ -655,7 +655,7 @@ function renderHomePage(container) {
     </section>
 
     <!-- 4. FLOATING SEARCH CONTAINER -->
-    <div class="shell" style="margin-top: -65px; position: relative; z-index: 40; padding: 0 20px; width: 100%; max-width: 100%;">
+    <div class="shell hero-search-shell">
       <div class="jmt-home-search-card" style="width: 100% !important; max-width: 100% !important;">
 
         <!-- SEARCH TABS -->
