@@ -13,4 +13,6 @@ const CustomerProfileSchema = new mongoose.Schema({
   timestamps: true
 });
 
+CustomerProfileSchema.index({ userId: 1, passportNumber: 1 });
+
 module.exports = mongoose.models.CustomerProfile || mongoose.model('CustomerProfile', CustomerProfileSchema);

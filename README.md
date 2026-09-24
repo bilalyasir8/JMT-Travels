@@ -92,7 +92,7 @@ Configured variables:
 ```env
 PORT=3000
 MONGODB_URI=                     # Optional: MongoDB Atlas connection string
-AUTH_SECRET=local-development-secret-key-jmt
+AUTH_SECRET=your-jwt-secret-key-32-chars
 
 PAYMENT_PROVIDER=SANDBOX
 PAYMENT_KEY_ID=
@@ -106,7 +106,7 @@ SMTP_PASSWORD=your-app-password
 EMAIL_FROM="JMT TRAVELS" <info@jmttravels.com>
 
 ADMIN_EMAIL=admin@jmttravels.com
-ADMIN_PASSWORD=JMTAdmin2026!
+ADMIN_PASSWORD=your-secure-admin-password
 ```
 
 ### 3. Run Development Server

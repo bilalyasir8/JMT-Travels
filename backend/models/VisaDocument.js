@@ -29,4 +29,7 @@ const VisaDocumentSchema = new mongoose.Schema({
   timestamps: true
 });
 
+VisaDocumentSchema.index({ applicationId: 1, status: 1 });
+VisaDocumentSchema.index({ uploadedBy: 1, createdAt: -1 });
+
 module.exports = mongoose.models.VisaDocument || mongoose.model('VisaDocument', VisaDocumentSchema);

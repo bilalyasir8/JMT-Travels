@@ -17,4 +17,7 @@ const PaymentEventSchema = new mongoose.Schema({
   timestamps: true
 });
 
+PaymentEventSchema.index({ eventId: 1, processingStatus: 1 });
+PaymentEventSchema.index({ providerOrderId: 1, createdAt: -1 });
+
 module.exports = mongoose.models.PaymentEvent || mongoose.model('PaymentEvent', PaymentEventSchema);

@@ -24,12 +24,17 @@ const chatbotService = require('./services/chatbot');
 const chatTools = require('./services/chatTools');
 const i18nService = require('./services/i18n');
 const cache = require('./services/cache');
-const zlib = require('./services/cache') && require('zlib');
+const zlib = require('zlib');
+const compression = require('compression');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const NODE_ENV = process.env.NODE_ENV || 'development';
-const AUTH_SECRET = process.env.AUTH_SECRET || 'local-development-jmt-jwt-secret-key';
+const AUTH_SECRET = process.env.AUTH_SECRET || (NODE_ENV !== 'production' ? 'local-development-jmt-jwt-secret-key' : null);
+if (!AUTH_SECRET && NODE_ENV === 'production') {
+  console.error('[FATAL SECURITY ERROR] AUTH_SECRET environment variable is missing in production. Application cannot start securely.');
+  process.exit(1);
+}
 
 // -------------------------------------------------------------
 // TRUST PROXY CONFIGURATION FOR RENDER / REVERSE PROXIES
@@ -44,19 +49,44 @@ const trustProxyConfig = process.env.TRUST_PROXY
 app.set('trust proxy', trustProxyConfig);
 
 // -------------------------------------------------------------
-// HELMET & SECURITY HEADERS (Task #2 Section 15)
+// HELMET & SECURITY HEADERS (Phase 0F Hardened CSP)
 // -------------------------------------------------------------
 app.disable('x-powered-by');
 app.use(helmet({
-  contentSecurityPolicy: false, // Preserves inline styles for current SPA setup
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrcAttr: ["'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+      styleSrcAttr: ["'unsafe-inline'"],
+      fontSrc: ["'self'", 'https://fonts.gstatic.com', 'data:'],
+      imgSrc: ["'self'", 'data:', 'blob:', 'https:'],
+      connectSrc: ["'self'", 'https://jmttravels.com', 'https://www.jmttravels.com', 'https://secure.paytabs.com', 'https://checkout.thawani.om'],
+      frameSrc: ["'self'", 'https://www.google.com', 'https://maps.google.com', 'https://secure.paytabs.com', 'https://checkout.thawani.om'],
+      frameAncestors: ["'self'"],
+      baseUri: ["'self'"],
+      objectSrc: ["'none'"],
+      upgradeInsecureRequests: NODE_ENV === 'production' ? [] : null
+    }
+  },
   crossOriginResourcePolicy: { policy: 'cross-origin' },
   frameguard: { action: 'sameorigin' },
   noSniff: true,
   referrerPolicy: { policy: 'strict-origin-when-cross-origin' }
 }));
 
-// Environment-driven CORS configuration (Task #2 Section 14)
-const allowedOrigins = process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : ['http://localhost:3000', 'http://127.0.0.1:3000'];
+// Environment-driven CORS configuration (Phase 0E)
+const configuredOrigins = process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim()) : [];
+const defaultAllowedOrigins = [
+  'https://jmttravels.com',
+  'https://www.jmttravels.com'
+];
+if (NODE_ENV !== 'production') {
+  defaultAllowedOrigins.push('http://localhost:3000', 'http://127.0.0.1:3000');
+}
+const allowedOrigins = Array.from(new Set([...defaultAllowedOrigins, ...configuredOrigins]));
+
 app.use(cors({
   origin: (origin, callback) => {
     if (!origin || NODE_ENV === 'development' || allowedOrigins.includes(origin)) {
@@ -76,35 +106,14 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Compression, Cache Security, Slow Request Monitoring & Probes
 // -------------------------------------------------------------
 
-// Lightweight Response GZIP Compression Middleware
-app.use((req, res, next) => {
-  const acceptEncoding = req.headers['accept-encoding'] || '';
-  if (!acceptEncoding.includes('gzip')) {
-    return next();
+// High-Performance Response GZIP / Deflate Compression Middleware
+app.use(compression({
+  threshold: 1024,
+  filter: (req, res) => {
+    if (req.headers['x-no-compression']) return false;
+    return compression.filter(req, res);
   }
-  const originalSend = res.send;
-  res.send = function (body) {
-    if (res.headersSent) {
-      return originalSend.call(this, body);
-    }
-    const contentType = res.getHeader('Content-Type') || '';
-    if (typeof body === 'string' || Buffer.isBuffer(body)) {
-      if (body.length > 1024 && (contentType.includes('text') || contentType.includes('json') || contentType.includes('javascript') || contentType.includes('xml'))) {
-        zlib.gzip(body, (err, compressed) => {
-          if (err || !compressed) {
-            return originalSend.call(this, body);
-          }
-          res.setHeader('Content-Encoding', 'gzip');
-          res.setHeader('Content-Length', compressed.length);
-          originalSend.call(this, compressed);
-        });
-        return;
-      }
-    }
-    return originalSend.call(this, body);
-  };
-  next();
-});
+}));
 
 // Slow Request Detection Middleware (>500ms)
 app.use((req, res, next) => {
@@ -227,8 +236,26 @@ Sitemap: ${baseUrl}/sitemap.xml
   res.send(robotsText);
 });
 
-// Serve static frontend files
-app.use(express.static(path.join(__dirname, '../frontend/public')));
+// Serve static frontend files with production Cache-Control headers
+app.use(express.static(path.join(__dirname, '../frontend/public'), {
+  maxAge: '1d',
+  etag: true,
+  lastModified: true,
+  setHeaders: (res, filePath) => {
+    // 1. HTML documents must always be revalidated so updates are seen immediately
+    if (filePath.endsWith('.html')) {
+      res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
+    }
+    // 2. Static media assets (images, webp, svg, fonts) can be cached long-term (30 days)
+    else if (/\.(jpe?g|png|webp|svg|gif|ico|woff2?|ttf|eot)$/i.test(filePath)) {
+      res.setHeader('Cache-Control', 'public, max-age=2592000, immutable');
+    }
+    // 3. CSS & JS scripts can be cached with 1 day max-age
+    else if (/\.(css|js)$/i.test(filePath)) {
+      res.setHeader('Cache-Control', 'public, max-age=86400');
+    }
+  }
+}));
 
 // -------------------------------------------------------------
 // RATE LIMITING (Task #2 Section 9)
@@ -260,6 +287,15 @@ const submissionLimiter = rateLimit({
   message: { success: false, error: { code: 'RATE_LIMITED', message: 'Too many submissions. Please wait 15 minutes.' } }
 });
 
+const adminLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 150,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: { code: 'RATE_LIMITED', message: 'Too many administrative requests. Please wait 15 minutes.' } }
+});
+
+app.use('/api/admin/', adminLimiter);
 app.use('/api/', globalLimiter);
 
 // -------------------------------------------------------------
@@ -453,7 +489,16 @@ async function seedInitialData() {
   const adminEmail = (process.env.ADMIN_EMAIL || 'admin@jmttravels.com').toLowerCase();
   const existingAdmin = await db.users.findOne({ email: adminEmail });
   if (!existingAdmin) {
-    const passwordHash = bcrypt.hashSync(process.env.ADMIN_PASSWORD || 'JMTAdmin2026!', 12);
+    let adminPass = process.env.ADMIN_PASSWORD;
+    if (!adminPass) {
+      if (NODE_ENV === 'production') {
+        console.warn('[Security Warning] ADMIN_PASSWORD environment variable not set. Admin account seeding skipped in production.');
+        return;
+      }
+      // Safe development/test-only fallback (never used in production)
+      adminPass = 'JMTAdmin2026!';
+    }
+    const passwordHash = bcrypt.hashSync(adminPass, 12);
     await db.users.create({
       name: 'JMT Super Admin',
       email: adminEmail,
@@ -486,7 +531,7 @@ async function authenticate(req, res, next) {
       token = decodeURIComponent(cookieHeader.split('jmt_session=')[1].split(';')[0]);
     } else {
       const adminKey = req.get('x-admin-key');
-      if (adminKey && process.env.ADMIN_ACCESS_KEY && adminKey === process.env.ADMIN_ACCESS_KEY) {
+      if (adminKey && process.env.ADMIN_ACCESS_KEY && process.env.ADMIN_ACCESS_KEY.length >= 16 && adminKey === process.env.ADMIN_ACCESS_KEY) {
         req.user = { id: 'admin-key-user', role: 'ADMIN', name: 'Staff Access Key', status: 'ACTIVE' };
         return next();
       }
@@ -610,13 +655,20 @@ function authorize(...allowedRoles) {
 
 async function logAudit(req, action, entityType, entityId, metadata = {}) {
   try {
+    const cleanMeta = metadata && typeof metadata === 'object' ? { ...metadata } : {};
+    const sensitiveKeys = ['password', 'passwordHash', 'token', 'secret', 'apiKey', 'key', 'authHeader', 'authorization', 'cookie', 'passportNumber'];
+    for (const k of Object.keys(cleanMeta)) {
+      if (sensitiveKeys.some(s => k.toLowerCase().includes(s.toLowerCase()))) {
+        cleanMeta[k] = '[REDACTED]';
+      }
+    }
     await db.auditLogs.create({
       actorId: req.user ? req.user.id : 'ANONYMOUS',
       actorRole: req.user ? req.user.role : 'GUEST',
       action,
       entityType,
       entityId,
-      metadata
+      metadata: cleanMeta
     });
   } catch (err) {
     console.error('[Audit Log Error]:', err.message);
@@ -1578,10 +1630,30 @@ app.get('/api/support/tickets', authenticate, async (req, res) => {
   res.json({ success: true, tickets });
 });
 
+// GET INDIVIDUAL SUPPORT TICKET (IDOR RESTRICTED)
+app.get('/api/support/tickets/:id', authenticate, async (req, res) => {
+  try {
+    const ticket = await db.supportTickets.findById(req.params.id) ||
+      await db.supportTickets.findOne({ ticketId: req.params.id }) ||
+      await db.supportTickets.findOne({ ticketNumber: req.params.id });
+    if (!ticket) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Support ticket not found.' } });
+
+    const isStaff = ['STAFF', 'ADMIN', 'SUPER_ADMIN'].includes(req.user.role);
+    if (!isStaff && ticket.userId !== req.user.id) {
+      await logAudit(req, 'SUSPICIOUS_IDOR_SUPPORT_ATTEMPT', 'SUPPORT_TICKET', req.params.id);
+      return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Access denied: You do not own this support ticket.' } });
+    }
+
+    const messages = await db.chatMessages.find({ conversationId: ticket.conversationId || ticket.id });
+    res.json({ success: true, ticket, messages });
+  } catch (err) {
+    res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: err.message } });
+  }
+});
+
 // --- 8. REVIEWS & FEEDBACK ---
 app.get('/api/reviews', async (req, res) => {
-  const reviews = await db.reviews.find();
-  reviews.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+  const reviews = await db.reviews.find({}, null, { sort: { createdAt: -1 }, limit: 50 });
   const count = reviews.length;
   const totalScore = reviews.reduce((sum, r) => sum + (Number(r.rating) || 0), 0);
   const average = count > 0 ? parseFloat((totalScore / count).toFixed(1)) : 5.0;
@@ -1730,25 +1802,20 @@ app.get('/api/admin/users', authenticate, authorize('ADMIN', 'SUPER_ADMIN'), asy
     const status = req.query.status;
     const search = (req.query.search || '').trim();
 
-    let allUsers = await db.users.find();
-
+    const filter = {};
     if (role && ['CUSTOMER', 'STAFF', 'ADMIN', 'SUPER_ADMIN'].includes(role)) {
-      allUsers = allUsers.filter(u => u.role === role);
+      filter.role = role;
     }
-
     if (status && ['ACTIVE', 'UNVERIFIED', 'SUSPENDED', 'DISABLED'].includes(status)) {
-      allUsers = allUsers.filter(u => u.status === status);
+      filter.status = status;
     }
-
     if (search) {
       const rx = new RegExp(escapeRegex(search), 'i');
-      allUsers = allUsers.filter(u => rx.test(u.name) || rx.test(u.email) || rx.test(u.phone || ''));
+      filter.$or = [{ name: rx }, { email: rx }, { phone: rx }];
     }
 
-    const total = allUsers.length;
-    const totalPages = Math.ceil(total / limit) || 1;
-    const startIndex = (page - 1) * limit;
-    const paginatedUsers = allUsers.slice(startIndex, startIndex + limit).map(u => sanitizeUser(u));
+    const { data: usersData, total, totalPages } = await db.users.findPaginated(filter, null, { page, limit, sort: { createdAt: -1 } });
+    const paginatedUsers = usersData.map(u => sanitizeUser(u));
 
     res.json({
       success: true,
@@ -1828,19 +1895,16 @@ app.get('/api/admin/visa-applications', authenticate, authorize('STAFF', 'ADMIN'
     const visaServiceId = req.query.visaServiceId;
     const search = (req.query.search || '').trim();
 
-    let apps = await db.visaApplications.find();
-
-    if (status) apps = apps.filter(a => a.status === status);
-    if (visaServiceId) apps = apps.filter(a => a.visaServiceId === visaServiceId);
+    const filter = {};
+    if (status) filter.status = status;
+    if (visaServiceId) filter.visaServiceId = visaServiceId;
     if (search) {
       const rx = new RegExp(escapeRegex(search), 'i');
-      apps = apps.filter(a => rx.test(a.applicationNumber || '') || rx.test(a.fullName || '') || rx.test(a.email || ''));
+      filter.$or = [{ applicationNumber: rx }, { fullName: rx }, { email: rx }];
     }
 
-    const total = apps.length;
-    const totalPages = Math.ceil(total / limit) || 1;
-    const startIndex = (page - 1) * limit;
-    const paginatedApps = apps.slice(startIndex, startIndex + limit).map(a => visaService.sanitizeApplication(a, req.user.role));
+    const { data: appsData, total, totalPages } = await db.visaApplications.findPaginated(filter, null, { page, limit, sort: { createdAt: -1 } });
+    const paginatedApps = appsData.map(a => visaService.sanitizeApplication(a, req.user.role));
 
     res.json({
       success: true,
@@ -1999,17 +2063,14 @@ app.get('/api/admin/bookings', authenticate, authorize('STAFF', 'ADMIN', 'SUPER_
     const status = req.query.status;
     const search = (req.query.search || '').trim();
 
-    let bks = await db.tourBookings.find();
-    if (status) bks = bks.filter(b => b.status === status);
+    const filter = {};
+    if (status) filter.status = status;
     if (search) {
       const rx = new RegExp(escapeRegex(search), 'i');
-      bks = bks.filter(b => rx.test(b.bookingNumber || '') || rx.test(b.travellerName || '') || rx.test(b.email || '') || rx.test(b.packageTitle || ''));
+      filter.$or = [{ bookingNumber: rx }, { travellerName: rx }, { email: rx }, { packageTitle: rx }];
     }
 
-    const total = bks.length;
-    const totalPages = Math.ceil(total / limit) || 1;
-    const startIndex = (page - 1) * limit;
-    const paginatedBookings = bks.slice(startIndex, startIndex + limit);
+    const { data: paginatedBookings, total, totalPages } = await db.tourBookings.findPaginated(filter, null, { page, limit, sort: { createdAt: -1 } });
 
     res.json({
       success: true,
@@ -2061,20 +2122,17 @@ app.get('/api/admin/payments', authenticate, authorize('STAFF', 'ADMIN', 'SUPER_
     const currency = req.query.currency;
     const search = (req.query.search || '').trim();
 
-    let pymts = await db.payments.find();
-
-    if (status) pymts = pymts.filter(p => p.status === status);
-    if (provider) pymts = pymts.filter(p => p.provider === provider);
-    if (currency) pymts = pymts.filter(p => p.currency === currency);
+    const filter = {};
+    if (status) filter.status = status;
+    if (provider) filter.provider = provider;
+    if (currency) filter.currency = currency;
     if (search) {
       const rx = new RegExp(escapeRegex(search), 'i');
-      pymts = pymts.filter(p => rx.test(p.paymentNumber || '') || rx.test(p.providerOrderId || '') || rx.test(p.userId || ''));
+      filter.$or = [{ paymentNumber: rx }, { providerOrderId: rx }, { userId: rx }];
     }
 
-    const total = pymts.length;
-    const totalPages = Math.ceil(total / limit) || 1;
-    const startIndex = (page - 1) * limit;
-    const paginatedPayments = pymts.slice(startIndex, startIndex + limit).map(p => paymentService.sanitizePayment(p, req.user.role));
+    const { data: pymtsData, total, totalPages } = await db.payments.findPaginated(filter, null, { page, limit, sort: { createdAt: -1 } });
+    const paginatedPayments = pymtsData.map(p => paymentService.sanitizePayment(p, req.user.role));
 
     res.json({
       success: true,
@@ -2091,14 +2149,11 @@ app.get('/api/admin/refunds', authenticate, authorize('STAFF', 'ADMIN', 'SUPER_A
     const page = Math.max(1, parseInt(req.query.page, 10) || 1);
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 20));
 
-    const refunds = await db.refunds.find();
-    const total = refunds.length;
-    const totalPages = Math.ceil(total / limit) || 1;
-    const startIndex = (page - 1) * limit;
+    const { data: paginatedRefunds, total, totalPages } = await db.refunds.findPaginated({}, null, { page, limit, sort: { createdAt: -1 } });
 
     res.json({
       success: true,
-      refunds: refunds.slice(startIndex, startIndex + limit),
+      refunds: paginatedRefunds,
       pagination: { total, page, limit, totalPages }
     });
   } catch (err) {
@@ -2114,20 +2169,18 @@ app.get('/api/admin/support/tickets', authenticate, authorize('STAFF', 'ADMIN', 
     const status = req.query.status;
     const search = (req.query.search || '').trim();
 
-    let tkts = await db.supportTickets.find();
-    if (status) tkts = tkts.filter(t => t.status === status);
+    const filter = {};
+    if (status) filter.status = status;
     if (search) {
       const rx = new RegExp(escapeRegex(search), 'i');
-      tkts = tkts.filter(t => rx.test(t.ticketNumber || '') || rx.test(t.subject || '') || rx.test(t.userEmail || ''));
+      filter.$or = [{ ticketNumber: rx }, { subject: rx }, { userEmail: rx }];
     }
 
-    const total = tkts.length;
-    const totalPages = Math.ceil(total / limit) || 1;
-    const startIndex = (page - 1) * limit;
+    const { data: paginatedTickets, total, totalPages } = await db.supportTickets.findPaginated(filter, null, { page, limit, sort: { createdAt: -1 } });
 
     res.json({
       success: true,
-      tickets: tkts.slice(startIndex, startIndex + limit),
+      tickets: paginatedTickets,
       pagination: { total, page, limit, totalPages }
     });
   } catch (err) {
@@ -2200,14 +2253,11 @@ app.get('/api/admin/contact-inquiries', authenticate, authorize('STAFF', 'ADMIN'
     const page = Math.max(1, parseInt(req.query.page, 10) || 1);
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 20));
 
-    const inquiries = await db.contactInquiries.find();
-    const total = inquiries.length;
-    const totalPages = Math.ceil(total / limit) || 1;
-    const startIndex = (page - 1) * limit;
+    const { data: paginatedInquiries, total, totalPages } = await db.contactInquiries.findPaginated({}, null, { page, limit, sort: { createdAt: -1 } });
 
     res.json({
       success: true,
-      inquiries: inquiries.slice(startIndex, startIndex + limit),
+      inquiries: paginatedInquiries,
       pagination: { total, page, limit, totalPages }
     });
   } catch (err) {
@@ -2236,14 +2286,12 @@ app.get('/api/admin/notifications', authenticate, authorize('ADMIN', 'SUPER_ADMI
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 20));
     const status = req.query.status;
 
-    let notifs = await db.notifications.find();
-    if (status) notifs = notifs.filter(n => n.status === status);
+    const filter = {};
+    if (status) filter.status = status;
 
-    const total = notifs.length;
-    const totalPages = Math.ceil(total / limit) || 1;
-    const startIndex = (page - 1) * limit;
+    const { data: notifsData, total, totalPages } = await db.notifications.findPaginated(filter, null, { page, limit, sort: { createdAt: -1 } });
 
-    const safeNotifs = notifs.slice(startIndex, startIndex + limit).map(n => ({
+    const safeNotifs = notifsData.map(n => ({
       id: n.id,
       userId: n.userId,
       channel: n.channel,
@@ -2295,26 +2343,20 @@ app.get('/api/admin/audit-logs', authenticate, authorize('ADMIN', 'SUPER_ADMIN')
     const entityType = req.query.entityType;
     const search = (req.query.search || '').trim();
 
-    let logs = await db.auditLogs.find();
-
-    if (actorRole) logs = logs.filter(l => l.actorRole === actorRole);
-    if (action) logs = logs.filter(l => l.action === action);
-    if (entityType) logs = logs.filter(l => l.entityType === entityType);
+    const filter = {};
+    if (actorRole) filter.actorRole = actorRole;
+    if (action) filter.action = action;
+    if (entityType) filter.entityType = entityType;
     if (search) {
       const rx = new RegExp(escapeRegex(search), 'i');
-      logs = logs.filter(l => rx.test(l.action || '') || rx.test(l.actorId || '') || rx.test(l.entityId || ''));
+      filter.$or = [{ action: rx }, { actorId: rx }, { entityId: rx }];
     }
 
-    // Sort descending by timestamp
-    logs.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
-
-    const total = logs.length;
-    const totalPages = Math.ceil(total / limit) || 1;
-    const startIndex = (page - 1) * limit;
+    const { data: paginatedLogs, total, totalPages } = await db.auditLogs.findPaginated(filter, null, { page, limit, sort: { createdAt: -1 } });
 
     res.json({
       success: true,
-      logs: logs.slice(startIndex, startIndex + limit),
+      logs: paginatedLogs,
       pagination: { total, page, limit, totalPages }
     });
   } catch (err) {
@@ -2396,11 +2438,12 @@ app.get('/api/chat/conversations/:id', authenticate, async (req, res) => {
       return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Access denied to this conversation.' } });
     }
 
-    let messages = await db.chatMessages.find({ conversationId: conversation.id });
-    messages.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-    if (messages.length > 20) {
-      messages = messages.slice(messages.length - 20);
-    }
+    let messages = await db.chatMessages.find(
+      { conversationId: conversation.id },
+      null,
+      { sort: { createdAt: -1 }, limit: 20 }
+    );
+    messages.reverse();
 
     res.json({ success: true, conversation, messages });
   } catch (err) {
@@ -2617,8 +2660,7 @@ app.get('*', async (req, res) => {
 
     if (req.path.startsWith('/tourism/')) {
       const slug = req.path.replace('/tourism/', '').split('?')[0];
-      const allPkgs = await db.tourPackages.find();
-      const pkg = allPkgs.find(p => p.slug === slug);
+      const pkg = await db.tourPackages.findOne({ slug });
       if (pkg) {
         html = html.replace(/<title>.*?<\/title>/, `<title>${pkg.title} | JMT Travels</title>`);
         html = html.replace(/<meta name="description" content=".*?">/, `<meta name="description" content="${pkg.summary || pkg.title}">`);
@@ -2626,8 +2668,7 @@ app.get('*', async (req, res) => {
       }
     } else if (req.path.startsWith('/visa/')) {
       const slug = req.path.replace('/visa/', '').split('?')[0];
-      const allVisas = await db.visaServices.find();
-      const service = allVisas.find(v => v.slug === slug);
+      const service = await db.visaServices.findOne({ slug });
       if (service) {
         html = html.replace(/<title>.*?<\/title>/, `<title>${service.country} ${service.visaType} Visa | JMT Travels</title>`);
         html = html.replace(/<meta name="description" content=".*?">/, `<meta name="description" content="${service.overview || service.visaType}">`);

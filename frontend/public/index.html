@@ -79,7 +79,7 @@
     <nav class="header-nav" aria-label="Main Navigation" style="border:0; shadow:none; background:transparent;">
       <div class="shell" style="height:84px; display:flex; align-items:center; justify-content:space-between; gap:20px;">
         <a class="brand-logo" href="/" onclick="event.preventDefault(); navigate('/')" style="display:flex; align-items:center; gap:12px; text-decoration:none;">
-          <img src="/assets/logo.png" alt="JMT TRAVELS Logo" style="height:64px; width:auto; max-height:64px; object-fit:contain;" width="64" height="64">
+          <img src="/assets/logo.png" alt="JMT TRAVELS Logo" style="height:64px; width:auto; max-height:64px; object-fit:contain;" width="64" height="64" fetchpriority="high" decoding="async">
           <span class="brand-title" style="display:flex; flex-direction:column;">
             <b style="font-size:22px; color:#FFFFFF !important; font-weight:800; letter-spacing:-0.5px; line-height:1.1;">JMT TRAVELS</b>
             <small style="color:#00E676 !important; font-size:9.5px; font-weight:700; letter-spacing:1.2px; margin-top:2px;">JOURNEY MORE TOGETHER</small>
@@ -110,28 +110,27 @@
       </div>
 
       <!-- MOBILE NAVIGATION DRAWER -->
-      <div id="mobile-nav-drawer" class="mobile-nav-drawer" style="display:none; background:rgba(193, 212, 228, 0.96); backdrop-filter:blur(12px); border-top:1px solid rgba(8,43,82,0.1); border-bottom:1px solid rgba(8,43,82,0.1); padding:16px 24px 24px; box-shadow:0 10px 25px rgba(8,43,82,0.12);">
-        <ul class="mobile-nav-links" style="list-style:none; padding:0; margin:0 0 16px; display:flex; flex-direction:column; gap:10px;">
-          <li><a href="/" onclick="event.preventDefault(); toggleMobileMenu(); navigate('/')" class="nav-link-item" data-nav="home" style="font-size:15px; font-weight:600; color:#0B286C; text-decoration:none; display:block; padding:8px 0;">Home</a></li>
-          <li><a href="/tourism" onclick="event.preventDefault(); toggleMobileMenu(); navigate('/tourism')" class="nav-link-item" data-nav="tourism" style="font-size:15px; font-weight:600; color:#0B286C; text-decoration:none; display:block; padding:8px 0;">Oman Tours</a></li>
-          <li><a href="/visa" onclick="event.preventDefault(); toggleMobileMenu(); navigate('/visa')" class="nav-link-item" data-nav="visa" style="font-size:15px; font-weight:600; color:#0B286C; text-decoration:none; display:block; padding:8px 0;">Oman Tourist Visa</a></li>
-          <li><a href="/visa?service=schengen" onclick="event.preventDefault(); toggleMobileMenu(); navigate('/visa?service=schengen')" class="nav-link-item" data-nav="schengen" style="font-size:15px; font-weight:600; color:#0B286C; text-decoration:none; display:block; padding:8px 0;">Schengen Visa</a></li>
-          <li><a href="/hotels" onclick="event.preventDefault(); toggleMobileMenu(); navigate('/hotels')" class="nav-link-item" data-nav="hotels" style="font-size:15px; font-weight:600; color:#0B286C; text-decoration:none; display:block; padding:8px 0;">Hotels</a></li>
-          <li><a href="/flights" onclick="event.preventDefault(); toggleMobileMenu(); navigate('/flights')" class="nav-link-item" data-nav="flights" style="font-size:15px; font-weight:600; color:#0B286C; text-decoration:none; display:block; padding:8px 0;">Flights</a></li>
+      <div id="mobile-nav-drawer" class="mobile-nav-drawer" style="display:none;">
+        <ul class="mobile-nav-links">
+          <li><a href="/" onclick="event.preventDefault(); toggleMobileMenu(); navigate('/')" class="nav-link-item" data-nav="home">🏠 Home</a></li>
+          <li><a href="/tourism" onclick="event.preventDefault(); toggleMobileMenu(); navigate('/tourism')" class="nav-link-item" data-nav="tourism">🐪 Oman Tours</a></li>
+          <li><a href="/visa" onclick="event.preventDefault(); toggleMobileMenu(); navigate('/visa')" class="nav-link-item" data-nav="visa">🛂 Oman Tourist Visa</a></li>
+          <li><a href="/visa?service=schengen" onclick="event.preventDefault(); toggleMobileMenu(); navigate('/visa?service=schengen')" class="nav-link-item" data-nav="schengen">🇪🇺 Schengen Visa</a></li>
+          <li><a href="/hotels" onclick="event.preventDefault(); toggleMobileMenu(); navigate('/hotels')" class="nav-link-item" data-nav="hotels">🏨 Hotels</a></li>
+          <li><a href="/flights" onclick="event.preventDefault(); toggleMobileMenu(); navigate('/flights')" class="nav-link-item" data-nav="flights">✈️ Flights</a></li>
         </ul>
-        <div style="border-top:1px solid rgba(8,43,82,0.1); padding-top:16px; display:flex; flex-direction:column; gap:12px;">
+        <div style="border-top:1px solid rgba(255,255,255,0.12); padding-top:16px; display:flex; flex-direction:column; gap:12px;">
           <div id="mobile-nav-auth" style="display:flex; gap:12px;">
-            <a href="/login" onclick="event.preventDefault(); toggleMobileMenu(); navigate('/login')" class="btn btn-outline" style="flex:1; text-align:center;">Sign In</a>
-            <a href="/register" onclick="event.preventDefault(); toggleMobileMenu(); navigate('/register')" class="btn btn-create-account" style="flex:1; text-align:center; background: linear-gradient(135deg, #07153B 0%, #0B286C 100%); color:#FFFFFF !important;">Register</a>
+            <a href="/login" onclick="event.preventDefault(); toggleMobileMenu(); navigate('/login')" class="btn mobile-auth-signin" style="flex:1; text-align:center;">Sign In</a>
+            <a href="/register" onclick="event.preventDefault(); toggleMobileMenu(); navigate('/register')" class="btn mobile-auth-register" style="flex:1; text-align:center;">Register</a>
           </div>
-          <div style="display:flex; justify-content:space-between; align-items:center; font-size:13px; color:#58718A; padding-top:4px;">
-            <button id="mobile-theme-toggle-btn" class="theme-toggle-btn" onclick="toggleTheme()" aria-label="Toggle theme" title="Toggle theme" style="background:#07153B; border:1px solid rgba(255,255,255,0.2); border-radius:50%; width:38px; height:38px; display:inline-flex; align-items:center; justify-content:center; color:#FFFFFF; cursor:pointer;">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="#FFFFFF" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.389 5.389 0 0 1-4.4 2.26 5.403 5.403 0 0 1-5.4-5.4c0-1.81.89-3.42 2.26-4.4C12.92 3.04 12.46 3 12 3z"/></svg>
+          <div style="display:flex; justify-content:space-between; align-items:center; font-size:13px; padding-top:4px;">
+            <button id="mobile-theme-toggle-btn" class="theme-toggle-btn" onclick="toggleTheme()" aria-label="Toggle theme" title="Toggle theme" style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.2); border-radius:99px; padding:8px 16px; display:inline-flex; align-items:center; gap:8px; color:#FFFFFF; cursor:pointer; font-weight:600; font-size:12px;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="#FFFFFF" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.389 5.389 0 0 1-4.4 2.26 5.403 5.403 0 0 1-5.4-5.4c0-1.81.89-3.42 2.26-4.4C12.92 3.04 12.46 3 12 3z"/></svg> Theme
             </button>
-            <button onclick="toggleLanguage()" style="background:none; border:0; color:#082B52; font-weight:600; cursor:pointer;">🌐 EN ▾ Language</button>
+            <button onclick="toggleLanguage()" style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.2); border-radius:99px; padding:8px 16px; color:#FFFFFF; font-weight:600; font-size:12px; cursor:pointer; display:inline-flex; align-items:center; gap:6px;">🌐 EN ▾ Language</button>
           </div>
         </div>
-      </div>
       </div>
     </nav>
   </header>
@@ -273,6 +272,6 @@
     }
   </script>
   <!-- Client Application Script -->
-  <script src="/assets/js/app.js"></script>
+  <script src="/assets/js/app.js" defer></script>
 </body>
 </html>

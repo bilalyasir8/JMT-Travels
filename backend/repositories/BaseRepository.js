@@ -74,9 +74,25 @@ class BaseRepository {
     items = items.filter(item => {
       return Object.entries(filter).every(([k, v]) => {
         if (v === undefined) return true;
+        if (k === '$or' && Array.isArray(v)) {
+          return v.some(subFilter => {
+            return Object.entries(subFilter).every(([sk, sv]) => {
+              const val = item[sk];
+              if (sv instanceof RegExp) return sv.test(String(val || ''));
+              return val === sv;
+            });
+          });
+        }
+        if (v instanceof RegExp) {
+          return v.test(String(item[k] || ''));
+        }
         if (typeof v === 'object' && v !== null) {
           if (v.$in) return v.$in.includes(item[k]);
-          if (v.$ne) return item[k] !== v.$ne;
+          if (v.$ne !== undefined) return item[k] !== v.$ne;
+          if (v.$regex) {
+            const rx = new RegExp(v.$regex, v.$options || 'i');
+            return rx.test(String(item[k] || ''));
+          }
         }
         return item[k] === v;
       });
