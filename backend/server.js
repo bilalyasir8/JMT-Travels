@@ -1285,6 +1285,157 @@ app.put('/api/account/profile', authenticate, async (req, res) => {
   }
 });
 
+// --- V5.2 CUSTOMER DASHBOARD ENDPOINT ---
+app.get('/api/account/dashboard', authenticate, async (req, res) => {
+  try {
+    // Authoritative customer identity strictly from req.user.id
+    const customerId = req.user.id;
+
+    // Concurrently fetch customer's records with bounded queries and selective projection
+    const [bookingsRaw, visasRaw, ticketsRaw] = await Promise.all([
+      db.tourBookings.find(
+        { userId: customerId },
+        { id: 1, bookingNumber: 1, packageTitle: 1, amount: 1, currency: 1, status: 1, travelDate: 1, createdAt: 1 },
+        { sort: { createdAt: -1 }, limit: 15, lean: true }
+      ),
+      db.visaApplications.find(
+        { userId: customerId },
+        { id: 1, applicationNumber: 1, destination: 1, visaType: 1, status: 1, travelDate: 1, requestedDocuments: 1, createdAt: 1 },
+        { sort: { createdAt: -1 }, limit: 15, lean: true }
+      ),
+      db.supportTickets.find(
+        { userId: customerId },
+        { id: 1, ticketId: 1, subject: 1, status: 1, priority: 1, createdAt: 1 },
+        { sort: { createdAt: -1 }, limit: 10, lean: true }
+      )
+    ]);
+
+    const bookings = Array.isArray(bookingsRaw) ? bookingsRaw : [];
+    const visas = Array.isArray(visasRaw) ? visasRaw : [];
+    const tickets = Array.isArray(ticketsRaw) ? ticketsRaw : [];
+
+    // Calculate Summary Metrics
+    const upcomingTrips = bookings.filter(b =>
+      ['CONFIRMED', 'PAID', 'PROCESSING', 'PENDING'].includes(b.status) &&
+      !['CANCELLED', 'REFUNDED', 'COMPLETED'].includes(b.status)
+    ).length;
+
+    const activeVisas = visas.filter(v =>
+      ['SUBMITTED', 'UNDER_REVIEW', 'ADDITIONAL_DOCUMENTS_REQUIRED', 'PROCESSING', 'PENDING_DOCUMENTS', 'APPROVED', 'Documents required'].includes(v.status) &&
+      !['CANCELLED', 'REJECTED', 'COMPLETED'].includes(v.status)
+    ).length;
+
+    const totalBookings = bookings.filter(b => b.status !== 'CANCELLED').length;
+
+    const pendingActions =
+      visas.filter(v => ['ADDITIONAL_DOCUMENTS_REQUIRED', 'PENDING_DOCUMENTS', 'Documents required'].includes(v.status)).length +
+      bookings.filter(b => ['PENDING_PAYMENT', 'PAYMENT_PENDING'].includes(b.status)).length +
+      tickets.filter(t => t.status === 'WAITING_FOR_CUSTOMER').length;
+
+    // Upcoming Activity (up to 5 items)
+    const upcomingItems = [];
+
+    bookings
+      .filter(b => ['CONFIRMED', 'PAID', 'PROCESSING', 'PENDING'].includes(b.status) && !['CANCELLED', 'REFUNDED', 'COMPLETED'].includes(b.status))
+      .forEach(b => {
+        upcomingItems.push({
+          id: b.id || b.bookingNumber,
+          type: 'TOUR_BOOKING',
+          title: b.packageTitle || 'Oman Tour Experience',
+          reference: b.bookingNumber || b.id,
+          date: b.travelDate || b.createdAt,
+          status: b.status,
+          amount: b.amount ? `${b.currency || 'OMR'} ${b.amount}` : null,
+          badgeColor: ['CONFIRMED', 'PAID'].includes(b.status) ? 'success' : 'warning'
+        });
+      });
+
+    visas
+      .filter(v => ['SUBMITTED', 'UNDER_REVIEW', 'ADDITIONAL_DOCUMENTS_REQUIRED', 'PROCESSING', 'PENDING_DOCUMENTS', 'APPROVED', 'Documents required'].includes(v.status) && !['CANCELLED', 'REJECTED', 'COMPLETED'].includes(v.status))
+      .forEach(v => {
+        upcomingItems.push({
+          id: v.id || v.applicationNumber,
+          type: 'VISA_APPLICATION',
+          title: `${v.destination} ${v.visaType} Visa`,
+          reference: v.applicationNumber || v.id,
+          date: v.travelDate || v.createdAt,
+          status: v.status,
+          amount: null,
+          badgeColor: v.status === 'APPROVED' ? 'success' : (['ADDITIONAL_DOCUMENTS_REQUIRED', 'PENDING_DOCUMENTS', 'Documents required'].includes(v.status) ? 'danger' : 'info')
+        });
+      });
+
+    const upcomingActivity = upcomingItems.slice(0, 5);
+
+    // Recent Activity (up to 5 items, sorted by date descending)
+    const recentItems = [];
+
+    bookings.forEach(b => {
+      recentItems.push({
+        id: b.id || b.bookingNumber,
+        type: 'TOUR_BOOKING',
+        title: b.packageTitle || 'Tour Reservation',
+        reference: b.bookingNumber || b.id,
+        date: b.createdAt || b.travelDate,
+        status: b.status,
+        badgeColor: ['CONFIRMED', 'PAID'].includes(b.status) ? 'success' : (b.status === 'CANCELLED' ? 'danger' : 'warning')
+      });
+    });
+
+    visas.forEach(v => {
+      recentItems.push({
+        id: v.id || v.applicationNumber,
+        type: 'VISA_APPLICATION',
+        title: `${v.destination} Visa Application`,
+        reference: v.applicationNumber || v.id,
+        date: v.createdAt,
+        status: v.status,
+        badgeColor: v.status === 'APPROVED' ? 'success' : (['CANCELLED', 'REJECTED'].includes(v.status) ? 'danger' : 'info')
+      });
+    });
+
+    tickets.forEach(t => {
+      recentItems.push({
+        id: t.id || t.ticketId,
+        type: 'SUPPORT_TICKET',
+        title: t.subject || 'Support Ticket',
+        reference: t.ticketId || t.id,
+        date: t.createdAt,
+        status: t.status,
+        badgeColor: t.status === 'RESOLVED' ? 'success' : 'info'
+      });
+    });
+
+    recentItems.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+    const recentActivity = recentItems.slice(0, 5);
+
+    // Sanitized Customer DTO (strictly excludes sensitive fields)
+    res.json({
+      success: true,
+      user: {
+        id: req.user.id,
+        name: req.user.name,
+        email: req.user.email,
+        phone: req.user.phone || '',
+        role: req.user.role || 'CUSTOMER',
+        verified: !!req.user.verified,
+        preferredLanguage: req.user.preferredLanguage || 'en',
+        preferredCurrency: req.user.preferredCurrency || 'OMR'
+      },
+      summary: {
+        upcomingTrips,
+        activeVisas,
+        bookings: totalBookings,
+        pendingActions
+      },
+      upcomingActivity,
+      recentActivity
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: err.message } });
+  }
+});
+
 
 // --- i18n & MULTI-CURRENCY ENDPOINTS (Task #7) ---
 app.get('/api/i18n/translations', (req, res) => {

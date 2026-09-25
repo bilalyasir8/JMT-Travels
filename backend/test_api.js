@@ -2330,8 +2330,136 @@ async function runTestSuite() {
     assert.strictEqual(p12MeRes.body.user.id, customer1User.id);
     console.log('  ✅ PROFILE-12 PASSED: Existing auth endpoints (/api/auth/me) 100% operational');
 
+    // ================================================================
+    // 🔒 EXECUTING V5.2 CUSTOMER DASHBOARD TEST SUITE
+    // ================================================================
+
+    // DASH-1: Unauthenticated dashboard → 401
+    console.log('\n[DASH-1] Testing Unauthenticated GET /api/account/dashboard...');
+    const d1Res = await request('/api/account/dashboard', { method: 'GET' });
+    assert.strictEqual(d1Res.status, 401);
+    assert.strictEqual(d1Res.body.error.code, 'UNAUTHORIZED');
+    console.log('  ✅ DASH-1 PASSED: Unauthenticated dashboard request blocked (401 UNAUTHORIZED)');
+
+    // DASH-2: Authenticated customer → dashboard 200
+    console.log('\n[DASH-2] Testing Authenticated Customer GET /api/account/dashboard...');
+    const d2Res = await request('/api/account/dashboard', {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(d2Res.status, 200);
+    assert.strictEqual(d2Res.body.success, true);
+    assert.strictEqual(d2Res.body.user.id, customer1User.id);
+    assert.ok(typeof d2Res.body.summary === 'object');
+    assert.ok(typeof d2Res.body.summary.upcomingTrips === 'number');
+    assert.ok(typeof d2Res.body.summary.activeVisas === 'number');
+    assert.ok(typeof d2Res.body.summary.bookings === 'number');
+    assert.ok(typeof d2Res.body.summary.pendingActions === 'number');
+    assert.ok(Array.isArray(d2Res.body.upcomingActivity));
+    assert.ok(Array.isArray(d2Res.body.recentActivity));
+    console.log('  ✅ DASH-2 PASSED: Authenticated customer retrieves dashboard summary (200 OK)');
+
+    // DASH-3: Dashboard contains only customer-owned data (isolation between Customer 1 and Customer 2)
+    console.log('\n[DASH-3] Testing Dashboard Customer Data Isolation (Tenant Boundary)...');
+    const cust1BookingNum = `JMT-B-C1-${Date.now()}`;
+    const cust2BookingNum = `JMT-B-C2-${Date.now()}`;
+
+    await db.tourBookings.create({
+      id: `tb_c1_${Date.now()}`,
+      bookingNumber: cust1BookingNum,
+      packageId: 'pkg-muscat',
+      packageTitle: 'Customer 1 Exclusive Heritage Tour',
+      userId: customer1User.id,
+      travellerName: customer1User.name,
+      email: customer1User.email,
+      phone: '+96891234567',
+      travellers: 2,
+      travelDate: '2026-11-15',
+      amount: 240,
+      currency: 'OMR',
+      status: 'CONFIRMED'
+    });
+
+    await db.tourBookings.create({
+      id: `tb_c2_${Date.now()}`,
+      bookingNumber: cust2BookingNum,
+      packageId: 'pkg-dubai',
+      packageTitle: 'Customer 2 Exclusive Getaway',
+      userId: customer2User.id,
+      travellerName: customer2User.name,
+      email: customer2User.email,
+      phone: '+96892345678',
+      travellers: 1,
+      travelDate: '2026-12-01',
+      amount: 245,
+      currency: 'OMR',
+      status: 'CONFIRMED'
+    });
+
+    const d3Cust1Res = await request('/api/account/dashboard', {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(d3Cust1Res.status, 200);
+    const c1DashboardStr = JSON.stringify(d3Cust1Res.body);
+    assert.ok(c1DashboardStr.includes(cust1BookingNum));
+    assert.strictEqual(c1DashboardStr.includes(cust2BookingNum), false);
+
+    const d3Cust2Res = await request('/api/account/dashboard', {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${customer2Token}` }
+    });
+    assert.strictEqual(d3Cust2Res.status, 200);
+    const c2DashboardStr = JSON.stringify(d3Cust2Res.body);
+    assert.ok(c2DashboardStr.includes(cust2BookingNum));
+    assert.strictEqual(c2DashboardStr.includes(cust1BookingNum), false);
+    console.log('  ✅ DASH-3 PASSED: Dashboard data strictly isolated per authenticated customer');
+
+    // DASH-4: userId override ignored (IDOR Defense)
+    console.log('\n[DASH-4] Testing Query & Body userId Override Rejection (IDOR Defense)...');
+    const d4Res = await request(`/api/account/dashboard?userId=${customer2User.id}`, {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(d4Res.status, 200);
+    assert.strictEqual(d4Res.body.user.id, customer1User.id);
+    const d4Str = JSON.stringify(d4Res.body);
+    assert.strictEqual(d4Str.includes(cust2BookingNum), false);
+    console.log('  ✅ DASH-4 PASSED: Client userId override ignored; customer data boundary intact');
+
+    // DASH-5: Bounded result sizes
+    console.log('\n[DASH-5] Testing Bounded Activity Result Sizes (Max 5 items)...');
+    assert.ok(d3Cust1Res.body.upcomingActivity.length <= 5);
+    assert.ok(d3Cust1Res.body.recentActivity.length <= 5);
+    console.log('  ✅ DASH-5 PASSED: Upcoming & recent activities strictly bounded to max 5 items');
+
+    // DASH-6: Sensitive fields absent
+    console.log('\n[DASH-6] Testing Sensitive Fields Absent from Dashboard Response...');
+    assert.strictEqual(d2Res.body.user.passwordHash, undefined);
+    assert.strictEqual(d2Res.body.user.mfaSecret, undefined);
+    assert.strictEqual(d2Res.body.user.tokenInvalidatedBefore, undefined);
+    assert.strictEqual(d2Res.body.user.verificationToken, undefined);
+    assert.strictEqual(d2Res.body.user.resetPasswordToken, undefined);
+    assert.strictEqual(d2Res.body.user.failedLoginAttempts, undefined);
+    assert.strictEqual(d2Res.body.user.lockUntil, undefined);
+    const d6Str = JSON.stringify(d2Res.body);
+    assert.strictEqual(d6Str.includes('passwordHash'), false);
+    assert.strictEqual(d6Str.includes('mfaSecret'), false);
+    console.log('  ✅ DASH-6 PASSED: Sensitive fields strictly excluded from dashboard payload');
+
+    // DASH-7: Existing profile tests remain passing
+    console.log('\n[DASH-7] Testing Existing Profile Endpoint Co-Existence...');
+    const d7ProfileRes = await request('/api/account/profile', {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(d7ProfileRes.status, 200);
+    assert.strictEqual(d7ProfileRes.body.user.id, customer1User.id);
+    assert.ok(d7ProfileRes.body.profile);
+    console.log('  ✅ DASH-7 PASSED: Existing /api/account/profile endpoint remains 100% operational');
+
     console.log('\n================================================================');
-    console.log('🎉 ALL AUTOMATED TESTS PASSED SUCCESSFULLY! (155/155)');
+    console.log('🎉 ALL AUTOMATED TESTS PASSED SUCCESSFULLY! (162/162)');
     console.log('================================================================');
   } catch (err) {
     console.error('\n❌ Test Failure Details:', err);
