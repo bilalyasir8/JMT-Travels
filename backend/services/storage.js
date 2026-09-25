@@ -18,8 +18,11 @@ class FileSecurityService {
     const hex = buffer.toString('hex', 0, 8).toUpperCase();
     const ext = extension.toLowerCase().replace('.', '');
 
-    // Prohibited Executable & Script Extensions
-    const forbiddenExts = ['exe', 'js', 'html', 'htm', 'php', 'sh', 'bat', 'cmd', 'vbs', 'jar', 'phtml', 'cgi', 'pl', 'py'];
+    // Prohibited Executable, Script & Archive Extensions
+    const forbiddenExts = [
+      'exe', 'js', 'html', 'htm', 'php', 'sh', 'bat', 'cmd', 'vbs', 'jar', 'phtml', 'cgi', 'pl', 'py',
+      'zip', 'rar', '7z', 'tar', 'gz', 'bz2', 'iso', 'dmg', 'bin'
+    ];
     if (forbiddenExts.includes(ext)) {
       return false;
     }
@@ -83,6 +86,12 @@ class StorageService {
    * Save uploaded file to private storage
    */
   async upload(fileBuffer, originalName, mimeType) {
+    if (!fileBuffer || fileBuffer.length === 0) {
+      throw new Error('Security Violation: File is empty (0 bytes).');
+    }
+    if (!originalName || originalName.length > 255) {
+      throw new Error('Security Violation: Filename is missing or exceeds 255 characters.');
+    }
     const storageKey = this.generateStorageKey(originalName, mimeType);
     const ext = path.extname(originalName);
 

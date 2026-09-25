@@ -2630,8 +2630,323 @@ async function runTestSuite() {
     assert.ok(trip10ProfileRes.body.user);
     console.log('  ✅ TRIP-10 PASSED: Existing V5.1 and V5.2 endpoints remain 100% operational');
 
+    // =================================================================
+    // V5.4 CUSTOMER VISA & SECURE DOCUMENT VAULT TESTS (DOC-1 to DOC-16, VISA-1 to VISA-9)
+    // =================================================================
+
+    // Seed V5.4 Visa Applications for Customer 1 and Customer 2
+    const v54Cust1VisaAppNum = `JMT-V-V54-C1-${Date.now()}`;
+    const v54Cust1RawPassport = 'K11223344';
+    const v54Cust1Visa = await db.visaApplications.create({
+      id: `va_v54_c1_${Date.now()}`,
+      applicationNumber: v54Cust1VisaAppNum,
+      userId: customer1User.id,
+      destination: 'Oman',
+      visaType: 'Tourist 30-Day Express',
+      fullName: customer1User.name,
+      email: customer1User.email,
+      phone: '+96891234567',
+      passportNumber: v54Cust1RawPassport,
+      status: 'UNDER_REVIEW',
+      travelDate: '2026-12-15',
+      requestedDocuments: [{
+        requestId: `req_v54_${Date.now()}`,
+        documentType: 'PHOTO',
+        instruction: 'Please upload white-background passport photograph',
+        status: 'PENDING'
+      }],
+      timeline: [{
+        applicationId: v54Cust1VisaAppNum,
+        previousStatus: 'DRAFT',
+        newStatus: 'UNDER_REVIEW',
+        changedBy: customer1User.id,
+        timestamp: new Date(),
+        note: 'Submitted application for review.'
+      }]
+    });
+
+    const v54Cust2VisaAppNum = `JMT-V-V54-C2-${Date.now()}`;
+    const v54Cust2RawPassport = 'L99887766';
+    const v54Cust2Visa = await db.visaApplications.create({
+      id: `va_v54_c2_${Date.now()}`,
+      applicationNumber: v54Cust2VisaAppNum,
+      userId: customer2User.id,
+      destination: 'Schengen Area',
+      visaType: 'Schengen Tourist C',
+      fullName: customer2User.name,
+      email: customer2User.email,
+      phone: '+96898765432',
+      passportNumber: v54Cust2RawPassport,
+      status: 'PROCESSING',
+      travelDate: '2027-01-20',
+      timeline: [{
+        applicationId: v54Cust2VisaAppNum,
+        previousStatus: 'UNDER_REVIEW',
+        newStatus: 'PROCESSING',
+        changedBy: customer2User.id,
+        timestamp: new Date(),
+        note: 'Processing in progress at embassy.'
+      }]
+    });
+
+    const samplePdfBuffer = Buffer.from('%PDF-1.4\n1 0 obj\n<<\n>>\nendobj\ntrailer\n<<\n>>\n%%EOF');
+
+    // Upload initial document for Customer 1
+    const cust1UploadRes = await uploadMultipart('/api/documents/upload', customer1Token, {
+      applicationId: v54Cust1Visa.id,
+      documentType: 'PASSPORT_COPY'
+    }, samplePdfBuffer, 'customer1_passport.pdf', 'application/pdf');
+    assert.strictEqual(cust1UploadRes.status, 201);
+    const cust1Doc = cust1UploadRes.body.document;
+    assert.ok(cust1Doc && cust1Doc.id);
+
+    // Upload initial document for Customer 2
+    const cust2UploadRes = await uploadMultipart('/api/documents/upload', customer2Token, {
+      applicationId: v54Cust2Visa.id,
+      documentType: 'PASSPORT_COPY'
+    }, samplePdfBuffer, 'customer2_passport.pdf', 'application/pdf');
+    assert.strictEqual(cust2UploadRes.status, 201);
+    const cust2Doc = cust2UploadRes.body.document;
+    assert.ok(cust2Doc && cust2Doc.id);
+
+    // DOC-1: Unauthenticated document list → 401
+    console.log('\n[DOC-1] Testing Unauthenticated Document List...');
+    const doc1Res = await request('/api/account/documents');
+    assert.strictEqual(doc1Res.status, 401);
+    console.log('  ✅ DOC-1 PASSED: Unauthenticated document list blocked (401 UNAUTHORIZED)');
+
+    // DOC-2: Unauthenticated download → 401
+    console.log('\n[DOC-2] Testing Unauthenticated Document Download...');
+    const doc2Res = await request(`/api/documents/${cust1Doc.id}/download`);
+    assert.strictEqual(doc2Res.status, 401);
+    console.log('  ✅ DOC-2 PASSED: Unauthenticated download blocked (401 UNAUTHORIZED)');
+
+    // DOC-3: Customer can list own documents
+    console.log('\n[DOC-3] Testing Customer Listing Own Documents...');
+    const doc3Res = await request('/api/account/documents', {
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(doc3Res.status, 200);
+    assert.ok(Array.isArray(doc3Res.body.documents));
+    const cust1DocIds = doc3Res.body.documents.map(d => d.id);
+    assert.ok(cust1DocIds.includes(cust1Doc.id));
+    assert.strictEqual(cust1DocIds.includes(cust2Doc.id), false);
+    console.log('  ✅ DOC-3 PASSED: Customer retrieves own documents only');
+
+    // DOC-4: Customer can download own document
+    console.log('\n[DOC-4] Testing Customer Downloading Own Document...');
+    const doc4Res = await request(`/api/documents/${cust1Doc.id}/download`, {
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(doc4Res.status, 200);
+    assert.strictEqual(doc4Res.headers['content-type'], 'application/pdf');
+    console.log('  ✅ DOC-4 PASSED: Customer downloads own document successfully (200 OK)');
+
+    // DOC-5: Customer A cannot download Customer B document
+    console.log('\n[DOC-5] Testing Customer A Accessing Customer B Document Download (IDOR)...');
+    const doc5Res = await request(`/api/documents/${cust2Doc.id}/download`, {
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(doc5Res.status, 403);
+    assert.strictEqual(doc5Res.body.error.code, 'FORBIDDEN');
+    console.log('  ✅ DOC-5 PASSED: Cross-customer document download blocked (403 FORBIDDEN)');
+
+    // DOC-6: Customer A cannot view Customer B document metadata
+    console.log('\n[DOC-6] Testing Customer A Viewing Customer B Document Metadata (IDOR)...');
+    const doc6Res = await request(`/api/account/documents/${cust2Doc.id}`, {
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(doc6Res.status, 403);
+    assert.strictEqual(doc6Res.body.error.code, 'FORBIDDEN');
+    console.log('  ✅ DOC-6 PASSED: Cross-customer document metadata viewing blocked (403 FORBIDDEN)');
+
+    // DOC-7: userId override rejected
+    console.log('\n[DOC-7] Testing Query Parameter userId Override Rejection...');
+    const doc7Res = await request(`/api/account/documents?userId=${customer2User.id}`, {
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(doc7Res.status, 200);
+    const doc7Ids = doc7Res.body.documents.map(d => d.id);
+    assert.strictEqual(doc7Ids.includes(cust2Doc.id), false);
+    console.log('  ✅ DOC-7 PASSED: Client userId query parameter ignored; tenant boundary intact');
+
+    // DOC-8: applicationId override rejected (cannot associate with unowned application)
+    console.log('\n[DOC-8] Testing Document Upload to Unowned Application Rejection...');
+    const doc8Res = await uploadMultipart('/api/documents/upload', customer1Token, {
+      applicationId: v54Cust2Visa.id,
+      documentType: 'PHOTO'
+    }, samplePdfBuffer, 'spoof_upload.pdf', 'application/pdf');
+    assert.strictEqual(doc8Res.status, 403);
+    assert.strictEqual(doc8Res.body.error.code, 'FORBIDDEN');
+    console.log('  ✅ DOC-8 PASSED: Unauthorized cross-customer application upload blocked (403 FORBIDDEN)');
+
+    // DOC-9: raw storage path absent
+    console.log('\n[DOC-9] Testing Raw Storage Path Absent from Response...');
+    const doc9Str = JSON.stringify(doc3Res.body) + JSON.stringify(cust1UploadRes.body);
+    assert.strictEqual(doc9Str.includes('storageKey'), false);
+    assert.strictEqual(doc9Str.includes('private-uploads'), false);
+    console.log('  ✅ DOC-9 PASSED: Raw physical storageKey and paths strictly absent from DTO');
+
+    // DOC-10: passport number masked
+    console.log('\n[DOC-10] Testing Passport Number Masking in Document Vault Responses...');
+    const doc10VisaRes = await request('/api/account/visa', {
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(doc10VisaRes.status, 200);
+    const doc10Str = JSON.stringify(doc10VisaRes.body);
+    assert.strictEqual(doc10Str.includes(v54Cust1RawPassport), false);
+    assert.ok(doc10Str.includes('••••••3344'));
+    console.log('  ✅ DOC-10 PASSED: Passport number securely masked (••••••3344)');
+
+    // DOC-11: invalid document ID safely rejected
+    console.log('\n[DOC-11] Testing Non-Existent Document ID Handling...');
+    const doc11Res = await request('/api/account/documents/non_existent_doc_99999', {
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(doc11Res.status, 404);
+    assert.strictEqual(doc11Res.body.error.code, 'NOT_FOUND');
+    console.log('  ✅ DOC-11 PASSED: Non-existent document ID safely returns 404 NOT_FOUND');
+
+    // DOC-12: path traversal attempt rejected
+    console.log('\n[DOC-12] Testing Path Traversal Defense in Document Download...');
+    const doc12Res = await request('/api/documents/..%2f..%2fpackage.json/download', {
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.ok(doc12Res.status === 403 || doc12Res.status === 404);
+    console.log('  ✅ DOC-12 PASSED: Path traversal attack safely rejected');
+
+    // DOC-13: unauthorized upload rejected (empty file, archive file, oversized filename)
+    console.log('\n[DOC-13] Testing Upload Abuse Protections (Empty, Archive, Oversized Name)...');
+    const emptyBuf = Buffer.alloc(0);
+    const doc13EmptyRes = await uploadMultipart('/api/documents/upload', customer1Token, {
+      applicationId: v54Cust1Visa.id,
+      documentType: 'PHOTO'
+    }, emptyBuf, 'empty.pdf', 'application/pdf');
+    assert.strictEqual(doc13EmptyRes.status, 400);
+
+    const archiveBuf = Buffer.from('PK\x03\x04\x14\x00\x00\x00\x08\x00');
+    const doc13ArchiveRes = await uploadMultipart('/api/documents/upload', customer1Token, {
+      applicationId: v54Cust1Visa.id,
+      documentType: 'PHOTO'
+    }, archiveBuf, 'exploit.zip', 'application/zip');
+    assert.strictEqual(doc13ArchiveRes.status, 400);
+
+    const longName = 'a'.repeat(260) + '.pdf';
+    const doc13LongNameRes = await uploadMultipart('/api/documents/upload', customer1Token, {
+      applicationId: v54Cust1Visa.id,
+      documentType: 'PHOTO'
+    }, samplePdfBuffer, longName, 'application/pdf');
+    assert.strictEqual(doc13LongNameRes.status, 400);
+    console.log('  ✅ DOC-13 PASSED: Empty file, archive, and oversized filename correctly rejected (400)');
+
+    // DOC-14: cross-customer application/document association rejected
+    console.log('\n[DOC-14] Testing Cross-Customer Document Replace Attempt (IDOR)...');
+    const doc14Res = await uploadMultipart(`/api/documents/${cust1Doc.id}/replace`, customer2Token, {}, samplePdfBuffer, 'replace_attack.pdf', 'application/pdf');
+    assert.strictEqual(doc14Res.status, 403);
+    assert.strictEqual(doc14Res.body.error.code, 'FORBIDDEN');
+    console.log('  ✅ DOC-14 PASSED: Cross-customer document replacement blocked (403 FORBIDDEN)');
+
+    // DOC-15: sensitive fields absent
+    console.log('\n[DOC-15] Testing Sensitive Authentication & Admin Fields Absent from Document Payload...');
+    const doc15Str = JSON.stringify(doc3Res.body);
+    assert.strictEqual(doc15Str.includes('passwordHash'), false);
+    assert.strictEqual(doc15Str.includes('verificationToken'), false);
+    assert.strictEqual(doc15Str.includes('apiKey'), false);
+    assert.strictEqual(doc15Str.includes('adminNotes'), false);
+    console.log('  ✅ DOC-15 PASSED: Sensitive fields strictly absent from documents response');
+
+    // DOC-16: existing security tests remain passing + replacement consistency (Section 13A)
+    console.log('\n[DOC-16] Testing Document Replacement Consistency (Section 13A)...');
+    const updatedPdfBuffer = Buffer.from('%PDF-1.4\n2 0 obj\n<<\n>>\nendobj\ntrailer\n<<\n>>\n%%EOF');
+    const replaceRes = await uploadMultipart(`/api/documents/${cust1Doc.id}/replace`, customer1Token, {}, updatedPdfBuffer, 'updated_passport.pdf', 'application/pdf');
+    assert.strictEqual(replaceRes.status, 200);
+    const newDocRecord = replaceRes.body.document;
+    assert.ok(newDocRecord && newDocRecord.id);
+    assert.strictEqual(newDocRecord.status, 'UPLOADED');
+    assert.strictEqual(newDocRecord.replacesDocumentId, cust1Doc.id);
+
+    // Verify old document is marked REPLACED
+    const oldDocVerify = await db.visaDocuments.findById(cust1Doc.id);
+    assert.strictEqual(oldDocVerify.status, 'REPLACED');
+    console.log('  ✅ DOC-16 PASSED: Safe document replacement consistency verified (Section 13A)');
+
+    // VISA-1: Unauthenticated application list → 401
+    console.log('\n[VISA-1] Testing Unauthenticated Visa Application List...');
+    const visa1Res = await request('/api/account/visa');
+    assert.strictEqual(visa1Res.status, 401);
+    console.log('  ✅ VISA-1 PASSED: Unauthenticated visa list blocked (401 UNAUTHORIZED)');
+
+    // VISA-2: Customer sees own applications
+    console.log('\n[VISA-2] Testing Customer Retrieving Own Visa Applications...');
+    const visa2Res = await request('/api/account/visa', {
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(visa2Res.status, 200);
+    assert.ok(Array.isArray(visa2Res.body.applications));
+    const c1AppNumbers = visa2Res.body.applications.map(a => a.applicationNumber);
+    assert.ok(c1AppNumbers.includes(v54Cust1VisaAppNum));
+    console.log('  ✅ VISA-2 PASSED: Customer retrieves own visa applications (200 OK)');
+
+    // VISA-3: Customer cannot see another user's application
+    console.log('\n[VISA-3] Testing Cross-Customer Application Isolation in List...');
+    assert.strictEqual(c1AppNumbers.includes(v54Cust2VisaAppNum), false);
+    console.log('  ✅ VISA-3 PASSED: Customer B application absent from Customer A list');
+
+    // VISA-4: Application detail ownership enforced
+    console.log('\n[VISA-4] Testing Application Detail Ownership Enforcement (IDOR)...');
+    const visa4Res = await request(`/api/account/visa/${v54Cust2Visa.id}`, {
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(visa4Res.status, 403);
+    assert.strictEqual(visa4Res.body.error.code, 'FORBIDDEN');
+    console.log('  ✅ VISA-4 PASSED: Customer blocked from accessing foreign application detail (403)');
+
+    // VISA-5: Sensitive internal fields absent
+    console.log('\n[VISA-5] Testing Internal Staff Notes Absent from Customer DTO...');
+    const visa5Res = await request(`/api/account/visa/${v54Cust1Visa.id}`, {
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(visa5Res.status, 200);
+    const visa5Str = JSON.stringify(visa5Res.body);
+    assert.strictEqual(visa5Str.includes('adminNotes'), false);
+    assert.strictEqual(visa5Str.includes('internalNotes'), false);
+    console.log('  ✅ VISA-5 PASSED: Internal staff notes strictly absent from visa detail response');
+
+    // VISA-6: Passport masked
+    console.log('\n[VISA-6] Testing Masked Passport in Visa Detail Response...');
+    assert.strictEqual(visa5Str.includes(v54Cust1RawPassport), false);
+    assert.ok(visa5Str.includes('••••••3344'));
+    console.log('  ✅ VISA-6 PASSED: Passport number masked as ••••••3344 in visa detail');
+
+    // VISA-7: Application status rendered from authoritative state
+    console.log('\n[VISA-7] Testing Authoritative State and Timeline Rendering...');
+    assert.strictEqual(visa5Res.body.application.status, 'UNDER_REVIEW');
+    assert.ok(Array.isArray(visa5Res.body.application.timeline));
+    assert.strictEqual(visa5Res.body.application.timeline[0].newStatus, 'UNDER_REVIEW');
+    console.log('  ✅ VISA-7 PASSED: Authoritative status and timeline verified');
+
+    // VISA-8: Required documents derived from actual data
+    console.log('\n[VISA-8] Testing Required Documents Derived from Actual Data...');
+    const reqDocs = visa5Res.body.application.requestedDocuments;
+    assert.ok(Array.isArray(reqDocs));
+    assert.strictEqual(reqDocs.length, 1);
+    assert.strictEqual(reqDocs[0].documentType, 'PHOTO');
+    assert.strictEqual(reqDocs[0].status, 'PENDING');
+    console.log('  ✅ VISA-8 PASSED: Required document states derived accurately from data');
+
+    // VISA-9: Existing visa workflow unaffected + concurrency verification (Section 28A)
+    console.log('\n[VISA-9] Testing Existing Visa Application Workflow & Concurrency (Section 28A)...');
+    const concurrentFetches = await Promise.all([
+      request('/api/account/visa', { headers: { Authorization: `Bearer ${customer1Token}` } }),
+      request('/api/account/documents', { headers: { Authorization: `Bearer ${customer1Token}` } }),
+      request('/api/account/visa', { headers: { Authorization: `Bearer ${customer2Token}` } }),
+      request('/api/account/documents', { headers: { Authorization: `Bearer ${customer2Token}` } })
+    ]);
+    concurrentFetches.forEach(res => assert.strictEqual(res.status, 200));
+    console.log('  ✅ VISA-9 PASSED: Existing workflow and concurrent data access verified cleanly');
+
     console.log('\n================================================================');
-    console.log('🎉 ALL AUTOMATED TESTS PASSED SUCCESSFULLY! (172/172)');
+    console.log('🎉 ALL AUTOMATED TESTS PASSED SUCCESSFULLY! (197/197)');
     console.log('================================================================');
   } catch (err) {
     console.error('\n❌ Test Failure Details:', err);

@@ -287,6 +287,14 @@ const submissionLimiter = rateLimit({
   message: { success: false, error: { code: 'RATE_LIMITED', message: 'Too many submissions. Please wait 15 minutes.' } }
 });
 
+const uploadLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: { code: 'RATE_LIMITED', message: 'Too many file upload requests. Please wait 15 minutes.' } }
+});
+
 const adminLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 150,
@@ -1839,7 +1847,340 @@ app.get('/api/account/my-trips/:id', authenticate, async (req, res) => {
   }
 });
 
+// -------------------------------------------------------------
+// V5.4 CUSTOMER VISA APPLICATIONS & SECURE DOCUMENT VAULT (Task #V5.4)
+// -------------------------------------------------------------
 
+function sanitizeDocument(doc) {
+  if (!doc) return null;
+  const d = typeof doc.toObject === 'function' ? doc.toObject() : { ...doc };
+  delete d.storageKey;
+  delete d._id;
+  delete d.__v;
+  return {
+    id: d.id || d.documentId,
+    documentId: d.documentId || d.id,
+    applicationId: d.applicationId,
+    applicationNumber: d.applicationNumber || null,
+    destination: d.destination || null,
+    documentType: d.documentType,
+    originalFilename: d.originalFilename,
+    displayFilename: d.displayFilename || d.originalFilename,
+    mimeType: d.mimeType,
+    fileSize: d.fileSize,
+    uploadedBy: d.uploadedBy,
+    status: d.status,
+    reviewNote: d.reviewNote || null,
+    replacesDocumentId: d.replacesDocumentId || null,
+    replacedByDocumentId: d.replacedByDocumentId || null,
+    downloadUrl: `/api/documents/${d.id || d.documentId}/download`,
+    createdAt: d.createdAt,
+    updatedAt: d.updatedAt
+  };
+}
+
+// GET /api/account/visa - List customer-owned visa applications
+app.get('/api/account/visa', authenticate, async (req, res) => {
+  try {
+    const rawStatus = (req.query.status || 'ALL').trim().toUpperCase();
+    const validStatuses = [
+      'ALL', 'DRAFT', 'PENDING_DOCUMENTS', 'SUBMITTED', 'UNDER_REVIEW',
+      'ADDITIONAL_DOCUMENTS_REQUIRED', 'PROCESSING', 'APPROVED', 'REJECTED',
+      'CANCELLED', 'COMPLETED'
+    ];
+
+    if (!validStatuses.includes(rawStatus)) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'INVALID_STATUS',
+          message: `Status must be one of: ${validStatuses.join(', ')}`
+        }
+      });
+    }
+
+    const limit = Math.min(Math.max(parseInt(req.query.limit) || 50, 1), 100);
+    const page = Math.max(parseInt(req.query.page) || 1, 1);
+
+    const filter = { userId: req.user.id };
+    if (rawStatus !== 'ALL') {
+      filter.status = rawStatus;
+    }
+
+    const allApps = await db.visaApplications.find(filter);
+    const sortedApps = allApps.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+    const total = sortedApps.length;
+    const paginatedApps = sortedApps.slice((page - 1) * limit, page * limit);
+
+    const appIds = paginatedApps.map(a => a.id);
+    const docs = appIds.length > 0 ? await db.visaDocuments.find({ applicationId: { $in: appIds } }) : [];
+    const docCountMap = new Map();
+    docs.forEach(d => {
+      docCountMap.set(d.applicationId, (docCountMap.get(d.applicationId) || 0) + 1);
+    });
+
+    const applications = paginatedApps.map(a => {
+      const obj = typeof a.toObject === 'function' ? a.toObject() : { ...a };
+      delete obj.adminNotes;
+      delete obj._id;
+      delete obj.__v;
+
+      const requestedDocs = obj.requestedDocuments || [];
+      const pendingRequests = requestedDocs.filter(r => r.status === 'PENDING');
+
+      let requiredAction = 'None';
+      if (obj.status === 'ADDITIONAL_DOCUMENTS_REQUIRED' || pendingRequests.length > 0) {
+        requiredAction = `Upload requested document (${pendingRequests.length} pending)`;
+      } else if (obj.status === 'PENDING_DOCUMENTS') {
+        requiredAction = 'Upload required documents';
+      } else if (obj.status === 'DRAFT') {
+        requiredAction = 'Complete and submit application';
+      } else if (obj.status === 'UNDER_REVIEW' || obj.status === 'PROCESSING') {
+        requiredAction = 'Consular processing in progress';
+      } else if (obj.status === 'APPROVED' || obj.status === 'COMPLETED') {
+        requiredAction = 'Ready for travel';
+      } else if (obj.status === 'REJECTED') {
+        requiredAction = 'Application closed';
+      }
+
+      return {
+        id: obj.id,
+        applicationNumber: obj.applicationNumber,
+        destination: obj.destination,
+        visaType: obj.visaType,
+        nationality: obj.nationality,
+        fullName: obj.fullName,
+        email: obj.email,
+        phone: obj.phone,
+        passportNumber: maskPassport(obj.passportNumber),
+        dateOfBirth: obj.dateOfBirth,
+        passportExpiry: obj.passportExpiry,
+        travelDate: obj.travelDate,
+        status: obj.status,
+        uploadedDocumentsCount: docCountMap.get(obj.id) || (obj.documents || []).length,
+        requiredDocumentsCount: requestedDocs.length,
+        requiredAction,
+        createdAt: obj.createdAt,
+        updatedAt: obj.updatedAt
+      };
+    });
+
+    res.json({
+      success: true,
+      page,
+      limit,
+      total,
+      count: applications.length,
+      applications
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: err.message } });
+  }
+});
+
+// GET /api/account/visa/:id - Get single visa application detail for authenticated customer
+app.get('/api/account/visa/:id', authenticate, async (req, res) => {
+  try {
+    const targetId = String(req.params.id || '').trim();
+    if (!targetId) {
+      return res.status(400).json({ success: false, error: { code: 'INVALID_ID', message: 'Application ID is required.' } });
+    }
+
+    const appRecord = await db.visaApplications.findById(targetId) || await db.visaApplications.findOne({ applicationNumber: targetId });
+    if (!appRecord) {
+      return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Visa application not found.' } });
+    }
+
+    const isStaff = ['STAFF', 'ADMIN', 'SUPER_ADMIN'].includes(req.user.role);
+    if (!isStaff && appRecord.userId !== req.user.id) {
+      await logAudit(req, 'SUSPICIOUS_IDOR_VISA_ATTEMPT', 'VISA_APPLICATION', targetId);
+      return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Access denied: You do not own this application.' } });
+    }
+
+    const docs = await db.visaDocuments.find({ applicationId: appRecord.id });
+    const sanitizedDocs = docs.map(d => sanitizeDocument(d));
+
+    const payment = await db.payments.findOne({
+      $or: [
+        { visaApplicationId: appRecord.id },
+        { visaApplicationId: appRecord.applicationNumber }
+      ]
+    });
+
+    const safePayment = payment ? {
+      id: payment.id,
+      amount: payment.amount,
+      currency: payment.currency,
+      status: payment.status,
+      paymentMethod: payment.paymentMethod,
+      createdAt: payment.createdAt
+    } : null;
+
+    const sanitizedTimeline = (appRecord.timeline || []).map(t => ({
+      previousStatus: t.previousStatus,
+      newStatus: t.newStatus,
+      timestamp: t.timestamp,
+      note: t.note || ''
+    }));
+
+    const requestedDocs = (appRecord.requestedDocuments || []).map(r => ({
+      requestId: r.requestId,
+      documentType: r.documentType,
+      instruction: r.instruction,
+      status: r.status,
+      requestedAt: r.requestedAt
+    }));
+
+    const obj = typeof appRecord.toObject === 'function' ? appRecord.toObject() : { ...appRecord };
+    delete obj.adminNotes;
+    delete obj._id;
+    delete obj.__v;
+
+    res.json({
+      success: true,
+      application: {
+        id: obj.id,
+        applicationNumber: obj.applicationNumber,
+        destination: obj.destination,
+        visaType: obj.visaType,
+        nationality: obj.nationality,
+        fullName: obj.fullName,
+        email: obj.email,
+        phone: obj.phone,
+        passportNumber: maskPassport(obj.passportNumber),
+        dateOfBirth: obj.dateOfBirth,
+        passportExpiry: obj.passportExpiry,
+        travelDate: obj.travelDate,
+        status: obj.status,
+        timeline: sanitizedTimeline,
+        documents: sanitizedDocs,
+        requestedDocuments: requestedDocs,
+        payment: safePayment,
+        createdAt: obj.createdAt,
+        updatedAt: obj.updatedAt
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: err.message } });
+  }
+});
+
+// GET /api/account/documents - List customer-owned documents in Document Vault
+app.get('/api/account/documents', authenticate, async (req, res) => {
+  try {
+    const rawType = (req.query.type || 'ALL').trim().toUpperCase();
+    const validTypes = ['ALL', 'PASSPORT_COPY', 'PHOTO', 'CIVIL_ID', 'TRAVEL_ITINERARY', 'OTHER'];
+    if (!validTypes.includes(rawType)) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'INVALID_DOCUMENT_TYPE',
+          message: `Document type must be one of: ${validTypes.join(', ')}`
+        }
+      });
+    }
+
+    const rawStatus = (req.query.status || 'ALL').trim().toUpperCase();
+    const validStatuses = ['ALL', 'UPLOADED', 'UNDER_REVIEW', 'ACCEPTED', 'REJECTED', 'REPLACED'];
+    if (!validStatuses.includes(rawStatus)) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'INVALID_STATUS',
+          message: `Status must be one of: ${validStatuses.join(', ')}`
+        }
+      });
+    }
+
+    const limit = Math.min(Math.max(parseInt(req.query.limit) || 50, 1), 100);
+    const page = Math.max(parseInt(req.query.page) || 1, 1);
+
+    const userApps = await db.visaApplications.find({ userId: req.user.id });
+    const appMap = new Map();
+    userApps.forEach(a => {
+      appMap.set(a.id, a);
+      if (a.applicationNumber) appMap.set(a.applicationNumber, a);
+    });
+    const appIds = userApps.map(a => a.id);
+
+    const filter = {
+      $or: [
+        { uploadedBy: req.user.id },
+        { applicationId: { $in: appIds } }
+      ]
+    };
+
+    if (rawType !== 'ALL') {
+      filter.documentType = rawType;
+    }
+    if (rawStatus !== 'ALL') {
+      filter.status = rawStatus;
+    }
+
+    const allDocs = await db.visaDocuments.find(filter);
+    const sortedDocs = allDocs.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+    const total = sortedDocs.length;
+    const paginatedDocs = sortedDocs.slice((page - 1) * limit, page * limit);
+
+    const documents = paginatedDocs.map(d => {
+      const sanitized = sanitizeDocument(d);
+      const app = appMap.get(sanitized.applicationId);
+      if (app) {
+        sanitized.applicationNumber = app.applicationNumber || app.id;
+        sanitized.destination = app.destination || null;
+      }
+      return sanitized;
+    });
+
+    res.json({
+      success: true,
+      page,
+      limit,
+      total,
+      count: documents.length,
+      documents
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: err.message } });
+  }
+});
+
+// GET /api/account/documents/:id - Single document metadata for authenticated customer
+app.get('/api/account/documents/:id', authenticate, async (req, res) => {
+  try {
+    const targetId = String(req.params.id || '').trim();
+    if (!targetId) {
+      return res.status(400).json({ success: false, error: { code: 'INVALID_ID', message: 'Document ID is required.' } });
+    }
+
+    const docRecord = await db.visaDocuments.findById(targetId) || await db.visaDocuments.findOne({ documentId: targetId });
+    if (!docRecord) {
+      return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Document not found.' } });
+    }
+
+    const appRecord = await db.visaApplications.findById(docRecord.applicationId) || await db.visaApplications.findOne({ applicationNumber: docRecord.applicationId });
+    const isStaff = ['STAFF', 'ADMIN', 'SUPER_ADMIN'].includes(req.user.role);
+    const isOwner = docRecord.uploadedBy === req.user.id || (appRecord && appRecord.userId === req.user.id);
+
+    if (!isStaff && !isOwner) {
+      await logAudit(req, 'SUSPICIOUS_IDOR_DOCUMENT_VIEW_ATTEMPT', 'VISA_DOCUMENT', targetId);
+      return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Access denied: You do not own this document.' } });
+    }
+
+    const sanitized = sanitizeDocument(docRecord);
+    if (appRecord) {
+      sanitized.applicationNumber = appRecord.applicationNumber || appRecord.id;
+      sanitized.destination = appRecord.destination || null;
+    }
+
+    res.json({
+      success: true,
+      document: sanitized
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: err.message } });
+  }
+});
 
 // --- i18n & MULTI-CURRENCY ENDPOINTS (Task #7) ---
 app.get('/api/i18n/translations', (req, res) => {
@@ -2039,16 +2380,31 @@ app.post('/api/visa/applications/:id/request-documents', authenticate, authorize
   }
 });
 
-// --- 4. SECURE PRIVATE FILE UPLOADS, REVIEW & DOWNLOADS (Task #3 Section 8–16) ---
-app.post('/api/documents/upload', authenticate, memoryUpload.single('document'), async (req, res) => {
+// --- 4. SECURE PRIVATE FILE UPLOADS, REVIEW & DOWNLOADS (Task #3 Section 8–16 & V5.4) ---
+app.post('/api/documents/upload', authenticate, uploadLimiter, memoryUpload.single('document'), async (req, res) => {
   try {
-    if (!req.file) {
-      return res.status(400).json({ success: false, error: { code: 'NO_FILE', message: 'Please select a document file to upload.' } });
+    if (!req.file || req.file.size === 0) {
+      return res.status(400).json({ success: false, error: { code: 'NO_FILE', message: 'Please select a valid, non-empty document file to upload.' } });
+    }
+
+    if (req.file.originalname && req.file.originalname.length > 255) {
+      return res.status(400).json({ success: false, error: { code: 'FILENAME_TOO_LONG', message: 'Filename exceeds maximum length of 255 characters.' } });
     }
 
     const { applicationId, documentType } = req.body || {};
     if (!applicationId) {
       return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Application ID is required for document upload.' } });
+    }
+
+    const isStaff = ['STAFF', 'ADMIN', 'SUPER_ADMIN'].includes(req.user.role);
+    const appRecord = await db.visaApplications.findById(applicationId) || await db.visaApplications.findOne({ applicationNumber: applicationId });
+    if (!appRecord) {
+      return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Visa application not found.' } });
+    }
+
+    if (!isStaff && appRecord.userId !== req.user.id) {
+      await logAudit(req, 'SUSPICIOUS_IDOR_DOCUMENT_UPLOAD_ATTEMPT', 'VISA_APPLICATION', applicationId);
+      return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Access denied: You do not own this application.' } });
     }
 
     const docRecord = await visaService.uploadDocument(
@@ -2061,9 +2417,49 @@ app.post('/api/documents/upload', authenticate, memoryUpload.single('document'),
     );
 
     await logAudit(req, `Uploaded document: ${docRecord.documentType}`, 'VISA_DOCUMENT', docRecord.id);
-    res.status(201).json({ success: true, document: docRecord });
+    res.status(201).json({ success: true, document: sanitizeDocument(docRecord) });
   } catch (err) {
     res.status(400).json({ success: false, error: { code: 'UPLOAD_ERROR', message: err.message } });
+  }
+});
+
+// SAFE DOCUMENT REPLACEMENT (Section 13A)
+app.post('/api/documents/:id/replace', authenticate, uploadLimiter, memoryUpload.single('document'), async (req, res) => {
+  try {
+    if (!req.file || req.file.size === 0) {
+      return res.status(400).json({ success: false, error: { code: 'NO_FILE', message: 'Please select a valid, non-empty replacement file.' } });
+    }
+
+    if (req.file.originalname && req.file.originalname.length > 255) {
+      return res.status(400).json({ success: false, error: { code: 'FILENAME_TOO_LONG', message: 'Filename exceeds maximum length of 255 characters.' } });
+    }
+
+    const docRecord = await db.visaDocuments.findById(req.params.id) || await db.visaDocuments.findOne({ documentId: req.params.id });
+    if (!docRecord) {
+      return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Document not found.' } });
+    }
+
+    const appRecord = await db.visaApplications.findById(docRecord.applicationId) || await db.visaApplications.findOne({ applicationNumber: docRecord.applicationId });
+    const isStaff = ['STAFF', 'ADMIN', 'SUPER_ADMIN'].includes(req.user.role);
+    const isOwner = docRecord.uploadedBy === req.user.id || (appRecord && appRecord.userId === req.user.id);
+
+    if (!isStaff && !isOwner) {
+      await logAudit(req, 'SUSPICIOUS_IDOR_DOCUMENT_REPLACE_ATTEMPT', 'VISA_DOCUMENT', req.params.id);
+      return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Access denied: You do not own this document.' } });
+    }
+
+    const newDoc = await visaService.replaceDocument(
+      docRecord.id || docRecord.documentId,
+      req.file.buffer,
+      req.file.originalname,
+      req.file.mimetype,
+      req.user
+    );
+
+    await logAudit(req, `Replaced document: ${newDoc.documentType}`, 'VISA_DOCUMENT', newDoc.id);
+    res.json({ success: true, document: sanitizeDocument(newDoc), message: 'Document replaced successfully.' });
+  } catch (err) {
+    res.status(400).json({ success: false, error: { code: 'REPLACE_ERROR', message: err.message } });
   }
 });
 

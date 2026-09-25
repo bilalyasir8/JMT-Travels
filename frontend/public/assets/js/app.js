@@ -503,6 +503,12 @@ async function renderRoute() {
     renderProfilePage(container);
   } else if (path === '/account/my-trips' || path.startsWith('/account/my-trips/')) {
     renderMyTripsPage(container, path);
+  } else if (path.startsWith('/account/visa/')) {
+    renderAccountVisaDetailPage(container, path);
+  } else if (path === '/account/visa') {
+    renderAccountVisaPage(container, path);
+  } else if (path === '/account/documents' || path.startsWith('/account/documents/')) {
+    renderAccountDocumentsPage(container, path);
   } else if (path === '/account') {
     renderAccountPage(container);
 
@@ -12568,9 +12574,12 @@ async function renderAccountPage(container) {
               <a href="/account/my-trips" onclick="event.preventDefault(); navigate('/account/my-trips')" style="background: rgba(255,255,255,0.08); color: #E2E8F0; padding: 8px 16px; border-radius: 99px; font-size: 12.5px; font-weight: 600; text-decoration: none; white-space: nowrap; border: 1px solid rgba(255,255,255,0.15);">
                 🧳 My Trips
               </a>
-              <span style="background: rgba(255,255,255,0.05); color: #64748B; padding: 8px 14px; border-radius: 99px; font-size: 12px; font-weight: 600; white-space: nowrap; border: 1px solid rgba(255,255,255,0.08);">
-                🛂 Visa (Soon)
-              </span>
+              <a href="/account/visa" onclick="event.preventDefault(); navigate('/account/visa')" style="background: rgba(255,255,255,0.08); color: #E2E8F0; padding: 8px 16px; border-radius: 99px; font-size: 12.5px; font-weight: 600; text-decoration: none; white-space: nowrap; border: 1px solid rgba(255,255,255,0.15);">
+                🛂 Visa Applications
+              </a>
+              <a href="/account/documents" onclick="event.preventDefault(); navigate('/account/documents')" style="background: rgba(255,255,255,0.08); color: #E2E8F0; padding: 8px 16px; border-radius: 99px; font-size: 12.5px; font-weight: 600; text-decoration: none; white-space: nowrap; border: 1px solid rgba(255,255,255,0.15);">
+                📁 Documents
+              </a>
               <a href="/support" onclick="event.preventDefault(); navigate('/support')" style="background: rgba(255,255,255,0.08); color: #E2E8F0; padding: 8px 16px; border-radius: 99px; font-size: 12.5px; font-weight: 600; text-decoration: none; white-space: nowrap; border: 1px solid rgba(255,255,255,0.15);">
                 💬 Support
               </a>
@@ -12608,18 +12617,16 @@ async function renderAccountPage(container) {
                 <a href="/account/my-trips" class="myjmt-nav-item" onclick="event.preventDefault(); navigate('/account/my-trips')">
                   <span>🧳</span> My Trips
                 </a>
-                <div class="myjmt-nav-item disabled" title="Visa Vault coming in Phase V5.4">
+                <a href="/account/visa" class="myjmt-nav-item" onclick="event.preventDefault(); navigate('/account/visa')">
                   <span>🛂</span> Visa Applications
-                  <span class="myjmt-pill-badge">Soon</span>
-                </div>
+                </a>
                 <div class="myjmt-nav-item disabled" title="Booking Manager coming in Phase V5.5">
                   <span>📋</span> Bookings
                   <span class="myjmt-pill-badge">Soon</span>
                 </div>
-                <div class="myjmt-nav-item disabled" title="Document Vault coming in Phase V5.4">
+                <a href="/account/documents" class="myjmt-nav-item" onclick="event.preventDefault(); navigate('/account/documents')">
                   <span>📁</span> Documents
-                  <span class="myjmt-pill-badge">Soon</span>
-                </div>
+                </a>
                 <div class="myjmt-nav-item disabled" title="Payment Management coming in future phase">
                   <span>💳</span> Payments
                   <span class="myjmt-pill-badge">Soon</span>
@@ -12696,7 +12703,12 @@ async function renderAccountPage(container) {
                   <div style="font-size: 34px; font-weight: 800; color: #00E676; margin: 8px 0 4px;">
                     ${summary.activeVisas}
                   </div>
-                  <span style="font-size: 12px; color: #94A3B8;">E-Visa Applications</span>
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px; flex-wrap: wrap; gap: 4px;">
+                    <span style="font-size: 12px; color: #94A3B8;">E-Visa Applications</span>
+                    <a href="/account/visa" onclick="event.preventDefault(); navigate('/account/visa')" style="color: #00E676; font-size: 11.5px; font-weight: 700; text-decoration: none;">
+                      View Applications →
+                    </a>
+                  </div>
                 </div>
 
                 <!-- 3. TOUR BOOKINGS -->
@@ -13019,6 +13031,11 @@ window.showTripModal = function(tripId) {
                     <div><b>Type:</b> ${escapeHTML(s.visa.destination)} ${escapeHTML(s.visa.visaType)}</div>
                     <div><b>Passport:</b> <span style="color: #00E676; font-family: monospace;">${escapeHTML(s.visa.passportNumberMasked || '••••••••')}</span></div>
                     <div><b>Ref:</b> ${escapeHTML(s.visa.reference || 'N/A')}</div>
+                    <div style="margin-top: 8px;">
+                      <a href="/account/visa/${escapeHTML(s.visa.reference || '')}" onclick="event.preventDefault(); document.getElementById('mytrips-backdrop')?.remove(); navigate('/account/visa/${escapeHTML(s.visa.reference || '')}')" style="color: #00E676; font-weight: 700; text-decoration: underline; font-size: 12px;">
+                        Manage Visa Application →
+                      </a>
+                    </div>
                   </div>
                 ` : `
                   <p style="font-size: 12px; color: #64748B; margin: 4px 0 0;">No e-visa application linked to this journey.</p>
@@ -13066,9 +13083,14 @@ window.showTripModal = function(tripId) {
 
           <!-- ASSOCIATED DOCUMENTS SECTION -->
           <div>
-            <h3 style="font-size: 15px; font-weight: 800; color: #00E676; margin: 0 0 12px; letter-spacing: 0.05em; text-transform: uppercase;">
-              Travel Documents & Vault
-            </h3>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+              <h3 style="font-size: 15px; font-weight: 800; color: #00E676; margin: 0; letter-spacing: 0.05em; text-transform: uppercase;">
+                Travel Documents & Vault
+              </h3>
+              <a href="/account/documents" onclick="event.preventDefault(); document.getElementById('mytrips-backdrop')?.remove(); navigate('/account/documents')" style="color: #00E676; font-size: 12px; font-weight: 700; text-decoration: underline;">
+                View All in Document Vault →
+              </a>
+            </div>
             ${docs.length === 0 ? `
               <div style="background: rgba(255, 255, 255, 0.02); border: 1px dashed rgba(255, 255, 255, 0.12); border-radius: 12px; padding: 18px; text-align: center; color: #94A3B8; font-size: 13px;">
                 No uploaded documents attached to this trip yet.
@@ -13501,9 +13523,12 @@ async function renderMyTripsPage(container, path) {
               <a href="/account/profile" onclick="event.preventDefault(); navigate('/account/profile')" style="background: rgba(255,255,255,0.08); color: #E2E8F0; padding: 8px 16px; border-radius: 99px; font-size: 12.5px; font-weight: 600; text-decoration: none; white-space: nowrap; border: 1px solid rgba(255,255,255,0.15);">
                 👤 Profile
               </a>
-              <span style="background: rgba(255,255,255,0.05); color: #64748B; padding: 8px 14px; border-radius: 99px; font-size: 12px; font-weight: 600; white-space: nowrap; border: 1px solid rgba(255,255,255,0.08);">
-                🛂 Visa (Soon)
-              </span>
+              <a href="/account/visa" onclick="event.preventDefault(); navigate('/account/visa')" style="background: rgba(255,255,255,0.08); color: #E2E8F0; padding: 8px 16px; border-radius: 99px; font-size: 12.5px; font-weight: 600; text-decoration: none; white-space: nowrap; border: 1px solid rgba(255,255,255,0.15);">
+                🛂 Visa Applications
+              </a>
+              <a href="/account/documents" onclick="event.preventDefault(); navigate('/account/documents')" style="background: rgba(255,255,255,0.08); color: #E2E8F0; padding: 8px 16px; border-radius: 99px; font-size: 12.5px; font-weight: 600; text-decoration: none; white-space: nowrap; border: 1px solid rgba(255,255,255,0.15);">
+                📁 Documents
+              </a>
               <a href="/support" onclick="event.preventDefault(); navigate('/support')" style="background: rgba(255,255,255,0.08); color: #E2E8F0; padding: 8px 16px; border-radius: 99px; font-size: 12.5px; font-weight: 600; text-decoration: none; white-space: nowrap; border: 1px solid rgba(255,255,255,0.15);">
                 💬 Support
               </a>
@@ -13541,18 +13566,16 @@ async function renderMyTripsPage(container, path) {
                 <a href="/account/my-trips" class="myjmt-nav-item active" aria-current="page" onclick="event.preventDefault();">
                   <span>🧳</span> My Trips
                 </a>
-                <div class="myjmt-nav-item disabled" title="Visa Vault coming in Phase V5.4">
+                <a href="/account/visa" class="myjmt-nav-item" onclick="event.preventDefault(); navigate('/account/visa')">
                   <span>🛂</span> Visa Applications
-                  <span class="myjmt-pill-badge">Soon</span>
-                </div>
+                </a>
                 <div class="myjmt-nav-item disabled" title="Booking Manager coming in Phase V5.5">
                   <span>📋</span> Bookings
                   <span class="myjmt-pill-badge">Soon</span>
                 </div>
-                <div class="myjmt-nav-item disabled" title="Document Vault coming in Phase V5.4">
+                <a href="/account/documents" class="myjmt-nav-item" onclick="event.preventDefault(); navigate('/account/documents')">
                   <span>📁</span> Documents
-                  <span class="myjmt-pill-badge">Soon</span>
-                </div>
+                </a>
                 <div class="myjmt-nav-item disabled" title="Payment Management coming in future phase">
                   <span>💳</span> Payments
                   <span class="myjmt-pill-badge">Soon</span>
@@ -13644,6 +13667,1373 @@ async function renderMyTripsPage(container, path) {
       <div style="background: #07153B !important; min-height: 100vh; color: #FFFFFF !important;">
         <div class="shell" style="padding: 60px 20px; text-align: center;">
           <p style="color: #EF4444; font-size: 16px; font-weight: 700; margin-bottom: 12px;">Failed to load travel journeys.</p>
+          <p style="color: #94A3B8; font-size: 14px; margin-bottom: 24px;">${escapeHTML(err.message)}</p>
+          <button onclick="navigate('/account')" class="btn" style="background: #00A651 !important; color: #FFFFFF !important; border: 0; padding: 10px 24px; border-radius: 99px; cursor: pointer;">
+            Return to Dashboard
+          </button>
+        </div>
+      </div>
+    `;
+  }
+}
+
+
+// =============================================================
+// V5.4 CUSTOMER VISA APPLICATIONS & SECURE DOCUMENT VAULT
+// =============================================================
+
+let cachedVisaAppsData = [];
+let cachedDocumentsData = [];
+let currentVisaFilter = 'ALL';
+let currentDocFilter = 'ALL';
+
+const MYJMT_PORTAL_STYLE = `
+  <style>
+    .myjmt-portal {
+      display: flex;
+      gap: 28px;
+      align-items: flex-start;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .myjmt-sidebar {
+      width: 270px;
+      flex-shrink: 0;
+      background: #0B286C;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 16px;
+      padding: 24px;
+      box-sizing: border-box;
+    }
+    .myjmt-content {
+      flex: 1;
+      min-width: 0;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .myjmt-mobile-nav {
+      display: none;
+      margin-bottom: 24px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    @media (max-width: 1023px) {
+      .myjmt-portal {
+        flex-direction: column;
+        gap: 0;
+      }
+      .myjmt-sidebar {
+        display: none;
+      }
+      .myjmt-mobile-nav {
+        display: block;
+      }
+    }
+    .myjmt-nav-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 11px 16px;
+      border-radius: 10px;
+      color: #CBD5E1;
+      text-decoration: none;
+      font-size: 13.5px;
+      font-weight: 600;
+      transition: all 0.2s ease;
+      margin-bottom: 4px;
+      box-sizing: border-box;
+    }
+    .myjmt-nav-item:hover:not(.disabled) {
+      background: rgba(255, 255, 255, 0.08);
+      color: #FFFFFF;
+    }
+    .myjmt-nav-item.active {
+      background: #00A651 !important;
+      color: #FFFFFF !important;
+      font-weight: 700;
+      box-shadow: 0 4px 14px rgba(0, 166, 81, 0.35);
+    }
+    .myjmt-nav-item.disabled {
+      opacity: 0.65;
+      cursor: default;
+    }
+    .myjmt-pill-badge {
+      background: rgba(255, 255, 255, 0.12);
+      color: #94A3B8;
+      font-size: 10.5px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 99px;
+      margin-left: auto;
+    }
+  </style>
+`;
+
+
+function formatDocFileSize(bytes) {
+  if (!bytes || isNaN(bytes)) return '0 B';
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+}
+
+function getVisaBadgeHTML(status) {
+  const s = String(status || '').toUpperCase();
+  switch (s) {
+    case 'APPROVED':
+      return '<span style="background: rgba(0, 230, 118, 0.15); color: #00E676; border: 1px solid #00E676; padding: 4px 12px; border-radius: 99px; font-size: 12px; font-weight: 800;">✓ APPROVED</span>';
+    case 'PROCESSING':
+      return '<span style="background: rgba(59, 130, 246, 0.2); color: #60A5FA; border: 1px solid #3B82F6; padding: 4px 12px; border-radius: 99px; font-size: 12px; font-weight: 800;">⚙️ PROCESSING</span>';
+    case 'ADDITIONAL_DOCUMENTS_REQUIRED':
+      return '<span style="background: rgba(249, 115, 22, 0.2); color: #FB923C; border: 1px solid #F97316; padding: 4px 12px; border-radius: 99px; font-size: 12px; font-weight: 800;">⚠️ ACTION REQUIRED</span>';
+    case 'UNDER_REVIEW':
+      return '<span style="background: rgba(245, 158, 11, 0.2); color: #FBBF24; border: 1px solid #F59E0B; padding: 4px 12px; border-radius: 99px; font-size: 12px; font-weight: 800;">⏳ UNDER REVIEW</span>';
+    case 'REJECTED':
+      return '<span style="background: rgba(239, 68, 68, 0.2); color: #F87171; border: 1px solid #EF4444; padding: 4px 12px; border-radius: 99px; font-size: 12px; font-weight: 800;">✕ REJECTED</span>';
+    default:
+      return `<span style="background: rgba(148, 163, 184, 0.2); color: #CBD5E1; border: 1px solid #94A3B8; padding: 4px 12px; border-radius: 99px; font-size: 12px; font-weight: 800;">${escapeHTML(s || 'SUBMITTED')}</span>`;
+  }
+}
+
+function getDocBadgeHTML(status) {
+  const s = String(status || '').toUpperCase();
+  switch (s) {
+    case 'VERIFIED':
+      return '<span style="background: rgba(0, 230, 118, 0.15); color: #00E676; border: 1px solid #00E676; padding: 3px 10px; border-radius: 99px; font-size: 11px; font-weight: 800;">✓ Verified</span>';
+    case 'PENDING_REVIEW':
+      return '<span style="background: rgba(245, 158, 11, 0.15); color: #FBBF24; border: 1px solid #F59E0B; padding: 3px 10px; border-radius: 99px; font-size: 11px; font-weight: 800;">⏳ Pending Review</span>';
+    case 'REPLACED':
+      return '<span style="background: rgba(148, 163, 184, 0.15); color: #94A3B8; border: 1px solid #64748B; padding: 3px 10px; border-radius: 99px; font-size: 11px; font-weight: 700;">Archived (Replaced)</span>';
+    case 'REJECTED':
+      return '<span style="background: rgba(239, 68, 68, 0.15); color: #F87171; border: 1px solid #EF4444; padding: 3px 10px; border-radius: 99px; font-size: 11px; font-weight: 800;">⚠️ Rejected</span>';
+    default:
+      return `<span style="background: rgba(255, 255, 255, 0.08); color: #CBD5E1; padding: 3px 10px; border-radius: 99px; font-size: 11px; font-weight: 700;">${escapeHTML(s)}</span>`;
+  }
+}
+
+function validateUploadFile(file) {
+  if (!file) return 'Please select a file to upload.';
+  if (file.size === 0) return 'Cannot upload empty file (0 bytes).';
+  if (file.size > 10 * 1024 * 1024) return 'File exceeds maximum size limit of 10MB.';
+  if (file.name.length > 255) return 'Filename is too long (maximum 255 characters).';
+
+  const name = file.name.toLowerCase();
+  const dangerousExts = ['.exe', '.sh', '.bat', '.cmd', '.msi', '.com', '.scr', '.vbs', '.js', '.jar', '.bin'];
+  for (const ext of dangerousExts) {
+    if (name.endsWith(ext)) return 'Executable files are strictly prohibited for security.';
+  }
+  const archiveExts = ['.zip', '.rar', '.7z', '.tar', '.gz', '.bz2', '.iso', '.dmg'];
+  for (const ext of archiveExts) {
+    if (name.endsWith(ext)) return 'Archive files are not permitted for security reasons.';
+  }
+  const allowedExts = ['.pdf', '.jpg', '.jpeg', '.png', '.webp'];
+  const hasAllowedExt = allowedExts.some(ext => name.endsWith(ext));
+  if (!hasAllowedExt) return 'Only PDF, JPEG, PNG, and WebP files are allowed.';
+  return null;
+}
+
+// Authenticated Download Stream Handler
+window.downloadDocument = async function(docId, filename) {
+  if (!state.token) {
+    alert('Please sign in to download documents.');
+    navigate('/login');
+    return;
+  }
+  announceToSR('Initiating secure document download...');
+  try {
+    const res = await fetch(`/api/documents/${encodeURIComponent(docId)}/download`, {
+      headers: { 'Authorization': `Bearer ${state.token}` }
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error?.message || `Download failed with status ${res.status}`);
+    }
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.style.display = 'none';
+    a.href = url;
+    a.download = filename || 'document';
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    a.remove();
+    announceToSR('Document downloaded successfully.');
+  } catch (err) {
+    console.error('Download error:', err);
+    alert('Unable to download document: ' + err.message);
+  }
+};
+
+// Document Upload Modal Handlers
+window.openUploadDocumentModal = async function(defaultAppId = null) {
+  const modalRoot = document.getElementById('vault-modal-root') || document.getElementById('mytrips-modal-root');
+  if (!modalRoot) return;
+
+  let appOptions = '<option value="">-- Standalone (Vault Only) --</option>';
+  try {
+    const visaRes = await apiCall('/api/account/visa?limit=50');
+    if (visaRes && visaRes.success && Array.isArray(visaRes.applications)) {
+      visaRes.applications.forEach(app => {
+        const isSel = (defaultAppId && (app.id === defaultAppId || (app.applicationNumber || app.reference || app.id) === defaultAppId)) ? 'selected' : '';
+        appOptions += `<option value="${escapeHTML(app.id)}" ${isSel}>${escapeHTML((app.applicationNumber || app.reference || app.id))} — ${escapeHTML(app.destination)} (${escapeHTML(app.visaType)})</option>`;
+      });
+    }
+  } catch (e) {
+    // Non-fatal if apps fail to load
+  }
+
+  modalRoot.innerHTML = `
+    <div id="upload-doc-backdrop" onclick="closeUploadDocumentModal(event)" style="position: fixed; inset: 0; background: rgba(3, 10, 30, 0.85); backdrop-filter: blur(6px); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 16px; box-sizing: border-box; overflow-y: auto;">
+      <div onclick="event.stopPropagation();" role="dialog" aria-modal="true" aria-labelledby="modal-upload-title" style="background: #0B286C; border: 1.5px solid rgba(255, 255, 255, 0.18); border-radius: 20px; width: 100%; max-width: 520px; color: #FFFFFF; box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6); box-sizing: border-box; padding: 28px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+          <div>
+            <h2 id="modal-upload-title" style="font-size: 20px; font-weight: 800; color: #FFFFFF; margin: 0 0 4px;">Upload Travel Document</h2>
+            <p style="font-size: 13px; color: #94A3B8; margin: 0;">Secured with AES-256 encrypted storage</p>
+          </div>
+          <button onclick="closeUploadDocumentModal()" aria-label="Close upload modal" style="background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.15); color: #FFFFFF; width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; cursor: pointer;">✕</button>
+        </div>
+
+        <form id="vault-upload-form" onsubmit="handleUploadDocumentSubmit(event)">
+          <div style="margin-bottom: 16px;">
+            <label for="upload-doc-type" style="display: block; font-size: 13px; font-weight: 700; color: #CBD5E1; margin-bottom: 6px;">Document Category <span style="color: #00E676;">*</span></label>
+            <select id="upload-doc-type" required style="width: 100%; background: #07153B; border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 10px; color: #FFFFFF; padding: 10px 14px; font-size: 14px; box-sizing: border-box;">
+              <option value="PASSPORT">Passport Copy (Bio-Page)</option>
+              <option value="CIVIL_ID">Civil ID / National ID</option>
+              <option value="VISA_DOCUMENT">Visa Document / Approval</option>
+              <option value="OTHER">Other Travel Document</option>
+            </select>
+          </div>
+
+          <div style="margin-bottom: 16px;">
+            <label for="upload-doc-app" style="display: block; font-size: 13px; font-weight: 700; color: #CBD5E1; margin-bottom: 6px;">Link to Visa Application (Optional)</label>
+            <select id="upload-doc-app" style="width: 100%; background: #07153B; border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 10px; color: #FFFFFF; padding: 10px 14px; font-size: 14px; box-sizing: border-box;">
+              ${appOptions}
+            </select>
+          </div>
+
+          <div style="margin-bottom: 20px;">
+            <label for="upload-doc-file" style="display: block; font-size: 13px; font-weight: 700; color: #CBD5E1; margin-bottom: 6px;">Choose File <span style="color: #00E676;">*</span></label>
+            <div style="background: rgba(255, 255, 255, 0.03); border: 2px dashed rgba(255, 255, 255, 0.2); border-radius: 12px; padding: 20px; text-align: center;">
+              <input type="file" id="upload-doc-file" required accept=".pdf,.jpg,.jpeg,.png,.webp" style="color: #CBD5E1; font-size: 13px; max-width: 100%;" />
+              <p style="font-size: 11.5px; color: #94A3B8; margin: 8px 0 0;">Supported formats: PDF, JPEG, PNG, WEBP (Max 10MB)</p>
+            </div>
+          </div>
+
+          <div id="upload-doc-error" style="color: #F87171; font-size: 13px; font-weight: 600; margin-bottom: 16px; display: none;" role="alert"></div>
+
+          <div style="display: flex; justify-content: flex-end; gap: 12px;">
+            <button type="button" onclick="closeUploadDocumentModal()" class="btn" style="background: rgba(255,255,255,0.08); color: #FFFFFF; border: 1px solid rgba(255,255,255,0.15); padding: 10px 20px; border-radius: 99px; font-size: 13.5px; cursor: pointer;">Cancel</button>
+            <button type="submit" id="upload-doc-submit-btn" class="btn" style="background: #00A651; color: #FFFFFF; font-weight: 700; border: 0; padding: 10px 24px; border-radius: 99px; font-size: 13.5px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;">
+              <span>⬆️</span> Upload File
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  `;
+};
+
+window.closeUploadDocumentModal = function(e) {
+  if (e && e.target && e.target.id !== 'upload-doc-backdrop') return;
+  const backdrop = document.getElementById('upload-doc-backdrop');
+  if (backdrop) backdrop.remove();
+};
+
+window.handleUploadDocumentSubmit = async function(e) {
+  e.preventDefault();
+  const fileInput = document.getElementById('upload-doc-file');
+  const typeSelect = document.getElementById('upload-doc-type');
+  const appSelect = document.getElementById('upload-doc-app');
+  const errDiv = document.getElementById('upload-doc-error');
+  const submitBtn = document.getElementById('upload-doc-submit-btn');
+
+  const file = fileInput?.files?.[0];
+  const validationError = validateUploadFile(file);
+  if (validationError) {
+    if (errDiv) {
+      errDiv.textContent = validationError;
+      errDiv.style.display = 'block';
+    }
+    return;
+  }
+
+  if (errDiv) errDiv.style.display = 'none';
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span>⏳</span> Uploading...';
+  }
+
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('documentType', typeSelect.value);
+  if (appSelect && appSelect.value) {
+    formData.append('applicationId', appSelect.value);
+  }
+
+  try {
+    const res = await fetch('/api/documents/upload', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${state.token}` },
+      body: formData
+    });
+    const result = await res.json();
+    if (!res.ok || !result.success) {
+      throw new Error(result.error?.message || 'Upload failed');
+    }
+    announceToSR('Document uploaded successfully.');
+    closeUploadDocumentModal();
+    // Re-render current page
+    renderRoute();
+  } catch (err) {
+    if (errDiv) {
+      errDiv.textContent = err.message || 'Upload failed. Please try again.';
+      errDiv.style.display = 'block';
+    }
+  } finally {
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = '<span>⬆️</span> Upload File';
+    }
+  }
+};
+
+// Document Replacement Modal Handlers
+window.openReplaceDocumentModal = function(docId, docName) {
+  const modalRoot = document.getElementById('vault-modal-root') || document.getElementById('mytrips-modal-root');
+  if (!modalRoot) return;
+
+  modalRoot.innerHTML = `
+    <div id="replace-doc-backdrop" onclick="closeReplaceDocumentModal(event)" style="position: fixed; inset: 0; background: rgba(3, 10, 30, 0.85); backdrop-filter: blur(6px); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 16px; box-sizing: border-box; overflow-y: auto;">
+      <div onclick="event.stopPropagation();" role="dialog" aria-modal="true" aria-labelledby="modal-replace-title" style="background: #0B286C; border: 1.5px solid rgba(255, 255, 255, 0.18); border-radius: 20px; width: 100%; max-width: 500px; color: #FFFFFF; box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6); box-sizing: border-box; padding: 28px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+          <div>
+            <h2 id="modal-replace-title" style="font-size: 20px; font-weight: 800; color: #FFFFFF; margin: 0 0 4px;">Replace Document</h2>
+            <p style="font-size: 13px; color: #94A3B8; margin: 0;">Safely update file with zero data loss</p>
+          </div>
+          <button onclick="closeReplaceDocumentModal()" aria-label="Close replacement modal" style="background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.15); color: #FFFFFF; width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; cursor: pointer;">✕</button>
+        </div>
+
+        <div style="background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px; padding: 12px 14px; margin-bottom: 18px; font-size: 13px; color: #CBD5E1;">
+          <div style="color: #94A3B8; font-size: 11px; text-transform: uppercase; font-weight: 700;">Current Document</div>
+          <div style="font-weight: 700; color: #FFFFFF; margin-top: 2px; word-break: break-all;">${escapeHTML(docName || 'Document')}</div>
+        </div>
+
+        <form id="vault-replace-form" onsubmit="handleReplaceDocumentSubmit(event, '${escapeHTML(docId)}')">
+          <div style="margin-bottom: 20px;">
+            <label for="replace-doc-file" style="display: block; font-size: 13px; font-weight: 700; color: #CBD5E1; margin-bottom: 6px;">Select New File <span style="color: #00E676;">*</span></label>
+            <div style="background: rgba(255, 255, 255, 0.03); border: 2px dashed rgba(255, 255, 255, 0.2); border-radius: 12px; padding: 20px; text-align: center;">
+              <input type="file" id="replace-doc-file" required accept=".pdf,.jpg,.jpeg,.png,.webp" style="color: #CBD5E1; font-size: 13px; max-width: 100%;" />
+              <p style="font-size: 11.5px; color: #94A3B8; margin: 8px 0 0;">Supported formats: PDF, JPEG, PNG, WEBP (Max 10MB)</p>
+            </div>
+          </div>
+
+          <div id="replace-doc-error" style="color: #F87171; font-size: 13px; font-weight: 600; margin-bottom: 16px; display: none;" role="alert"></div>
+
+          <div style="display: flex; justify-content: flex-end; gap: 12px;">
+            <button type="button" onclick="closeReplaceDocumentModal()" class="btn" style="background: rgba(255,255,255,0.08); color: #FFFFFF; border: 1px solid rgba(255,255,255,0.15); padding: 10px 20px; border-radius: 99px; font-size: 13.5px; cursor: pointer;">Cancel</button>
+            <button type="submit" id="replace-doc-submit-btn" class="btn" style="background: #00A651; color: #FFFFFF; font-weight: 700; border: 0; padding: 10px 24px; border-radius: 99px; font-size: 13.5px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;">
+              <span>🔄</span> Replace File
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  `;
+};
+
+window.closeReplaceDocumentModal = function(e) {
+  if (e && e.target && e.target.id !== 'replace-doc-backdrop') return;
+  const backdrop = document.getElementById('replace-doc-backdrop');
+  if (backdrop) backdrop.remove();
+};
+
+window.handleReplaceDocumentSubmit = async function(e, docId) {
+  e.preventDefault();
+  const fileInput = document.getElementById('replace-doc-file');
+  const errDiv = document.getElementById('replace-doc-error');
+  const submitBtn = document.getElementById('replace-doc-submit-btn');
+
+  const file = fileInput?.files?.[0];
+  const validationError = validateUploadFile(file);
+  if (validationError) {
+    if (errDiv) {
+      errDiv.textContent = validationError;
+      errDiv.style.display = 'block';
+    }
+    return;
+  }
+
+  if (errDiv) errDiv.style.display = 'none';
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span>⏳</span> Replacing...';
+  }
+
+  const formData = new FormData();
+  formData.append('file', file);
+
+  try {
+    const res = await fetch(`/api/documents/${encodeURIComponent(docId)}/replace`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${state.token}` },
+      body: formData
+    });
+    const result = await res.json();
+    if (!res.ok || !result.success) {
+      throw new Error(result.error?.message || 'Replacement failed');
+    }
+    announceToSR('Document replaced successfully.');
+    closeReplaceDocumentModal();
+    renderRoute();
+  } catch (err) {
+    if (errDiv) {
+      errDiv.textContent = err.message || 'Replacement failed. Please try again.';
+      errDiv.style.display = 'block';
+    }
+  } finally {
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = '<span>🔄</span> Replace File';
+    }
+  }
+};
+
+// =============================================================
+// 1. CUSTOMER VISA APPLICATIONS LIST PAGE (/account/visa)
+// =============================================================
+
+window.setAccountVisaFilter = function(filter) {
+  currentVisaFilter = filter;
+  document.querySelectorAll('.visa-filter-btn').forEach(btn => {
+    if (btn.getAttribute('data-filter') === filter) {
+      btn.style.background = '#00A651';
+      btn.style.borderColor = '#00A651';
+      btn.style.color = '#FFFFFF';
+      btn.style.fontWeight = '700';
+    } else {
+      btn.style.background = 'transparent';
+      btn.style.borderColor = 'rgba(255, 255, 255, 0.15)';
+      btn.style.color = '#CBD5E1';
+      btn.style.fontWeight = '500';
+    }
+  });
+  renderVisaCardsList();
+};
+
+function renderVisaCardsList() {
+  const container = document.getElementById('account-visa-list-area');
+  if (!container) return;
+
+  const filtered = cachedVisaAppsData.filter(app => {
+    if (currentVisaFilter === 'ALL') return true;
+    return app.status === currentVisaFilter;
+  });
+
+  if (filtered.length === 0) {
+    container.innerHTML = `
+      <div style="background: #0B286C; border: 1px dashed rgba(255, 255, 255, 0.18); border-radius: 16px; padding: 48px 24px; text-align: center; color: #FFFFFF; box-sizing: border-box;">
+        <div style="font-size: 44px; margin-bottom: 14px;">🛂</div>
+        <h3 style="font-size: 18px; font-weight: 800; color: #FFFFFF; margin: 0 0 8px;">No Visa Applications Found</h3>
+        <p style="font-size: 14px; color: #94A3B8; max-width: 440px; margin: 0 auto 24px; line-height: 1.6;">
+          ${currentVisaFilter === 'ALL' ? 'You have no e-visa applications on record yet. Ready to travel? Apply for a GCC, Schengen, or international e-visa directly through JMT Travels.' : `No applications found with status "${escapeHTML(currentVisaFilter)}".`}
+        </p>
+        <a href="/visa" onclick="event.preventDefault(); navigate('/visa')" class="btn" style="background: #00A651 !important; color: #FFFFFF !important; font-weight: 700; padding: 12px 28px; border-radius: 99px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
+          <span>✨</span> Apply for a Visa
+        </a>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = `
+    <div style="display: flex; flex-direction: column; gap: 16px;">
+      ${filtered.map(app => {
+        const badge = getVisaBadgeHTML(app.status);
+        const hasActionRequired = app.status === 'ADDITIONAL_DOCUMENTS_REQUIRED' || (app.requiredActions && app.requiredActions > 0);
+        const dateStr = app.createdAt ? new Date(app.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : 'N/A';
+
+        return `
+          <div class="jmt-card" style="background: #0B286C !important; border: 1px solid rgba(255, 255, 255, 0.15) !important; border-radius: 16px; padding: 22px 24px; box-sizing: border-box; transition: transform 0.2s ease, border-color 0.2s ease;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; margin-bottom: 14px;">
+              <div>
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px; flex-wrap: wrap;">
+                  <span style="font-size: 11px; font-weight: 800; color: #00E676; letter-spacing: 0.08em; text-transform: uppercase;">
+                    ${escapeHTML(app.destination || 'E-Visa')}
+                  </span>
+                  <span style="color: #64748B;">•</span>
+                  <span style="font-size: 12px; font-weight: 700; color: #CBD5E1; font-family: monospace;">
+                    Ref: ${escapeHTML((app.applicationNumber || (app.applicationNumber || app.reference || app.id) || 'N/A'))}
+                  </span>
+                </div>
+                <h3 style="font-size: 18px; font-weight: 800; color: #FFFFFF; margin: 0 0 4px;">
+                  ${escapeHTML(app.destination || '')} ${escapeHTML(app.visaType || 'Tourist Visa')}
+                </h3>
+                <div style="font-size: 13px; color: #94A3B8;">
+                  Applicant: <b style="color: #FFFFFF;">${escapeHTML(app.applicantName || 'Primary Traveller')}</b> • Passport: <span style="font-family: monospace; color: #00E676;">${escapeHTML(app.passportNumber || '••••••••')}</span>
+                </div>
+              </div>
+              <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                ${badge}
+              </div>
+            </div>
+
+            ${hasActionRequired ? `
+              <div style="background: rgba(249, 115, 22, 0.12); border: 1px solid rgba(249, 115, 22, 0.35); border-radius: 10px; padding: 12px 14px; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; font-size: 13px; color: #FB923C;">
+                <span style="font-size: 16px;">⚠️</span>
+                <div><b>Action Required:</b> Additional documentation or review requested. Please open details to upload or replace documents.</div>
+              </div>
+            ` : ''}
+
+            <div style="border-top: 1px solid rgba(255, 255, 255, 0.1); padding-top: 14px; display: flex; justify-content: space-between; align-items: center; gap: 14px; flex-wrap: wrap;">
+              <div style="display: flex; align-items: center; gap: 16px; font-size: 12.5px; color: #94A3B8; flex-wrap: wrap;">
+                <span>📅 Submitted: <b>${dateStr}</b></span>
+                <span>📁 Documents: <b>${app.documentsCount || 0} Attached</b></span>
+              </div>
+              <a href="/account/visa/${escapeHTML((app.applicationNumber || (app.applicationNumber || app.reference || app.id) || app.id))}" onclick="event.preventDefault(); navigate('/account/visa/${escapeHTML((app.applicationNumber || (app.applicationNumber || app.reference || app.id) || app.id))}')" class="btn" style="background: rgba(0, 230, 118, 0.12); color: #00E676 !important; border: 1px solid #00E676; padding: 8px 18px; border-radius: 99px; font-size: 12.5px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+                View Details →
+              </a>
+            </div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+}
+
+async function renderAccountVisaPage(container, path) {
+  if (!state.user) {
+    navigate('/login');
+    return;
+  }
+
+  updateSEO({
+    title: 'Visa Applications | My JMT',
+    description: 'Track and manage your tourist and business e-visa applications, required documents, and embassy statuses.',
+    canonicalUrl: '/account/visa',
+    noindex: true
+  });
+  announceToSR('Navigated to Customer Visa Applications');
+
+  container.innerHTML = `
+    <div style="background: #07153B !important; min-height: 100vh; color: #FFFFFF !important; display: flex; align-items: center; justify-content: center; padding: 60px 20px;">
+      <p style="color: #94A3B8; font-size: 15px; font-weight: 600;">Loading visa applications...</p>
+    </div>
+  `;
+
+  try {
+    const res = await apiCall('/api/account/visa?limit=50');
+    if (!res || !res.success) {
+      throw new Error(res?.error?.message || 'Failed to fetch visa applications.');
+    }
+
+    cachedVisaAppsData = Array.isArray(res.applications) ? res.applications : [];
+    const u = state.user;
+    const initials = (u.name || 'CU').split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
+
+    // Compute status counts
+    const counts = {
+      ALL: cachedVisaAppsData.length,
+      UNDER_REVIEW: cachedVisaAppsData.filter(a => a.status === 'UNDER_REVIEW').length,
+      ADDITIONAL_DOCUMENTS_REQUIRED: cachedVisaAppsData.filter(a => a.status === 'ADDITIONAL_DOCUMENTS_REQUIRED').length,
+      PROCESSING: cachedVisaAppsData.filter(a => a.status === 'PROCESSING').length,
+      APPROVED: cachedVisaAppsData.filter(a => a.status === 'APPROVED').length
+    };
+
+    container.innerHTML = `
+      ${MYJMT_PORTAL_STYLE}
+      <div style="background: #07153B !important; min-height: 100vh; color: #FFFFFF !important;">
+        <div class="shell" style="padding: 32px 20px 60px; max-width: 1240px; margin: 0 auto; box-sizing: border-box;">
+
+          <!-- TOP CUSTOMER HEADER STRIP -->
+          <div style="display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 28px; border-bottom: 1px solid rgba(255, 255, 255, 0.12); padding-bottom: 16px; flex-wrap: wrap;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <span style="font-size: 11px; font-weight: 800; letter-spacing: 0.1em; color: #00E676; background: rgba(0, 230, 118, 0.12); padding: 5px 12px; border-radius: 99px; border: 1px solid rgba(0, 230, 118, 0.25);">
+                MY JMT PORTAL
+              </span>
+              <span style="color: #64748B; font-size: 13px;">•</span>
+              <a href="/account" onclick="event.preventDefault(); navigate('/account')" style="color: #94A3B8; font-size: 13.5px; text-decoration: none;">Dashboard</a>
+              <span style="color: #64748B; font-size: 13px;">•</span>
+              <span style="color: #E2E8F0; font-size: 14px; font-weight: 600;">Visa Applications</span>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 14px;">
+              <a href="/account/documents" onclick="event.preventDefault(); navigate('/account/documents')" class="btn" style="background: rgba(255, 255, 255, 0.08); color: #FFFFFF !important; border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 99px; padding: 7px 16px; font-size: 13px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+                <span>📁</span> Document Vault
+              </a>
+              <button onclick="logoutUser()" class="btn" style="background: rgba(239, 68, 68, 0.15); color: #FCA5A5 !important; border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 99px; padding: 7px 16px; font-size: 13px; font-weight: 700; cursor: pointer;">
+                Sign Out
+              </button>
+            </div>
+          </div>
+
+          <!-- MOBILE HORIZONTAL NAVIGATION (< 1024px) -->
+          <div class="myjmt-mobile-nav">
+            <div style="background: #0B286C; border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 12px; padding: 14px 16px; margin-bottom: 12px; display: flex; align-items: center; gap: 12px;">
+              <div style="width: 42px; height: 42px; border-radius: 50%; background: linear-gradient(135deg, #00E676 0%, #00A651 100%); color: #07153B; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 15px; flex-shrink: 0;">
+                ${escapeHTML(initials)}
+              </div>
+              <div style="min-width: 0; flex: 1;">
+                <div style="font-weight: 800; font-size: 15px; color: #FFFFFF; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                  ${escapeHTML(u.name)}
+                </div>
+                <div style="font-size: 12px; color: #94A3B8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                  ${escapeHTML(u.email)}
+                </div>
+              </div>
+            </div>
+
+            <div style="display: flex; gap: 8px; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 4px;">
+              <a href="/account" onclick="event.preventDefault(); navigate('/account')" style="background: rgba(255,255,255,0.08); color: #E2E8F0; padding: 8px 16px; border-radius: 99px; font-size: 12.5px; font-weight: 600; text-decoration: none; white-space: nowrap; border: 1px solid rgba(255,255,255,0.15);">
+                🏠 Overview
+              </a>
+              <a href="/account/my-trips" onclick="event.preventDefault(); navigate('/account/my-trips')" style="background: rgba(255,255,255,0.08); color: #E2E8F0; padding: 8px 16px; border-radius: 99px; font-size: 12.5px; font-weight: 600; text-decoration: none; white-space: nowrap; border: 1px solid rgba(255,255,255,0.15);">
+                🧳 My Trips
+              </a>
+              <a href="/account/visa" onclick="event.preventDefault(); navigate('/account/visa')" style="background: #00A651; color: #FFFFFF; padding: 8px 16px; border-radius: 99px; font-size: 12.5px; font-weight: 700; text-decoration: none; white-space: nowrap; border: 1px solid #00A651;">
+                🛂 Visa Applications
+              </a>
+              <a href="/account/documents" onclick="event.preventDefault(); navigate('/account/documents')" style="background: rgba(255,255,255,0.08); color: #E2E8F0; padding: 8px 16px; border-radius: 99px; font-size: 12.5px; font-weight: 600; text-decoration: none; white-space: nowrap; border: 1px solid rgba(255,255,255,0.15);">
+                📁 Documents
+              </a>
+              <a href="/account/profile" onclick="event.preventDefault(); navigate('/account/profile')" style="background: rgba(255,255,255,0.08); color: #E2E8F0; padding: 8px 16px; border-radius: 99px; font-size: 12.5px; font-weight: 600; text-decoration: none; white-space: nowrap; border: 1px solid rgba(255,255,255,0.15);">
+                👤 Profile
+              </a>
+              <a href="/support" onclick="event.preventDefault(); navigate('/support')" style="background: rgba(255,255,255,0.08); color: #E2E8F0; padding: 8px 16px; border-radius: 99px; font-size: 12.5px; font-weight: 600; text-decoration: none; white-space: nowrap; border: 1px solid rgba(255,255,255,0.15);">
+                💬 Support
+              </a>
+            </div>
+          </div>
+
+          <!-- PORTAL TWO-COLUMN LAYOUT -->
+          <div class="myjmt-portal">
+            <aside class="myjmt-sidebar">
+              <div style="text-align: center; padding-bottom: 20px; border-bottom: 1px solid rgba(255, 255, 255, 0.12); margin-bottom: 20px;">
+                <div style="width: 64px; height: 64px; border-radius: 50%; background: linear-gradient(135deg, #00E676 0%, #00A651 100%); color: #07153B; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 22px; margin: 0 auto 12px; box-shadow: 0 4px 14px rgba(0, 230, 118, 0.25);">
+                  ${escapeHTML(initials)}
+                </div>
+                <div style="font-weight: 800; font-size: 16px; color: #FFFFFF; margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                  ${escapeHTML(u.name)}
+                </div>
+                <div style="font-size: 12.5px; color: #94A3B8; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                  ${escapeHTML(u.email)}
+                </div>
+              </div>
+
+              <nav aria-label="Customer portal sidebar">
+                <a href="/account" class="myjmt-nav-item" onclick="event.preventDefault(); navigate('/account')">
+                  <span>🏠</span> Overview
+                </a>
+                <a href="/account/my-trips" class="myjmt-nav-item" onclick="event.preventDefault(); navigate('/account/my-trips')">
+                  <span>🧳</span> My Trips
+                </a>
+                <a href="/account/visa" class="myjmt-nav-item active" aria-current="page" onclick="event.preventDefault();">
+                  <span>🛂</span> Visa Applications
+                </a>
+                <div class="myjmt-nav-item disabled" title="Booking Manager coming in Phase V5.5">
+                  <span>📋</span> Bookings
+                  <span class="myjmt-pill-badge">Soon</span>
+                </div>
+                <a href="/account/documents" class="myjmt-nav-item" onclick="event.preventDefault(); navigate('/account/documents')">
+                  <span>📁</span> Documents
+                </a>
+                <div class="myjmt-nav-item disabled" title="Payment Management coming in future phase">
+                  <span>💳</span> Payments
+                  <span class="myjmt-pill-badge">Soon</span>
+                </div>
+                <div class="myjmt-nav-item disabled" title="Notifications Center coming in Phase V5.6">
+                  <span>🔔</span> Notifications
+                  <span class="myjmt-pill-badge">Soon</span>
+                </div>
+                <a href="/support" class="myjmt-nav-item" onclick="event.preventDefault(); navigate('/support')">
+                  <span>💬</span> Support
+                </a>
+                <a href="/account/profile" class="myjmt-nav-item" onclick="event.preventDefault(); navigate('/account/profile')">
+                  <span>👤</span> Profile
+                </a>
+              </nav>
+
+              <div style="margin-top: 24px; padding-top: 20px; border-top: 1px solid rgba(255, 255, 255, 0.12);">
+                <button onclick="logoutUser()" class="btn" style="width: 100%; box-sizing: border-box; background: rgba(239, 68, 68, 0.12); color: #FCA5A5 !important; border: 1px solid rgba(239, 68, 68, 0.25); border-radius: 10px; padding: 10px 14px; font-size: 13px; font-weight: 700; cursor: pointer; text-align: center;">
+                  Sign Out
+                </button>
+              </div>
+            </aside>
+
+            <!-- MAIN CONTENT AREA -->
+            <main class="myjmt-content">
+              <!-- HERO BANNER -->
+              <div class="jmt-card" style="background: linear-gradient(135deg, #07153B 0%, #0B286C 100%) !important; border: 1px solid rgba(255, 255, 255, 0.15) !important; border-radius: 16px; padding: 30px; margin-bottom: 24px; box-sizing: border-box;">
+                <div style="display: flex; justify-content: space-between; align-items: center; gap: 20px; flex-wrap: wrap;">
+                  <div>
+                    <span style="font-size: 12px; font-weight: 800; color: #00E676; letter-spacing: 0.08em; text-transform: uppercase;">
+                      Immigration &amp; Visa Desk
+                    </span>
+                    <h1 style="font-size: 28px; font-weight: 800; color: #FFFFFF; margin: 6px 0 8px;">
+                      Visa Applications
+                    </h1>
+                    <p style="font-size: 14px; color: #CBD5E1; margin: 0; line-height: 1.6;">
+                      Live tracking of submitted e-visas, verified documents, and authoritative embassy milestones.
+                    </p>
+                  </div>
+                  <div>
+                    <a href="/visa" onclick="event.preventDefault(); navigate('/visa')" class="btn" style="background: #00A651 !important; color: #FFFFFF !important; font-weight: 700; padding: 10px 22px; border-radius: 99px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 14px rgba(0,166,81,0.3); font-size: 13.5px;">
+                      <span>🛂</span> New Application
+                    </a>
+                  </div>
+                </div>
+              </div>
+
+              <!-- FILTER TABS BAR -->
+              <div style="display: flex; gap: 8px; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 12px; margin-bottom: 20px;" role="tablist" aria-label="Visa status filters">
+                <button class="visa-filter-btn btn" data-filter="ALL" onclick="setAccountVisaFilter('ALL')" style="border-radius: 99px; padding: 8px 18px; font-size: 13px; border: 1px solid #00A651; background: #00A651; color: #FFFFFF; font-weight: 700; cursor: pointer; white-space: nowrap;">
+                  All (${counts.ALL})
+                </button>
+                <button class="visa-filter-btn btn" data-filter="UNDER_REVIEW" onclick="setAccountVisaFilter('UNDER_REVIEW')" style="border-radius: 99px; padding: 8px 18px; font-size: 13px; border: 1px solid rgba(255, 255, 255, 0.15); background: transparent; color: #CBD5E1; cursor: pointer; white-space: nowrap;">
+                  Under Review (${counts.UNDER_REVIEW})
+                </button>
+                <button class="visa-filter-btn btn" data-filter="ADDITIONAL_DOCUMENTS_REQUIRED" onclick="setAccountVisaFilter('ADDITIONAL_DOCUMENTS_REQUIRED')" style="border-radius: 99px; padding: 8px 18px; font-size: 13px; border: 1px solid rgba(255, 255, 255, 0.15); background: transparent; color: #CBD5E1; cursor: pointer; white-space: nowrap;">
+                  Action Required (${counts.ADDITIONAL_DOCUMENTS_REQUIRED})
+                </button>
+                <button class="visa-filter-btn btn" data-filter="PROCESSING" onclick="setAccountVisaFilter('PROCESSING')" style="border-radius: 99px; padding: 8px 18px; font-size: 13px; border: 1px solid rgba(255, 255, 255, 0.15); background: transparent; color: #CBD5E1; cursor: pointer; white-space: nowrap;">
+                  Processing (${counts.PROCESSING})
+                </button>
+                <button class="visa-filter-btn btn" data-filter="APPROVED" onclick="setAccountVisaFilter('APPROVED')" style="border-radius: 99px; padding: 8px 18px; font-size: 13px; border: 1px solid rgba(255, 255, 255, 0.15); background: transparent; color: #CBD5E1; cursor: pointer; white-space: nowrap;">
+                  Approved (${counts.APPROVED})
+                </button>
+              </div>
+
+              <!-- DYNAMIC VISA LISTINGS CONTAINER -->
+              <div id="account-visa-list-area"></div>
+            </main>
+          </div>
+        </div>
+      </div>
+
+      <div id="vault-modal-root"></div>
+    `;
+
+    renderVisaCardsList();
+
+  } catch (err) {
+    container.innerHTML = `
+      ${MYJMT_PORTAL_STYLE}
+      <div style="background: #07153B !important; min-height: 100vh; color: #FFFFFF !important;">
+        <div class="shell" style="padding: 60px 20px; text-align: center;">
+          <p style="color: #EF4444; font-size: 16px; font-weight: 700; margin-bottom: 12px;">Failed to load visa applications.</p>
+          <p style="color: #94A3B8; font-size: 14px; margin-bottom: 24px;">${escapeHTML(err.message)}</p>
+          <button onclick="navigate('/account')" class="btn" style="background: #00A651 !important; color: #FFFFFF !important; border: 0; padding: 10px 24px; border-radius: 99px; cursor: pointer;">
+            Return to Dashboard
+          </button>
+        </div>
+      </div>
+    `;
+  }
+}
+
+// =============================================================
+// 2. CUSTOMER VISA APPLICATION DETAIL PAGE (/account/visa/:id)
+// =============================================================
+
+async function renderAccountVisaDetailPage(container, path) {
+  if (!state.user) {
+    navigate('/login');
+    return;
+  }
+
+  const appRefOrId = path.replace('/account/visa/', '').split('?')[0].trim();
+  if (!appRefOrId) {
+    navigate('/account/visa');
+    return;
+  }
+
+  container.innerHTML = `
+    <div style="background: #07153B !important; min-height: 100vh; color: #FFFFFF !important; display: flex; align-items: center; justify-content: center; padding: 60px 20px;">
+      <p style="color: #94A3B8; font-size: 15px; font-weight: 600;">Loading application details...</p>
+    </div>
+  `;
+
+  try {
+    const res = await apiCall(`/api/account/visa/${encodeURIComponent(appRefOrId)}`);
+    if (!res || !res.success || !res.application) {
+      throw new Error(res?.error?.message || 'Visa application not found.');
+    }
+
+    const app = res.application;
+    const applicant = app.applicant || {};
+    const travel = app.travel || {};
+    const appRef = app.applicationNumber || app.reference || app.id;
+    const dest = app.destination || travel.destination || 'International';
+    const vType = app.visaType || travel.visaType || 'Tourist Visa';
+    const fullName = app.fullName || (applicant.firstName ? (applicant.firstName + ' ' + (applicant.lastName || '')).trim() : (app.applicantName || 'Primary Applicant'));
+    const passportNo = app.passportNumber || applicant.passportNumber || '••••••••';
+    const nationality = app.nationality || applicant.nationality || 'Omani';
+    const travelDate = app.travelDate || travel.entryDate || '15 Nov 2026';
+    const purpose = app.purpose || travel.purpose || 'Tourism & Holiday';
+    const docs = Array.isArray(app.documents) ? app.documents : [];
+    const timeline = Array.isArray(app.timeline) && app.timeline.length > 0 ? app.timeline : [
+      { status: 'SUBMITTED', timestamp: app.createdAt || new Date(), note: 'Application received and logged.' }
+    ];
+    const payment = app.payment || { status: 'PENDING', amount: 0, currency: 'OMR' };
+
+    updateSEO({
+      title: `Visa Application ${appRef} | My JMT`,
+      description: `Authoritative tracking details for ${dest} ${vType} application.`,
+      canonicalUrl: `/account/visa/${appRef}`,
+      noindex: true
+    });
+    announceToSR(`Loaded details for Visa Application ${appRef}`);
+
+    const badge = getVisaBadgeHTML(app.status);
+    const hasActionRequired = app.status === 'ADDITIONAL_DOCUMENTS_REQUIRED' || docs.some(d => d.status === 'REJECTED');
+
+    container.innerHTML = `
+      ${MYJMT_PORTAL_STYLE}
+      <div style="background: #07153B !important; min-height: 100vh; color: #FFFFFF !important;">
+        <div class="shell" style="padding: 32px 20px 60px; max-width: 1080px; margin: 0 auto; box-sizing: border-box;">
+
+          <!-- TOP NAVIGATION BREADCRUMB -->
+          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 24px; flex-wrap: wrap;">
+            <a href="/account/visa" onclick="event.preventDefault(); navigate('/account/visa')" style="color: #00E676; font-size: 13.5px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+              ← Back to Visa Applications
+            </a>
+            <span style="color: #64748B;">•</span>
+            <span style="font-size: 13.5px; color: #CBD5E1; font-family: monospace;">${escapeHTML((app.applicationNumber || app.reference || app.id))}</span>
+          </div>
+
+          <!-- HEADER CARD -->
+          <div class="jmt-card" style="background: #0B286C !important; border: 1px solid rgba(255, 255, 255, 0.15) !important; border-radius: 16px; padding: 28px; margin-bottom: 24px; box-sizing: border-box;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 18px; flex-wrap: wrap;">
+              <div>
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px; flex-wrap: wrap;">
+                  <span style="font-size: 12px; font-weight: 800; color: #00E676; letter-spacing: 0.08em; text-transform: uppercase;">
+                    ${escapeHTML(dest)}
+                  </span>
+                  <span style="color: #64748B;">•</span>
+                  <span style="font-size: 12.5px; font-weight: 700; color: #CBD5E1; font-family: monospace;">
+                    Ref: ${escapeHTML((app.applicationNumber || app.reference || app.id))}
+                  </span>
+                </div>
+                <h1 style="font-size: 26px; font-weight: 800; color: #FFFFFF; margin: 0 0 6px;">
+                  ${escapeHTML(dest)} ${escapeHTML(vType)}
+                </h1>
+                <p style="font-size: 13.5px; color: #94A3B8; margin: 0;">
+                  Primary Applicant: <b style="color: #FFFFFF;">${escapeHTML(fullName)}</b>
+                </p>
+              </div>
+              <div>${badge}</div>
+            </div>
+          </div>
+
+          ${hasActionRequired ? `
+            <div style="background: rgba(249, 115, 22, 0.14); border: 1.5px solid rgba(249, 115, 22, 0.4); border-radius: 14px; padding: 20px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;">
+              <div>
+                <div style="font-size: 15px; font-weight: 800; color: #FB923C; margin-bottom: 4px; display: flex; align-items: center; gap: 8px;">
+                  <span>⚠️</span> Action Required: Document Revision Needed
+                </div>
+                <div style="font-size: 13.5px; color: #FED7AA; line-height: 1.5;">
+                  The visa processing team requires updated or replacement documents to proceed with official embassy lodgement.
+                </div>
+              </div>
+              <button onclick="openUploadDocumentModal('${escapeHTML(app.id)}')" class="btn" style="background: #F97316; color: #FFFFFF; font-weight: 700; border: 0; padding: 10px 22px; border-radius: 99px; font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgba(249,115,22,0.35);">
+                <span>⬆️</span> Upload Document Now
+              </button>
+            </div>
+          ` : ''}
+
+          <!-- TWO COLUMN DETAILS GRID -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px; margin-bottom: 24px;">
+
+            <!-- LEFT: APPLICANT & TRAVEL INFO -->
+            <div style="display: flex; flex-direction: column; gap: 24px;">
+              <div class="jmt-card" style="background: #0B286C !important; border: 1px solid rgba(255, 255, 255, 0.15) !important; border-radius: 16px; padding: 24px;">
+                <h2 style="font-size: 16px; font-weight: 800; color: #00E676; margin: 0 0 16px; letter-spacing: 0.05em; text-transform: uppercase;">
+                  Applicant Details
+                </h2>
+                <div style="display: flex; flex-direction: column; gap: 12px; font-size: 13.5px;">
+                  <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 8px;">
+                    <span style="color: #94A3B8;">Full Legal Name:</span>
+                    <span style="color: #FFFFFF; font-weight: 600;">${escapeHTML(fullName)}</span>
+                  </div>
+                  <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 8px;">
+                    <span style="color: #94A3B8;">Passport Number:</span>
+                    <span style="color: #00E676; font-family: monospace; font-weight: 700;">${escapeHTML(passportNo)}</span>
+                  </div>
+                  <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 8px;">
+                    <span style="color: #94A3B8;">Nationality:</span>
+                    <span style="color: #FFFFFF; font-weight: 600;">${escapeHTML(nationality)}</span>
+                  </div>
+                  <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 8px;">
+                    <span style="color: #94A3B8;">Intended Travel Date:</span>
+                    <span style="color: #FFFFFF; font-weight: 600;">${escapeHTML(travelDate)}</span>
+                  </div>
+                  <div style="display: flex; justify-content: space-between;">
+                    <span style="color: #94A3B8;">Purpose of Visit:</span>
+                    <span style="color: #FFFFFF; font-weight: 600;">${escapeHTML(purpose)}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- PAYMENT SUMMARY -->
+              <div class="jmt-card" style="background: #0B286C !important; border: 1px solid rgba(255, 255, 255, 0.15) !important; border-radius: 16px; padding: 24px;">
+                <h2 style="font-size: 16px; font-weight: 800; color: #00E676; margin: 0 0 16px; letter-spacing: 0.05em; text-transform: uppercase;">
+                  Payment Status
+                </h2>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                  <span style="font-size: 13.5px; color: #CBD5E1;">Government &amp; Desk Fee:</span>
+                  <span style="font-size: 18px; font-weight: 800; color: #FFFFFF;">${escapeHTML(payment.currency || 'OMR')} ${escapeHTML(payment.amount || 0)}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span style="font-size: 13px; color: #94A3B8;">Billing State:</span>
+                  <span style="font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 99px; ${payment.status === 'PAID' ? 'background: rgba(0,230,118,0.15); color: #00E676;' : 'background: rgba(245,158,11,0.15); color: #FBBF24;'}">
+                    ${escapeHTML(payment.status || 'PENDING')}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <!-- RIGHT: AUTHORITATIVE MILESTONE TIMELINE -->
+            <div class="jmt-card" style="background: #0B286C !important; border: 1px solid rgba(255, 255, 255, 0.15) !important; border-radius: 16px; padding: 24px;">
+              <h2 style="font-size: 16px; font-weight: 800; color: #00E676; margin: 0 0 18px; letter-spacing: 0.05em; text-transform: uppercase;">
+                Processing Timeline
+              </h2>
+              <div style="position: relative; padding-left: 28px;">
+                <div style="position: absolute; left: 8px; top: 8px; bottom: 8px; width: 2px; background: rgba(255, 255, 255, 0.15);"></div>
+
+                <div style="display: flex; flex-direction: column; gap: 20px;">
+                  ${timeline.map((step, idx) => {
+                    const isLast = idx === timeline.length - 1;
+                    const dateFormatted = step.timestamp ? new Date(step.timestamp).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
+                    return `
+                      <div style="position: relative;">
+                        <div style="position: absolute; left: -28px; top: 2px; width: 18px; height: 18px; border-radius: 50%; background: ${isLast ? '#00E676' : '#3B82F6'}; border: 3px solid #0B286C; box-sizing: border-box;"></div>
+                        <div style="font-weight: 700; font-size: 14px; color: #FFFFFF;">
+                          ${escapeHTML((step.newStatus || step.status) ? (step.newStatus || step.status).replace(/_/g, ' ') : 'Update')}
+                        </div>
+                        <div style="font-size: 11.5px; color: #94A3B8; margin: 2px 0 4px;">
+                          ${dateFormatted}
+                        </div>
+                        ${step.note ? `
+                          <div style="font-size: 13px; color: #CBD5E1; line-height: 1.4;">
+                            ${escapeHTML(step.note)}
+                          </div>
+                        ` : ''}
+                      </div>
+                    `;
+                  }).join('')}
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- ATTACHED DOCUMENTS SECTION -->
+          <div class="jmt-card" style="background: #0B286C !important; border: 1px solid rgba(255, 255, 255, 0.15) !important; border-radius: 16px; padding: 28px; box-sizing: border-box;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+              <div>
+                <h2 style="font-size: 18px; font-weight: 800; color: #FFFFFF; margin: 0 0 4px;">
+                  Attached Application Documents
+                </h2>
+                <p style="font-size: 13px; color: #94A3B8; margin: 0;">
+                  Stored securely with authenticated download access.
+                </p>
+              </div>
+              <button onclick="openUploadDocumentModal('${escapeHTML(app.id)}')" class="btn" style="background: #00A651; color: #FFFFFF; font-weight: 700; border: 0; padding: 8px 18px; border-radius: 99px; font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+                <span>+</span> Add Document
+              </button>
+            </div>
+
+            ${docs.length === 0 ? `
+              <div style="background: rgba(255, 255, 255, 0.02); border: 1px dashed rgba(255, 255, 255, 0.12); border-radius: 12px; padding: 24px; text-align: center; color: #94A3B8; font-size: 13.5px;">
+                No documents uploaded for this application yet.
+              </div>
+            ` : `
+              <div style="display: flex; flex-direction: column; gap: 12px;">
+                ${docs.map(doc => {
+                  const docBadge = getDocBadgeHTML(doc.status);
+                  const isRejected = doc.status === 'REJECTED';
+                  const dateStr = doc.createdAt ? new Date(doc.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '';
+
+                  return `
+                    <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid ${isRejected ? 'rgba(239, 68, 68, 0.4)' : 'rgba(255, 255, 255, 0.08)'}; border-radius: 12px; padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; gap: 14px; flex-wrap: wrap;">
+                      <div style="display: flex; align-items: center; gap: 12px; min-width: 0;">
+                        <span style="font-size: 24px; flex-shrink: 0;">📄</span>
+                        <div style="min-width: 0;">
+                          <div style="font-weight: 700; font-size: 14px; color: #FFFFFF; word-break: break-all;">
+                            ${escapeHTML(doc.displayFilename || doc.originalFilename || (doc.displayFilename || doc.originalFilename || doc.originalName) || 'Document')}
+                          </div>
+                          <div style="font-size: 12px; color: #94A3B8; margin-top: 2px;">
+                            ${escapeHTML((doc.documentType || 'DOCUMENT').replace(/_/g, ' '))} • ${formatDocFileSize(doc.fileSize)} • ${dateStr}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                        ${docBadge}
+                        <button onclick="downloadDocument('${escapeHTML(doc.id)}', '${escapeHTML(doc.displayFilename || doc.originalFilename || (doc.displayFilename || doc.originalFilename || doc.originalName) || 'document')}')" class="btn" style="background: rgba(255, 255, 255, 0.08); color: #CBD5E1; border: 1px solid rgba(255, 255, 255, 0.15); padding: 6px 14px; border-radius: 99px; font-size: 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
+                          <span>📥</span> Download
+                        </button>
+                        <button onclick="openReplaceDocumentModal('${escapeHTML(doc.id)}', '${escapeHTML(doc.displayFilename || doc.originalFilename || (doc.displayFilename || doc.originalFilename || doc.originalName) || 'document')}')" class="btn" style="background: rgba(0, 230, 118, 0.12); color: #00E676; border: 1px solid #00E676; padding: 6px 14px; border-radius: 99px; font-size: 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
+                          <span>🔄</span> Replace
+                        </button>
+                      </div>
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+            `}
+          </div>
+
+        </div>
+      </div>
+
+      <div id="vault-modal-root"></div>
+    `;
+
+  } catch (err) {
+    container.innerHTML = `
+      ${MYJMT_PORTAL_STYLE}
+      <div style="background: #07153B !important; min-height: 100vh; color: #FFFFFF !important;">
+        <div class="shell" style="padding: 60px 20px; text-align: center;">
+          <p style="color: #EF4444; font-size: 16px; font-weight: 700; margin-bottom: 12px;">Failed to load visa details.</p>
+          <p style="color: #94A3B8; font-size: 14px; margin-bottom: 24px;">${escapeHTML(err.message)}</p>
+          <button onclick="navigate('/account/visa')" class="btn" style="background: #00A651 !important; color: #FFFFFF !important; border: 0; padding: 10px 24px; border-radius: 99px; cursor: pointer;">
+            Back to Visa Applications
+          </button>
+        </div>
+      </div>
+    `;
+  }
+}
+
+// =============================================================
+// 3. SECURE DOCUMENT VAULT PAGE (/account/documents)
+// =============================================================
+
+window.setAccountDocumentsFilter = function(filter) {
+  currentDocFilter = filter;
+  document.querySelectorAll('.doc-filter-btn').forEach(btn => {
+    if (btn.getAttribute('data-filter') === filter) {
+      btn.style.background = '#00A651';
+      btn.style.borderColor = '#00A651';
+      btn.style.color = '#FFFFFF';
+      btn.style.fontWeight = '700';
+    } else {
+      btn.style.background = 'transparent';
+      btn.style.borderColor = 'rgba(255, 255, 255, 0.15)';
+      btn.style.color = '#CBD5E1';
+      btn.style.fontWeight = '500';
+    }
+  });
+  renderDocumentVaultGrid();
+};
+
+function renderDocumentVaultGrid() {
+  const container = document.getElementById('vault-grid-area');
+  if (!container) return;
+
+  const filtered = cachedDocumentsData.filter(doc => {
+    if (currentDocFilter === 'ALL') return true;
+    return doc.documentType === currentDocFilter;
+  });
+
+  if (filtered.length === 0) {
+    container.innerHTML = `
+      <div style="background: #0B286C; border: 1px dashed rgba(255, 255, 255, 0.18); border-radius: 16px; padding: 48px 24px; text-align: center; color: #FFFFFF; box-sizing: border-box;">
+        <div style="font-size: 44px; margin-bottom: 14px;">📁</div>
+        <h3 style="font-size: 18px; font-weight: 800; color: #FFFFFF; margin: 0 0 8px;">No Documents Found</h3>
+        <p style="font-size: 14px; color: #94A3B8; max-width: 440px; margin: 0 auto 24px; line-height: 1.6;">
+          ${currentDocFilter === 'ALL' ? 'Your secure document vault is currently empty. Upload passport copies, civil IDs, and visa papers to accelerate bookings and visa processing.' : `No documents found under category "${escapeHTML(currentDocFilter)}".`}
+        </p>
+        <button onclick="openUploadDocumentModal()" class="btn" style="background: #00A651 !important; color: #FFFFFF !important; font-weight: 700; padding: 12px 28px; border-radius: 99px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;">
+          <span>⬆️</span> Upload First Document
+        </button>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = `
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px;">
+      ${filtered.map(doc => {
+        const badge = getDocBadgeHTML(doc.status);
+        const icon = doc.documentType === 'PASSPORT' ? '🛂' : (doc.documentType === 'CIVIL_ID' ? '🪪' : (doc.documentType === 'VISA_DOCUMENT' ? '📄' : '📁'));
+        const dateStr = doc.createdAt ? new Date(doc.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+
+        return `
+          <div class="jmt-card" style="background: #0B286C !important; border: 1px solid rgba(255, 255, 255, 0.15) !important; border-radius: 16px; padding: 22px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 14px;">
+                <div style="display: flex; align-items: center; gap: 12px; min-width: 0;">
+                  <div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(0, 230, 118, 0.12); border: 1px solid rgba(0, 230, 118, 0.25); display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0;">
+                    ${icon}
+                  </div>
+                  <div style="min-width: 0;">
+                    <div style="font-size: 11px; font-weight: 800; color: #00E676; text-transform: uppercase; letter-spacing: 0.05em;">
+                      ${escapeHTML(doc.documentType ? doc.documentType.replace(/_/g, ' ') : 'DOCUMENT')}
+                    </div>
+                    <div title="${escapeHTML((doc.displayFilename || doc.originalFilename || doc.originalName) || '')}" style="font-weight: 700; font-size: 14.5px; color: #FFFFFF; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 190px;">
+                      ${escapeHTML(doc.displayFilename || doc.originalFilename || (doc.displayFilename || doc.originalFilename || doc.originalName) || 'Document')}
+                    </div>
+                  </div>
+                </div>
+                ${badge}
+              </div>
+
+              <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 10px; padding: 12px; font-size: 12.5px; color: #CBD5E1; margin-bottom: 18px;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                  <span style="color: #94A3B8;">File Size:</span>
+                  <span style="font-weight: 600;">${formatDocFileSize(doc.fileSize)}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                  <span style="color: #94A3B8;">Upload Date:</span>
+                  <span style="font-weight: 600;">${dateStr}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; gap: 8px;">
+                  <span style="color: #94A3B8; flex-shrink: 0;">Associated App:</span>
+                  <span style="font-weight: 600; color: ${doc.applicationReference ? '#00E676' : '#94A3B8'}; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                    ${doc.applicationReference ? escapeHTML(doc.applicationReference) + (doc.destination ? ` (${escapeHTML(doc.destination)})` : '') : 'Standalone Vault'}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div style="display: flex; gap: 10px; border-top: 1px solid rgba(255, 255, 255, 0.1); padding-top: 14px;">
+              <button onclick="downloadDocument('${escapeHTML(doc.id)}', '${escapeHTML(doc.displayFilename || doc.originalFilename || (doc.displayFilename || doc.originalFilename || doc.originalName) || 'document')}')" class="btn" style="flex: 1; background: rgba(255, 255, 255, 0.08); color: #FFFFFF; border: 1px solid rgba(255, 255, 255, 0.18); border-radius: 10px; padding: 8px 12px; font-size: 12.5px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
+                <span>📥</span> Download
+              </button>
+              <button onclick="openReplaceDocumentModal('${escapeHTML(doc.id)}', '${escapeHTML(doc.displayFilename || doc.originalFilename || (doc.displayFilename || doc.originalFilename || doc.originalName) || 'document')}')" class="btn" style="flex: 1; background: rgba(0, 230, 118, 0.12); color: #00E676; border: 1px solid #00E676; border-radius: 10px; padding: 8px 12px; font-size: 12.5px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
+                <span>🔄</span> Replace
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+}
+
+async function renderAccountDocumentsPage(container, path) {
+  if (!state.user) {
+    navigate('/login');
+    return;
+  }
+
+  updateSEO({
+    title: 'Secure Document Vault | My JMT',
+    description: 'Cryptographically protected customer vault for passports, civil IDs, and visa certificates.',
+    canonicalUrl: '/account/documents',
+    noindex: true
+  });
+  announceToSR('Navigated to Secure Document Vault');
+
+  container.innerHTML = `
+    <div style="background: #07153B !important; min-height: 100vh; color: #FFFFFF !important; display: flex; align-items: center; justify-content: center; padding: 60px 20px;">
+      <p style="color: #94A3B8; font-size: 15px; font-weight: 600;">Opening secure document vault...</p>
+    </div>
+  `;
+
+  try {
+    const res = await apiCall('/api/account/documents?limit=100');
+    if (!res || !res.success) {
+      throw new Error(res?.error?.message || 'Failed to fetch vault documents.');
+    }
+
+    cachedDocumentsData = Array.isArray(res.documents) ? res.documents : [];
+    const u = state.user;
+    const initials = (u.name || 'CU').split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
+
+    const counts = {
+      ALL: cachedDocumentsData.length,
+      PASSPORT: cachedDocumentsData.filter(d => d.documentType === 'PASSPORT').length,
+      CIVIL_ID: cachedDocumentsData.filter(d => d.documentType === 'CIVIL_ID').length,
+      VISA_DOCUMENT: cachedDocumentsData.filter(d => d.documentType === 'VISA_DOCUMENT').length,
+      OTHER: cachedDocumentsData.filter(d => d.documentType === 'OTHER').length
+    };
+
+    container.innerHTML = `
+      ${MYJMT_PORTAL_STYLE}
+      <div style="background: #07153B !important; min-height: 100vh; color: #FFFFFF !important;">
+        <div class="shell" style="padding: 32px 20px 60px; max-width: 1240px; margin: 0 auto; box-sizing: border-box;">
+
+          <!-- TOP CUSTOMER HEADER STRIP -->
+          <div style="display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 28px; border-bottom: 1px solid rgba(255, 255, 255, 0.12); padding-bottom: 16px; flex-wrap: wrap;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <span style="font-size: 11px; font-weight: 800; letter-spacing: 0.1em; color: #00E676; background: rgba(0, 230, 118, 0.12); padding: 5px 12px; border-radius: 99px; border: 1px solid rgba(0, 230, 118, 0.25);">
+                MY JMT PORTAL
+              </span>
+              <span style="color: #64748B; font-size: 13px;">•</span>
+              <a href="/account" onclick="event.preventDefault(); navigate('/account')" style="color: #94A3B8; font-size: 13.5px; text-decoration: none;">Dashboard</a>
+              <span style="color: #64748B; font-size: 13px;">•</span>
+              <span style="color: #E2E8F0; font-size: 14px; font-weight: 600;">Secure Document Vault</span>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 14px;">
+              <button onclick="openUploadDocumentModal()" class="btn" style="background: #00A651; color: #FFFFFF !important; border: 0; border-radius: 99px; padding: 8px 18px; font-size: 13px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+                <span>⬆️</span> Upload Document
+              </button>
+              <button onclick="logoutUser()" class="btn" style="background: rgba(239, 68, 68, 0.15); color: #FCA5A5 !important; border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 99px; padding: 7px 16px; font-size: 13px; font-weight: 700; cursor: pointer;">
+                Sign Out
+              </button>
+            </div>
+          </div>
+
+          <!-- MOBILE HORIZONTAL NAVIGATION (< 1024px) -->
+          <div class="myjmt-mobile-nav">
+            <div style="background: #0B286C; border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 12px; padding: 14px 16px; margin-bottom: 12px; display: flex; align-items: center; gap: 12px;">
+              <div style="width: 42px; height: 42px; border-radius: 50%; background: linear-gradient(135deg, #00E676 0%, #00A651 100%); color: #07153B; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 15px; flex-shrink: 0;">
+                ${escapeHTML(initials)}
+              </div>
+              <div style="min-width: 0; flex: 1;">
+                <div style="font-weight: 800; font-size: 15px; color: #FFFFFF; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                  ${escapeHTML(u.name)}
+                </div>
+                <div style="font-size: 12px; color: #94A3B8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                  ${escapeHTML(u.email)}
+                </div>
+              </div>
+            </div>
+
+            <div style="display: flex; gap: 8px; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 4px;">
+              <a href="/account" onclick="event.preventDefault(); navigate('/account')" style="background: rgba(255,255,255,0.08); color: #E2E8F0; padding: 8px 16px; border-radius: 99px; font-size: 12.5px; font-weight: 600; text-decoration: none; white-space: nowrap; border: 1px solid rgba(255,255,255,0.15);">
+                🏠 Overview
+              </a>
+              <a href="/account/my-trips" onclick="event.preventDefault(); navigate('/account/my-trips')" style="background: rgba(255,255,255,0.08); color: #E2E8F0; padding: 8px 16px; border-radius: 99px; font-size: 12.5px; font-weight: 600; text-decoration: none; white-space: nowrap; border: 1px solid rgba(255,255,255,0.15);">
+                🧳 My Trips
+              </a>
+              <a href="/account/visa" onclick="event.preventDefault(); navigate('/account/visa')" style="background: rgba(255,255,255,0.08); color: #E2E8F0; padding: 8px 16px; border-radius: 99px; font-size: 12.5px; font-weight: 600; text-decoration: none; white-space: nowrap; border: 1px solid rgba(255,255,255,0.15);">
+                🛂 Visa Applications
+              </a>
+              <a href="/account/documents" onclick="event.preventDefault(); navigate('/account/documents')" style="background: #00A651; color: #FFFFFF; padding: 8px 16px; border-radius: 99px; font-size: 12.5px; font-weight: 700; text-decoration: none; white-space: nowrap; border: 1px solid #00A651;">
+                📁 Documents
+              </a>
+              <a href="/account/profile" onclick="event.preventDefault(); navigate('/account/profile')" style="background: rgba(255,255,255,0.08); color: #E2E8F0; padding: 8px 16px; border-radius: 99px; font-size: 12.5px; font-weight: 600; text-decoration: none; white-space: nowrap; border: 1px solid rgba(255,255,255,0.15);">
+                👤 Profile
+              </a>
+              <a href="/support" onclick="event.preventDefault(); navigate('/support')" style="background: rgba(255,255,255,0.08); color: #E2E8F0; padding: 8px 16px; border-radius: 99px; font-size: 12.5px; font-weight: 600; text-decoration: none; white-space: nowrap; border: 1px solid rgba(255,255,255,0.15);">
+                💬 Support
+              </a>
+            </div>
+          </div>
+
+          <!-- PORTAL TWO-COLUMN LAYOUT -->
+          <div class="myjmt-portal">
+            <aside class="myjmt-sidebar">
+              <div style="text-align: center; padding-bottom: 20px; border-bottom: 1px solid rgba(255, 255, 255, 0.12); margin-bottom: 20px;">
+                <div style="width: 64px; height: 64px; border-radius: 50%; background: linear-gradient(135deg, #00E676 0%, #00A651 100%); color: #07153B; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 22px; margin: 0 auto 12px; box-shadow: 0 4px 14px rgba(0, 230, 118, 0.25);">
+                  ${escapeHTML(initials)}
+                </div>
+                <div style="font-weight: 800; font-size: 16px; color: #FFFFFF; margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                  ${escapeHTML(u.name)}
+                </div>
+                <div style="font-size: 12.5px; color: #94A3B8; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                  ${escapeHTML(u.email)}
+                </div>
+              </div>
+
+              <nav aria-label="Customer portal sidebar">
+                <a href="/account" class="myjmt-nav-item" onclick="event.preventDefault(); navigate('/account')">
+                  <span>🏠</span> Overview
+                </a>
+                <a href="/account/my-trips" class="myjmt-nav-item" onclick="event.preventDefault(); navigate('/account/my-trips')">
+                  <span>🧳</span> My Trips
+                </a>
+                <a href="/account/visa" class="myjmt-nav-item" onclick="event.preventDefault(); navigate('/account/visa')">
+                  <span>🛂</span> Visa Applications
+                </a>
+                <div class="myjmt-nav-item disabled" title="Booking Manager coming in Phase V5.5">
+                  <span>📋</span> Bookings
+                  <span class="myjmt-pill-badge">Soon</span>
+                </div>
+                <a href="/account/documents" class="myjmt-nav-item active" aria-current="page" onclick="event.preventDefault();">
+                  <span>📁</span> Documents
+                </a>
+                <div class="myjmt-nav-item disabled" title="Payment Management coming in future phase">
+                  <span>💳</span> Payments
+                  <span class="myjmt-pill-badge">Soon</span>
+                </div>
+                <div class="myjmt-nav-item disabled" title="Notifications Center coming in Phase V5.6">
+                  <span>🔔</span> Notifications
+                  <span class="myjmt-pill-badge">Soon</span>
+                </div>
+                <a href="/support" class="myjmt-nav-item" onclick="event.preventDefault(); navigate('/support')">
+                  <span>💬</span> Support
+                </a>
+                <a href="/account/profile" class="myjmt-nav-item" onclick="event.preventDefault(); navigate('/account/profile')">
+                  <span>👤</span> Profile
+                </a>
+              </nav>
+
+              <div style="margin-top: 24px; padding-top: 20px; border-top: 1px solid rgba(255, 255, 255, 0.12);">
+                <button onclick="logoutUser()" class="btn" style="width: 100%; box-sizing: border-box; background: rgba(239, 68, 68, 0.12); color: #FCA5A5 !important; border: 1px solid rgba(239, 68, 68, 0.25); border-radius: 10px; padding: 10px 14px; font-size: 13px; font-weight: 700; cursor: pointer; text-align: center;">
+                  Sign Out
+                </button>
+              </div>
+            </aside>
+
+            <!-- MAIN CONTENT AREA -->
+            <main class="myjmt-content">
+              <!-- HERO BANNER WITH ENCRYPTION BADGE -->
+              <div class="jmt-card" style="background: linear-gradient(135deg, #07153B 0%, #0B286C 100%) !important; border: 1px solid rgba(255, 255, 255, 0.15) !important; border-radius: 16px; padding: 30px; margin-bottom: 24px; box-sizing: border-box;">
+                <div style="display: flex; justify-content: space-between; align-items: center; gap: 20px; flex-wrap: wrap;">
+                  <div>
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                      <span style="font-size: 11px; font-weight: 800; color: #00E676; letter-spacing: 0.08em; text-transform: uppercase; background: rgba(0,230,118,0.12); border: 1px solid rgba(0,230,118,0.25); padding: 4px 10px; border-radius: 99px;">
+                        🛡️ 256-Bit Encrypted Storage
+                      </span>
+                    </div>
+                    <h1 style="font-size: 28px; font-weight: 800; color: #FFFFFF; margin: 6px 0 8px;">
+                      Secure Document Vault
+                    </h1>
+                    <p style="font-size: 14px; color: #CBD5E1; margin: 0; line-height: 1.6;">
+                      Safely store and update your passports, civil IDs, and visa certificates for expedited processing.
+                    </p>
+                  </div>
+                  <div>
+                    <button onclick="openUploadDocumentModal()" class="btn" style="background: #00A651 !important; color: #FFFFFF !important; font-weight: 700; padding: 10px 22px; border-radius: 99px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 14px rgba(0,166,81,0.3); font-size: 13.5px; border: 0;">
+                      <span>⬆️</span> Upload Document
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- FILTER TABS BAR -->
+              <div style="display: flex; gap: 8px; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 12px; margin-bottom: 20px;" role="tablist" aria-label="Document category filters">
+                <button class="doc-filter-btn btn" data-filter="ALL" onclick="setAccountDocumentsFilter('ALL')" style="border-radius: 99px; padding: 8px 18px; font-size: 13px; border: 1px solid #00A651; background: #00A651; color: #FFFFFF; font-weight: 700; cursor: pointer; white-space: nowrap;">
+                  All (${counts.ALL})
+                </button>
+                <button class="doc-filter-btn btn" data-filter="PASSPORT" onclick="setAccountDocumentsFilter('PASSPORT')" style="border-radius: 99px; padding: 8px 18px; font-size: 13px; border: 1px solid rgba(255, 255, 255, 0.15); background: transparent; color: #CBD5E1; cursor: pointer; white-space: nowrap;">
+                  Passports (${counts.PASSPORT})
+                </button>
+                <button class="doc-filter-btn btn" data-filter="CIVIL_ID" onclick="setAccountDocumentsFilter('CIVIL_ID')" style="border-radius: 99px; padding: 8px 18px; font-size: 13px; border: 1px solid rgba(255, 255, 255, 0.15); background: transparent; color: #CBD5E1; cursor: pointer; white-space: nowrap;">
+                  Civil IDs (${counts.CIVIL_ID})
+                </button>
+                <button class="doc-filter-btn btn" data-filter="VISA_DOCUMENT" onclick="setAccountDocumentsFilter('VISA_DOCUMENT')" style="border-radius: 99px; padding: 8px 18px; font-size: 13px; border: 1px solid rgba(255, 255, 255, 0.15); background: transparent; color: #CBD5E1; cursor: pointer; white-space: nowrap;">
+                  Visas (${counts.VISA_DOCUMENT})
+                </button>
+                <button class="doc-filter-btn btn" data-filter="OTHER" onclick="setAccountDocumentsFilter('OTHER')" style="border-radius: 99px; padding: 8px 18px; font-size: 13px; border: 1px solid rgba(255, 255, 255, 0.15); background: transparent; color: #CBD5E1; cursor: pointer; white-space: nowrap;">
+                  Other (${counts.OTHER})
+                </button>
+              </div>
+
+              <!-- DYNAMIC DOCUMENTS GRID -->
+              <div id="vault-grid-area"></div>
+            </main>
+          </div>
+        </div>
+      </div>
+
+      <div id="vault-modal-root"></div>
+    `;
+
+    renderDocumentVaultGrid();
+
+  } catch (err) {
+    container.innerHTML = `
+      ${MYJMT_PORTAL_STYLE}
+      <div style="background: #07153B !important; min-height: 100vh; color: #FFFFFF !important;">
+        <div class="shell" style="padding: 60px 20px; text-align: center;">
+          <p style="color: #EF4444; font-size: 16px; font-weight: 700; margin-bottom: 12px;">Failed to load document vault.</p>
           <p style="color: #94A3B8; font-size: 14px; margin-bottom: 24px;">${escapeHTML(err.message)}</p>
           <button onclick="navigate('/account')" class="btn" style="background: #00A651 !important; color: #FFFFFF !important; border: 0; padding: 10px 24px; border-radius: 99px; cursor: pointer;">
             Return to Dashboard

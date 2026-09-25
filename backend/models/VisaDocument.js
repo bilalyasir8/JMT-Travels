@@ -18,10 +18,12 @@ const VisaDocumentSchema = new mongoose.Schema({
   uploadedBy: { type: String, required: true, index: true, ref: 'User' },
   status: {
     type: String,
-    enum: ['UPLOADED', 'UNDER_REVIEW', 'ACCEPTED', 'REJECTED'],
+    enum: ['UPLOADED', 'UNDER_REVIEW', 'ACCEPTED', 'REJECTED', 'REPLACED'],
     default: 'UPLOADED',
     index: true
   },
+  replacesDocumentId: { type: String, ref: 'VisaDocument' },
+  replacedByDocumentId: { type: String, ref: 'VisaDocument' },
   reviewNote: String,
   reviewedBy: String,
   reviewedAt: Date

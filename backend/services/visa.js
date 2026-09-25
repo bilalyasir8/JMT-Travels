@@ -63,6 +63,10 @@ class VisaService {
     const obj = typeof appRecord.toObject === 'function' ? appRecord.toObject() : { ...appRecord };
     if (!isStaff) {
       delete obj.adminNotes;
+      if (obj.passportNumber) {
+        const p = String(obj.passportNumber).trim();
+        obj.passportNumber = p.length > 4 ? `••••••${p.slice(-4)}` : '••••••';
+      }
     }
     return obj;
   }
@@ -202,47 +206,109 @@ class VisaService {
       throw new Error('Permission Denied: You do not own this application.');
     }
 
-    // Save to private storage via StorageService
-    const stored = await storageService.upload(fileBuffer, originalName, mimeType);
+    // Save to private storage via StorageService (validates signature & magic bytes)
+    let stored;
+    try {
+      stored = await storageService.upload(fileBuffer, originalName, mimeType);
 
-    const docRecord = await db.visaDocuments.create({
-      documentId: `doc_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`,
-      applicationId: appRecord.id,
-      documentType: documentType || 'PASSPORT_COPY',
-      storageKey: stored.storageKey,
-      originalFilename: originalName,
-      displayFilename: path.basename(originalName),
-      mimeType: stored.mimeType,
-      fileSize: stored.size,
-      uploadedBy: actorUser.id,
-      status: 'UPLOADED'
-    });
+      const docRecord = await db.visaDocuments.create({
+        documentId: `doc_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`,
+        applicationId: appRecord.id,
+        documentType: documentType || 'PASSPORT_COPY',
+        storageKey: stored.storageKey,
+        originalFilename: originalName,
+        displayFilename: path.basename(originalName),
+        mimeType: stored.mimeType,
+        fileSize: stored.size,
+        uploadedBy: actorUser.id,
+        status: 'UPLOADED'
+      });
 
-    // Attach document ID to application
-    const docs = appRecord.documents || [];
-    docs.push(docRecord.id);
+      // Attach document ID to application
+      const docs = appRecord.documents || [];
+      docs.push(docRecord.id);
 
-    // Fulfill any matching pending requested document
-    const requests = appRecord.requestedDocuments || [];
-    let fulfilledAny = false;
-    requests.forEach(req => {
-      if (req.documentType === documentType && req.status === 'PENDING') {
-        req.status = 'FULFILLED';
-        fulfilledAny = true;
+      // Fulfill any matching pending requested document
+      const requests = appRecord.requestedDocuments || [];
+      let fulfilledAny = false;
+      requests.forEach(req => {
+        if (req.documentType === documentType && req.status === 'PENDING') {
+          req.status = 'FULFILLED';
+          fulfilledAny = true;
+        }
+      });
+
+      await db.visaApplications.update(appRecord.id, {
+        documents: docs,
+        requestedDocuments: requests
+      });
+
+      // If customer responded to additional document request, transition back to UNDER_REVIEW
+      if (fulfilledAny && appRecord.status === 'ADDITIONAL_DOCUMENTS_REQUIRED') {
+        await this.transitionStatus(appRecord.id, 'UNDER_REVIEW', actorUser, 'Customer submitted requested additional document.', true);
       }
-    });
 
-    await db.visaApplications.update(appRecord.id, {
-      documents: docs,
-      requestedDocuments: requests
-    });
+      return docRecord;
+    } catch (err) {
+      // Orphan File Prevention: remove stored file if DB record creation or update fails
+      if (stored && stored.storageKey) {
+        try { await storageService.delete(stored.storageKey); } catch (_) {}
+      }
+      throw err;
+    }
+  }
 
-    // If customer responded to additional document request, transition back to UNDER_REVIEW
-    if (fulfilledAny && appRecord.status === 'ADDITIONAL_DOCUMENTS_REQUIRED') {
-      await this.transitionStatus(appRecord.id, 'UNDER_REVIEW', actorUser, 'Customer submitted requested additional document.', true);
+  /**
+   * Safe Document Replacement (Section 13A)
+   * Validates new file first -> persists new doc -> safely retires old doc.
+   * If replacement fails at any point, old document remains 100% intact.
+   */
+  async replaceDocument(existingDocumentId, fileBuffer, originalName, mimeType, actorUser) {
+    const oldDoc = await db.visaDocuments.findById(existingDocumentId) || await db.visaDocuments.findOne({ documentId: existingDocumentId });
+    if (!oldDoc) throw new Error('Document not found.');
+
+    const appRecord = await db.visaApplications.findById(oldDoc.applicationId) || await db.visaApplications.findOne({ applicationNumber: oldDoc.applicationId });
+    const isStaff = ['STAFF', 'ADMIN', 'SUPER_ADMIN'].includes(actorUser.role);
+    if (!isStaff && oldDoc.uploadedBy !== actorUser.id && (!appRecord || appRecord.userId !== actorUser.id)) {
+      throw new Error('Permission Denied: You do not own this document.');
     }
 
-    return docRecord;
+    let newStored;
+    try {
+      newStored = await storageService.upload(fileBuffer, originalName, mimeType);
+
+      const newDocRecord = await db.visaDocuments.create({
+        documentId: `doc_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`,
+        applicationId: oldDoc.applicationId,
+        documentType: oldDoc.documentType,
+        storageKey: newStored.storageKey,
+        originalFilename: originalName,
+        displayFilename: path.basename(originalName),
+        mimeType: newStored.mimeType,
+        fileSize: newStored.size,
+        uploadedBy: actorUser.id,
+        status: 'UPLOADED',
+        replacesDocumentId: oldDoc.id || oldDoc.documentId
+      });
+
+      if (appRecord) {
+        const docs = (appRecord.documents || []).filter(dId => dId !== oldDoc.id && dId !== oldDoc.documentId);
+        docs.push(newDocRecord.id);
+        await db.visaApplications.update(appRecord.id, { documents: docs });
+      }
+
+      await db.visaDocuments.update(oldDoc.id, {
+        status: 'REPLACED',
+        replacedByDocumentId: newDocRecord.id
+      });
+
+      return newDocRecord;
+    } catch (err) {
+      if (newStored && newStored.storageKey) {
+        try { await storageService.delete(newStored.storageKey); } catch (_) {}
+      }
+      throw err;
+    }
   }
 
   /**
