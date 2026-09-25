@@ -2458,8 +2458,180 @@ async function runTestSuite() {
     assert.ok(d7ProfileRes.body.profile);
     console.log('  ✅ DASH-7 PASSED: Existing /api/account/profile endpoint remains 100% operational');
 
+    // ================================================================
+    // 🔒 EXECUTING V5.3 UNIFIED MY TRIPS TEST SUITE
+    // ================================================================
+
+    // TRIP-1: Unauthenticated GET /api/account/my-trips → 401
+    console.log('\n[TRIP-1] Testing Unauthenticated GET /api/account/my-trips...');
+    const trip1Res = await request('/api/account/my-trips', { method: 'GET' });
+    assert.strictEqual(trip1Res.status, 401);
+    assert.strictEqual(trip1Res.body.error.code, 'UNAUTHORIZED');
+    console.log('  ✅ TRIP-1 PASSED: Unauthenticated trips request blocked (401 UNAUTHORIZED)');
+
+    // TRIP-2: Authenticated customer → own trips → 200
+    console.log('\n[TRIP-2] Testing Authenticated Customer GET /api/account/my-trips...');
+    const trip2Res = await request('/api/account/my-trips', {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(trip2Res.status, 200);
+    assert.strictEqual(trip2Res.body.success, true);
+    assert.ok(typeof trip2Res.body.summary === 'object');
+    assert.ok(typeof trip2Res.body.summary.totalTrips === 'number');
+    assert.ok(typeof trip2Res.body.summary.upcomingTrips === 'number');
+    assert.ok(typeof trip2Res.body.summary.ongoingTrips === 'number');
+    assert.ok(typeof trip2Res.body.summary.completedTrips === 'number');
+    assert.ok(typeof trip2Res.body.summary.actionRequired === 'number');
+    assert.ok(Array.isArray(trip2Res.body.trips));
+    console.log('  ✅ TRIP-2 PASSED: Authenticated customer retrieves own trips (200 OK)');
+
+    // TRIP-3: Customer A cannot retrieve Customer B trip (Tenant boundary / IDOR)
+    console.log('\n[TRIP-3] Testing Customer Data Boundary & Cross-Customer Trip Isolation (IDOR Defense)...');
+    const cust1TripsStr = JSON.stringify(trip2Res.body.trips);
+    assert.ok(cust1TripsStr.includes(cust1BookingNum));
+    assert.strictEqual(cust1TripsStr.includes(cust2BookingNum), false);
+
+    const trip3CrossRes = await request(`/api/account/my-trips/${cust2BookingNum}`, {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(trip3CrossRes.status, 404);
+    assert.strictEqual(trip3CrossRes.body.error.code, 'NOT_FOUND');
+    console.log('  ✅ TRIP-3 PASSED: Cross-customer trip access blocked; tenant boundary enforced');
+
+    // TRIP-4: userId override ignored
+    console.log('\n[TRIP-4] Testing Query & Body userId Override Defense (IDOR Protection)...');
+    const trip4Res = await request(`/api/account/my-trips?userId=${customer2User.id}`, {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(trip4Res.status, 200);
+    const trip4Str = JSON.stringify(trip4Res.body.trips);
+    assert.strictEqual(trip4Str.includes(cust2BookingNum), false);
+    assert.ok(trip4Str.includes(cust1BookingNum));
+    console.log('  ✅ TRIP-4 PASSED: Client userId override ignored; customer data boundary intact');
+
+    // TRIP-5: Invalid trip ID handled safely
+    console.log('\n[TRIP-5] Testing Invalid Trip ID Safe Handling...');
+    const trip5Res = await request('/api/account/my-trips/non-existent-trip-999', {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(trip5Res.status, 404);
+    assert.strictEqual(trip5Res.body.error.code, 'NOT_FOUND');
+    console.log('  ✅ TRIP-5 PASSED: Non-existent trip ID returns 404 NOT_FOUND safely');
+
+    // TRIP-6: Sensitive fields absent
+    console.log('\n[TRIP-6] Testing Sensitive Fields Absent from My Trips Response...');
+    const tripPayloadStr = JSON.stringify(trip2Res.body);
+    assert.strictEqual(tripPayloadStr.includes('passwordHash'), false);
+    assert.strictEqual(tripPayloadStr.includes('mfaSecret'), false);
+    assert.strictEqual(tripPayloadStr.includes('verificationToken'), false);
+    assert.strictEqual(tripPayloadStr.includes('tokenInvalidatedBefore'), false);
+    assert.strictEqual(tripPayloadStr.includes('resetPasswordToken'), false);
+    console.log('  ✅ TRIP-6 PASSED: Sensitive authentication fields strictly absent from trips payload');
+
+    // TRIP-7: Raw passport number absent
+    console.log('\n[TRIP-7] Testing Raw Passport Number Absent & Masked (••••••4321)...');
+    const cust1RawPassport = 'N98765432';
+    const cust1VisaAppNum = `JMT-V-TRIP-${Date.now()}`;
+    await db.visaApplications.create({
+      id: `va_trip_${Date.now()}`,
+      applicationNumber: cust1VisaAppNum,
+      userId: customer1User.id,
+      destination: 'Oman',
+      visaType: 'Tourist 30 Days',
+      fullName: customer1User.name,
+      email: customer1User.email,
+      phone: '+96891234567',
+      passportNumber: cust1RawPassport,
+      status: 'UNDER_REVIEW',
+      travelDate: '2026-11-20'
+    });
+
+    const trip7Res = await request('/api/account/my-trips', {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(trip7Res.status, 200);
+    const trip7Str = JSON.stringify(trip7Res.body);
+    assert.strictEqual(trip7Str.includes(cust1RawPassport), false);
+    assert.ok(trip7Str.includes('••••••5432'));
+    console.log('  ✅ TRIP-7 PASSED: Raw passport number absent; passport masked as ••••••5432');
+
+    // TRIP-8: Payment secrets absent
+    console.log('\n[TRIP-8] Testing Payment Gateway Secrets & Keys Absent from Response...');
+    await db.payments.create({
+      id: `pay_trip_${Date.now()}`,
+      paymentNumber: `JMT-P-TRIP-${Date.now()}`,
+      userId: customer1User.id,
+      bookingId: cust1BookingNum,
+      provider: 'THAWANI',
+      providerOrderId: 'order_secret_thawani_123',
+      providerPaymentId: 'pay_secret_thawani_456',
+      amount: 240,
+      amountMinor: 240000,
+      currency: 'OMR',
+      status: 'COMPLETED',
+      providerMetadata: { serverKey: 'sk_live_secret_key_12345', webhookSecret: 'whsec_secret_signature' }
+    });
+
+    const trip8Res = await request('/api/account/my-trips', {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(trip8Res.status, 200);
+    const trip8Str = JSON.stringify(trip8Res.body);
+    assert.strictEqual(trip8Str.includes('sk_live_secret_key_12345'), false);
+    assert.strictEqual(trip8Str.includes('whsec_secret_signature'), false);
+    assert.strictEqual(trip8Str.includes('order_secret_thawani_123'), false);
+    assert.strictEqual(trip8Str.includes('providerMetadata'), false);
+    console.log('  ✅ TRIP-8 PASSED: Payment secrets and gateway credentials strictly absent');
+
+    // TRIP-9: Customer cannot access another user's documents
+    console.log('\n[TRIP-9] Testing Customer Cannot Access Another User Documents (IDOR Defense)...');
+    const cust2DocId = `doc_c2_${Date.now()}`;
+    await db.visaDocuments.create({
+      id: cust2DocId,
+      documentId: cust2DocId,
+      applicationId: 'app_c2_xyz',
+      documentType: 'PASSPORT_COPY',
+      storageKey: 'mock-storage-key-c2.pdf',
+      originalFilename: 'customer2_passport.pdf',
+      mimeType: 'application/pdf',
+      fileSize: 1024,
+      uploadedBy: customer2User.id,
+      status: 'UPLOADED'
+    });
+
+    const trip9Res = await request(`/api/documents/${cust2DocId}/download`, {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(trip9Res.status, 403);
+    assert.strictEqual(trip9Res.body.error.code, 'FORBIDDEN');
+    console.log('  ✅ TRIP-9 PASSED: Unauthorized cross-customer document download blocked (403 FORBIDDEN)');
+
+    // TRIP-10: Existing V5.1/V5.2 security tests remain passing
+    console.log('\n[TRIP-10] Verifying Existing Profile & Dashboard Integration Integrity...');
+    const trip10DashRes = await request('/api/account/dashboard', {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(trip10DashRes.status, 200);
+    assert.ok(trip10DashRes.body.summary);
+
+    const trip10ProfileRes = await request('/api/account/profile', {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(trip10ProfileRes.status, 200);
+    assert.ok(trip10ProfileRes.body.user);
+    console.log('  ✅ TRIP-10 PASSED: Existing V5.1 and V5.2 endpoints remain 100% operational');
+
     console.log('\n================================================================');
-    console.log('🎉 ALL AUTOMATED TESTS PASSED SUCCESSFULLY! (162/162)');
+    console.log('🎉 ALL AUTOMATED TESTS PASSED SUCCESSFULLY! (172/172)');
     console.log('================================================================');
   } catch (err) {
     console.error('\n❌ Test Failure Details:', err);

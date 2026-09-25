@@ -1436,6 +1436,410 @@ app.get('/api/account/dashboard', authenticate, async (req, res) => {
   }
 });
 
+// --- V5.3 UNIFIED MY TRIPS AGGREGATION & ENDPOINTS ---
+async function getCustomerTripsData(user) {
+  const customerId = user.id;
+
+  // Concurrent queries with bounded limits and selective projection
+  const userContacts = [user.email, user.phone].filter(Boolean);
+  const [bookingsRaw, visasRaw, documentsRaw, paymentsRaw, inquiriesRaw] = await Promise.all([
+    db.tourBookings.find(
+      { userId: customerId },
+      { id: 1, bookingNumber: 1, packageTitle: 1, travelDate: 1, amount: 1, currency: 1, status: 1, travellers: 1, travellerName: 1, createdAt: 1, updatedAt: 1 },
+      { sort: { createdAt: -1 }, limit: 25, lean: true }
+    ),
+    db.visaApplications.find(
+      { userId: customerId },
+      { id: 1, applicationNumber: 1, destination: 1, visaType: 1, travelDate: 1, passportNumber: 1, status: 1, requestedDocuments: 1, documents: 1, createdAt: 1, updatedAt: 1 },
+      { sort: { createdAt: -1 }, limit: 25, lean: true }
+    ),
+    db.visaDocuments.find(
+      { uploadedBy: customerId },
+      { id: 1, documentId: 1, applicationId: 1, documentType: 1, originalFilename: 1, displayFilename: 1, mimeType: 1, fileSize: 1, status: 1, createdAt: 1 },
+      { sort: { createdAt: -1 }, limit: 50, lean: true }
+    ),
+    db.payments.find(
+      { userId: customerId },
+      { id: 1, paymentNumber: 1, bookingId: 1, visaApplicationId: 1, amount: 1, currency: 1, status: 1, paymentMethod: 1, createdAt: 1 },
+      { sort: { createdAt: -1 }, limit: 50, lean: true }
+    ),
+    userContacts.length > 0 ? db.contactInquiries.find(
+      { contact: { $in: userContacts } },
+      { id: 1, type: 1, message: 1, status: 1, createdAt: 1 },
+      { sort: { createdAt: -1 }, limit: 20, lean: true }
+    ) : []
+  ]);
+
+  const bookings = Array.isArray(bookingsRaw) ? bookingsRaw : [];
+  const visas = Array.isArray(visasRaw) ? visasRaw : [];
+  const documents = Array.isArray(documentsRaw) ? documentsRaw : [];
+  const payments = Array.isArray(paymentsRaw) ? paymentsRaw : [];
+  const inquiries = Array.isArray(inquiriesRaw) ? inquiriesRaw : [];
+
+  // Index payments by bookingId and visaApplicationId
+  const paymentsByBooking = new Map();
+  const paymentsByVisa = new Map();
+  payments.forEach(p => {
+    const safePayment = {
+      id: p.id || p.paymentNumber,
+      reference: p.paymentNumber || p.id,
+      amount: p.amount,
+      currency: p.currency || 'OMR',
+      status: p.status,
+      paymentMethod: p.paymentMethod || 'Online Card Payment'
+    };
+    if (p.bookingId) paymentsByBooking.set(String(p.bookingId), safePayment);
+    if (p.visaApplicationId) paymentsByVisa.set(String(p.visaApplicationId), safePayment);
+  });
+
+  // Group sanitized documents by applicationId (no storageKey, no disk paths)
+  const docsByApp = new Map();
+  documents.forEach(d => {
+    const appId = String(d.applicationId || '');
+    if (!docsByApp.has(appId)) docsByApp.set(appId, []);
+    docsByApp.get(appId).push({
+      id: d.id || d.documentId,
+      documentId: d.documentId || d.id,
+      documentType: d.documentType,
+      filename: d.displayFilename || d.originalFilename,
+      fileSize: d.fileSize,
+      mimeType: d.mimeType,
+      status: d.status,
+      downloadUrl: `/api/documents/${d.id || d.documentId}/download`,
+      createdAt: d.createdAt
+    });
+  });
+
+  // Identify hotel/flight consultations from inquiries
+  const hotelInquiries = [];
+  const flightInquiries = [];
+  inquiries.forEach(inq => {
+    const isFlight = inq.type === 'flight' || /flight|airline|ticket|air/i.test(inq.message || '');
+    const isHotel = inq.type === 'hotel' || /hotel|resort|stay|suite|room/i.test(inq.message || '');
+    if (isFlight) {
+      flightInquiries.push({
+        id: inq.id,
+        type: 'Flight Consultation',
+        status: inq.status === 'RESOLVED' ? 'COMPLETED' : 'IN_PROGRESS',
+        message: (inq.message || '').slice(0, 120),
+        createdAt: inq.createdAt
+      });
+    } else if (isHotel) {
+      hotelInquiries.push({
+        id: inq.id,
+        type: 'Hotel Consultation',
+        status: inq.status === 'RESOLVED' ? 'COMPLETED' : 'IN_PROGRESS',
+        message: (inq.message || '').slice(0, 120),
+        createdAt: inq.createdAt
+      });
+    }
+  });
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const trips = [];
+  const linkedVisaIds = new Set();
+  const linkedInquiryIds = new Set();
+
+  // 1. Process Tour Bookings into Trips
+  bookings.forEach(b => {
+    const payment = paymentsByBooking.get(String(b.id)) || paymentsByBooking.get(String(b.bookingNumber));
+    let paymentStatus = payment ? payment.status : (['PAID', 'CONFIRMED'].includes(b.status) ? 'PAID' : (['CANCELLED', 'REFUNDED'].includes(b.status) ? b.status : (['PENDING_PAYMENT', 'PAYMENT_PENDING'].includes(b.status) ? 'PENDING' : 'PENDING')));
+
+    // Check for a related visa application for this destination / timing
+    const linkedVisa = visas.find(v => !linkedVisaIds.has(v.id) && (
+      (v.destination && b.packageTitle && b.packageTitle.toLowerCase().includes(v.destination.toLowerCase())) ||
+      (v.travelDate && b.travelDate && v.travelDate.slice(0, 7) === b.travelDate.slice(0, 7))
+    ));
+    if (linkedVisa) linkedVisaIds.add(linkedVisa.id);
+
+    // Associated documents from linked visa
+    const tripDocs = linkedVisa ? (docsByApp.get(String(linkedVisa.id)) || docsByApp.get(String(linkedVisa.applicationNumber)) || []) : [];
+
+    // Check for consultations
+    const linkedHotel = hotelInquiries.find(h => !linkedInquiryIds.has(h.id));
+    if (linkedHotel) linkedInquiryIds.add(linkedHotel.id);
+    const linkedFlight = flightInquiries.find(f => !linkedInquiryIds.has(f.id));
+    if (linkedFlight) linkedInquiryIds.add(linkedFlight.id);
+
+    // Classification
+    let tripStatus = 'UPCOMING';
+    let nextAction = 'Ready for departure';
+
+    const hasPendingDocs = linkedVisa && (
+      ['ADDITIONAL_DOCUMENTS_REQUIRED', 'PENDING_DOCUMENTS', 'Documents required'].includes(linkedVisa.status) ||
+      (Array.isArray(linkedVisa.requestedDocuments) && linkedVisa.requestedDocuments.some(r => r.status === 'PENDING'))
+    );
+    const hasPendingPayment = ['PENDING_PAYMENT', 'PAYMENT_PENDING'].includes(b.status) || paymentStatus === 'PENDING';
+
+    if (hasPendingDocs) {
+      tripStatus = 'ACTION_REQUIRED';
+      nextAction = 'Submit requested visa documents';
+    } else if (hasPendingPayment && b.status !== 'CANCELLED') {
+      tripStatus = 'ACTION_REQUIRED';
+      nextAction = 'Complete booking payment';
+    } else if (b.status === 'CANCELLED') {
+      tripStatus = 'COMPLETED';
+      nextAction = 'Booking cancelled';
+    } else if (b.travelDate) {
+      const tDate = new Date(b.travelDate);
+      if (!isNaN(tDate.getTime())) {
+        tDate.setHours(0, 0, 0, 0);
+        if (tDate.getTime() === today.getTime()) {
+          tripStatus = 'ONGOING';
+          nextAction = 'Tour departs today';
+        } else if (tDate < today || b.status === 'COMPLETED') {
+          tripStatus = 'COMPLETED';
+          nextAction = 'Tour journey completed';
+        } else {
+          tripStatus = 'UPCOMING';
+          nextAction = b.status === 'CONFIRMED' ? 'Confirmed departure' : 'Booking confirmation pending';
+        }
+      }
+    }
+
+    // Infer destination
+    let destination = 'Muscat, Oman';
+    const titleLower = (b.packageTitle || '').toLowerCase();
+    if (titleLower.includes('salalah')) destination = 'Salalah, Oman';
+    else if (titleLower.includes('wahiba') || titleLower.includes('desert')) destination = 'Wahiba Sands, Oman';
+    else if (titleLower.includes('musandam') || titleLower.includes('khasab')) destination = 'Musandam, Oman';
+    else if (titleLower.includes('jabal') || titleLower.includes('nizwa')) destination = 'Jabal Akhdar & Nizwa, Oman';
+    else if (titleLower.includes('dubai')) destination = 'Dubai, UAE';
+
+    trips.push({
+      id: b.id || b.bookingNumber,
+      reference: b.bookingNumber || b.id,
+      type: 'TOUR',
+      title: b.packageTitle || 'Oman Tour Journey',
+      destination,
+      startDate: b.travelDate || b.createdAt,
+      endDate: null,
+      status: tripStatus,
+      paymentStatus,
+      payment: payment || { status: paymentStatus, amount: b.amount, currency: b.currency || 'OMR' },
+      nextAction,
+      services: {
+        tour: {
+          id: b.id,
+          reference: b.bookingNumber,
+          title: b.packageTitle,
+          status: b.status,
+          travellers: b.travellers || 1,
+          travellerName: b.travellerName,
+          amount: b.amount,
+          currency: b.currency || 'OMR'
+        },
+        visa: linkedVisa ? {
+          id: linkedVisa.id,
+          reference: linkedVisa.applicationNumber,
+          visaType: linkedVisa.visaType,
+          destination: linkedVisa.destination,
+          status: linkedVisa.status,
+          passportNumberMasked: maskPassport(linkedVisa.passportNumber)
+        } : null,
+        hotel: linkedHotel ? {
+          reference: linkedHotel.id,
+          type: 'Hotel Consultation',
+          status: linkedHotel.status
+        } : null,
+        flight: linkedFlight ? {
+          reference: linkedFlight.id,
+          type: 'Flight Consultation',
+          status: linkedFlight.status
+        } : null
+      },
+      documents: tripDocs,
+      createdAt: b.createdAt
+    });
+  });
+
+  // 2. Process Standalone Visa Applications into Trips
+  visas.forEach(v => {
+    if (linkedVisaIds.has(v.id)) return; // Already linked to a tour booking
+
+    const payment = paymentsByVisa.get(String(v.id)) || paymentsByVisa.get(String(v.applicationNumber));
+    let paymentStatus = payment ? payment.status : (['APPROVED', 'PROCESSING', 'UNDER_REVIEW'].includes(v.status) ? 'PAID' : (['CANCELLED', 'REJECTED'].includes(v.status) ? v.status : 'PENDING'));
+
+    const tripDocs = docsByApp.get(String(v.id)) || docsByApp.get(String(v.applicationNumber)) || [];
+
+    const linkedHotel = hotelInquiries.find(h => !linkedInquiryIds.has(h.id));
+    if (linkedHotel) linkedInquiryIds.add(linkedHotel.id);
+    const linkedFlight = flightInquiries.find(f => !linkedInquiryIds.has(f.id));
+    if (linkedFlight) linkedInquiryIds.add(linkedFlight.id);
+
+    let tripStatus = 'UPCOMING';
+    let nextAction = v.status === 'APPROVED' ? 'Visa issued — ready to travel' : 'Application under consular review';
+
+    const hasPendingDocs = ['ADDITIONAL_DOCUMENTS_REQUIRED', 'PENDING_DOCUMENTS', 'Documents required'].includes(v.status) ||
+      (Array.isArray(v.requestedDocuments) && v.requestedDocuments.some(r => r.status === 'PENDING'));
+
+    if (hasPendingDocs) {
+      tripStatus = 'ACTION_REQUIRED';
+      nextAction = 'Submit requested documents for visa clearing';
+    } else if (v.status === 'CANCELLED' || v.status === 'REJECTED') {
+      tripStatus = 'COMPLETED';
+      nextAction = v.status === 'REJECTED' ? 'Application rejected' : 'Application cancelled';
+    } else if (v.travelDate) {
+      const tDate = new Date(v.travelDate);
+      if (!isNaN(tDate.getTime())) {
+        tDate.setHours(0, 0, 0, 0);
+        if (tDate.getTime() === today.getTime()) {
+          tripStatus = 'ONGOING';
+          nextAction = 'Travel window active today';
+        } else if (tDate < today || v.status === 'COMPLETED') {
+          tripStatus = 'COMPLETED';
+          nextAction = 'Travel date passed';
+        } else {
+          tripStatus = 'UPCOMING';
+          nextAction = v.status === 'APPROVED' ? 'Visa approved — ready to travel' : 'Visa processing in progress';
+        }
+      }
+    } else if (v.status === 'COMPLETED') {
+      tripStatus = 'COMPLETED';
+      nextAction = 'Visa processing completed';
+    }
+
+    trips.push({
+      id: v.id || v.applicationNumber,
+      reference: v.applicationNumber || v.id,
+      type: 'VISA',
+      title: `${v.destination} ${v.visaType} Journey`,
+      destination: v.destination,
+      startDate: v.travelDate || v.createdAt,
+      endDate: null,
+      status: tripStatus,
+      paymentStatus,
+      payment: payment || { status: paymentStatus, amount: null, currency: 'OMR' },
+      nextAction,
+      services: {
+        tour: null,
+        visa: {
+          id: v.id,
+          reference: v.applicationNumber,
+          visaType: v.visaType,
+          destination: v.destination,
+          status: v.status,
+          passportNumberMasked: maskPassport(v.passportNumber),
+          requestedDocuments: (v.requestedDocuments || []).map(r => ({
+            requestId: r.requestId,
+            documentType: r.documentType,
+            instruction: r.instruction,
+            status: r.status
+          }))
+        },
+        hotel: linkedHotel ? {
+          reference: linkedHotel.id,
+          type: 'Hotel Consultation',
+          status: linkedHotel.status
+        } : null,
+        flight: linkedFlight ? {
+          reference: linkedFlight.id,
+          type: 'Flight Consultation',
+          status: linkedFlight.status
+        } : null
+      },
+      documents: tripDocs,
+      createdAt: v.createdAt
+    });
+  });
+
+  // 3. Process remaining Standalone Hotel / Flight Consultations
+  [...hotelInquiries, ...flightInquiries].forEach(inq => {
+    if (linkedInquiryIds.has(inq.id)) return;
+    const isFlight = inq.type === 'Flight Consultation';
+    trips.push({
+      id: inq.id,
+      reference: inq.id,
+      type: isFlight ? 'FLIGHT_CONSULTATION' : 'HOTEL_CONSULTATION',
+      title: isFlight ? 'Flight Consultation Request' : 'Hotel Consultation Request',
+      destination: 'Oman / GCC',
+      startDate: inq.createdAt,
+      endDate: null,
+      status: inq.status === 'COMPLETED' ? 'COMPLETED' : 'UPCOMING',
+      paymentStatus: 'N/A',
+      payment: null,
+      nextAction: inq.status === 'COMPLETED' ? 'Consultation completed' : 'Concierge review in progress',
+      services: {
+        tour: null,
+        visa: null,
+        hotel: !isFlight ? { reference: inq.id, type: 'Hotel Consultation', status: inq.status, details: inq.message } : null,
+        flight: isFlight ? { reference: inq.id, type: 'Flight Consultation', status: inq.status, details: inq.message } : null
+      },
+      documents: [],
+      createdAt: inq.createdAt
+    });
+  });
+
+  // Sort all trips chronologically by start date / created date descending
+  trips.sort((a, b) => new Date(b.startDate || b.createdAt || 0) - new Date(a.startDate || a.createdAt || 0));
+
+  // Compute summary metrics
+  const summary = {
+    totalTrips: trips.length,
+    upcomingTrips: trips.filter(t => t.status === 'UPCOMING').length,
+    ongoingTrips: trips.filter(t => t.status === 'ONGOING').length,
+    completedTrips: trips.filter(t => t.status === 'COMPLETED').length,
+    actionRequired: trips.filter(t => t.status === 'ACTION_REQUIRED').length
+  };
+
+  return { summary, trips };
+}
+
+// GET /api/account/my-trips - Aggregated customer travel journeys
+app.get('/api/account/my-trips', authenticate, async (req, res) => {
+  try {
+    const allowedFilters = ['ALL', 'UPCOMING', 'ONGOING', 'ACTION_REQUIRED', 'COMPLETED'];
+    const filterStatus = req.query.status ? String(req.query.status).trim().toUpperCase() : 'ALL';
+    if (!allowedFilters.includes(filterStatus)) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'INVALID_STATUS_FILTER',
+          message: 'Status must be one of: ALL, UPCOMING, ONGOING, ACTION_REQUIRED, COMPLETED'
+        }
+      });
+    }
+
+    const { summary, trips } = await getCustomerTripsData(req.user);
+    const filteredTrips = filterStatus === 'ALL' ? trips : trips.filter(t => t.status === filterStatus);
+
+    res.json({
+      success: true,
+      summary,
+      trips: filteredTrips
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: err.message } });
+  }
+});
+
+// GET /api/account/my-trips/:id - Single trip detail for authenticated customer
+app.get('/api/account/my-trips/:id', authenticate, async (req, res) => {
+  try {
+    const targetId = String(req.params.id || '').trim();
+    if (!targetId) {
+      return res.status(400).json({ success: false, error: { code: 'INVALID_ID', message: 'Trip ID is required.' } });
+    }
+
+    const { trips } = await getCustomerTripsData(req.user);
+    const trip = trips.find(t => t.id === targetId || t.reference === targetId);
+
+    if (!trip) {
+      return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Trip not found.' } });
+    }
+
+    res.json({
+      success: true,
+      trip
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: err.message } });
+  }
+});
+
+
 
 // --- i18n & MULTI-CURRENCY ENDPOINTS (Task #7) ---
 app.get('/api/i18n/translations', (req, res) => {
