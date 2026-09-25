@@ -11,6 +11,7 @@ const state = {
   cart: null,
   activeConversationId: localStorage.getItem('jmt_chat_conv') || null
 };
+window.state = state;
 
 // Theme State Manager & Persistent Mode Toggle
 window.toggleTheme = function() {
@@ -386,6 +387,7 @@ function navigate(route) {
   window.history.pushState({}, '', route);
   renderRoute();
 }
+window.navigate = navigate;
 
 window.onpopstate = () => renderRoute();
 
@@ -497,6 +499,8 @@ async function renderRoute() {
     renderLoginPage(container);
   } else if (path === '/register') {
     renderRegisterPage(container);
+  } else if (path === '/account/profile' || path === '/profile') {
+    renderProfilePage(container);
   } else if (path === '/account') {
     renderAccountPage(container);
   } else if (path === '/privacy' || path === '/terms' || path === '/refund-policy' || path === '/cancellation-policy') {
@@ -12392,6 +12396,12 @@ async function renderAccountPage(container) {
     container.innerHTML = `
       <div style="background: #07153B !important; min-height: 100vh; color: #FFFFFF !important;">
         <div class="shell" style="padding: 40px 20px 60px;">
+          <!-- PORTAL SUB-NAVIGATION TABS -->
+          <div style="display: flex; gap: 12px; margin-bottom: 24px; border-bottom: 1px solid rgba(255, 255, 255, 0.12); padding-bottom: 16px; flex-wrap: wrap; align-items: center;">
+            <span style="background: #00A651; color: #FFFFFF; padding: 9px 20px; border-radius: 99px; font-size: 13.5px; font-weight: 700; box-shadow: 0 4px 14px rgba(0, 166, 81, 0.3);">📊 Overview & Bookings</span>
+            <a href="/account/profile" onclick="event.preventDefault(); navigate('/account/profile')" style="background: rgba(255, 255, 255, 0.08); color: #CBD5E1; padding: 9px 20px; border-radius: 99px; text-decoration: none; font-size: 13.5px; font-weight: 700; border: 1px solid rgba(255,255,255,0.15); transition: all 0.2s ease;">👤 Profile & Preferences →</a>
+          </div>
+
           <!-- DASHBOARD HEADER -->
           <div class="jmt-hero" style="background: linear-gradient(135deg, #07153B 0%, #0B286C 100%) !important; border: 1px solid rgba(255, 255, 255, 0.15) !important; padding: 36px 32px; margin-bottom: 32px;">
             <span class="jmt-hero-eyebrow" style="color: #00E676 !important;">CUSTOMER PORTAL</span>
@@ -12557,6 +12567,425 @@ function renderSupportPage(container) {
       </div>
     </div>
   `;
+}
+
+// -------------------------------------------------------------
+// V5.1 CUSTOMER PROFILE & PREFERENCES PAGE
+// -------------------------------------------------------------
+async function renderProfilePage(container) {
+  if (!state.user) {
+    navigate('/login');
+    return;
+  }
+
+  updateSEO({
+    title: 'My Profile & Preferences | JMT Travels Customer Portal',
+    description: 'Manage your personal details, travel identification, and account preferences.',
+    canonicalUrl: '/account/profile',
+    noindex: true
+  });
+  announceToSR('Navigated to Customer Profile and Preferences');
+
+  container.innerHTML = `
+    <div style="background: #07153B !important; min-height: 100vh; color: #FFFFFF !important;">
+      <div class="shell" style="padding: 40px 20px 60px; max-width: 1080px; margin: 0 auto;">
+        <div style="padding: 60px 0; text-align: center; color: #94A3B8;">
+          <p style="font-size: 16px;">Loading your profile details...</p>
+        </div>
+      </div>
+    </div>
+  `;
+
+  try {
+    const profileRes = await apiCall('/api/account/profile');
+    if (!profileRes || !profileRes.success) {
+      throw new Error(profileRes?.error?.message || 'Failed to load profile.');
+    }
+
+    let isEditing = false;
+    let currentData = profileRes;
+
+    function renderContent() {
+      const u = currentData.user;
+      const p = currentData.profile;
+      const initials = (u.name || 'CU').split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
+
+      container.innerHTML = `
+        <div style="background: #07153B !important; min-height: 100vh; color: #FFFFFF !important;">
+          <div class="shell" style="padding: 40px 20px 60px; max-width: 1080px; margin: 0 auto;">
+
+            <!-- PORTAL SUB-NAVIGATION TABS -->
+            <div style="display: flex; gap: 12px; margin-bottom: 28px; border-bottom: 1px solid rgba(255, 255, 255, 0.12); padding-bottom: 16px; flex-wrap: wrap; align-items: center;">
+              <a href="/account" onclick="event.preventDefault(); navigate('/account')" style="background: rgba(255, 255, 255, 0.08); color: #CBD5E1; padding: 9px 20px; border-radius: 99px; text-decoration: none; font-size: 13.5px; font-weight: 700; border: 1px solid rgba(255,255,255,0.15); transition: all 0.2s ease;">← Back to Overview</a>
+              <span style="background: #00A651; color: #FFFFFF; padding: 9px 20px; border-radius: 99px; font-size: 13.5px; font-weight: 700; box-shadow: 0 4px 14px rgba(0, 166, 81, 0.3);">👤 Profile & Preferences</span>
+            </div>
+
+            <!-- PROFILE HERO HEADER -->
+            <div class="jmt-card" style="background: linear-gradient(135deg, #07153B 0%, #0B286C 100%) !important; border: 1px solid rgba(255, 255, 255, 0.15) !important; border-radius: 16px; padding: 32px; margin-bottom: 32px; display: flex; align-items: center; justify-content: space-between; gap: 24px; flex-wrap: wrap;">
+              <div style="display: flex; align-items: center; gap: 20px;">
+                <div style="width: 72px; height: 72px; border-radius: 50%; background: #00A651; color: #FFFFFF; font-size: 26px; font-weight: 800; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 16px rgba(0, 166, 81, 0.4); border: 2px solid rgba(255,255,255,0.2);">
+                  ${escapeHTML(initials)}
+                </div>
+                <div>
+                  <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 4px; flex-wrap: wrap;">
+                    <h1 style="font-size: 26px; font-weight: 800; color: #FFFFFF; margin: 0;">${escapeHTML(u.name)}</h1>
+                    <span style="background: rgba(0, 230, 118, 0.15); color: #00E676; border: 1px solid rgba(0, 230, 118, 0.3); border-radius: 99px; padding: 3px 10px; font-size: 11px; font-weight: 800; letter-spacing: 0.5px;">${u.verified ? '✓ VERIFIED' : 'CUSTOMER'}</span>
+                  </div>
+                  <p style="font-size: 14px; color: #94A3B8; margin: 0;">
+                    ${escapeHTML(u.email)} • Preferred: <b style="color: #00E676;">${u.preferredLanguage === 'ar' ? 'العربية' : 'English'}</b> (${escapeHTML(u.preferredCurrency)})
+                  </p>
+                </div>
+              </div>
+              <div>
+                ${!isEditing ? `
+                  <button id="btn-edit-profile" class="btn" style="background: #00A651 !important; color: #FFFFFF !important; border: 0; padding: 12px 28px; border-radius: 99px; font-weight: 700; font-size: 14px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 16px rgba(0, 166, 81, 0.35); transition: all 0.2s ease;">
+                    ✏️ Edit Profile
+                  </button>
+                ` : `
+                  <div style="display: flex; gap: 12px; align-items: center;">
+                    <button id="btn-cancel-edit" class="btn" style="background: rgba(255,255,255,0.08) !important; color: #E2E8F0 !important; border: 1px solid rgba(255,255,255,0.25) !important; padding: 11px 22px; border-radius: 99px; font-weight: 700; font-size: 14px; cursor: pointer;">
+                      ✕ Cancel
+                    </button>
+                    <button id="btn-save-profile" form="profile-form" type="submit" class="btn" style="background: #00A651 !important; color: #FFFFFF !important; border: 0; padding: 11px 26px; border-radius: 99px; font-weight: 700; font-size: 14px; cursor: pointer; box-shadow: 0 4px 16px rgba(0,166,81,0.35);">
+                      ✓ Save Changes
+                    </button>
+                  </div>
+                `}
+              </div>
+            </div>
+
+            <!-- FEEDBACK ALERT AREA -->
+            <div id="profile-feedback" style="display: none; margin-bottom: 24px; padding: 16px 20px; border-radius: 12px; font-size: 14px; font-weight: 600;"></div>
+
+            <!-- PROFILE MAIN CONTENT -->
+            ${!isEditing ? renderViewMode(u, p) : renderEditMode(u, p)}
+
+          </div>
+        </div>
+      `;
+
+      attachEventListeners();
+    }
+
+    function renderViewMode(u, p) {
+      return `
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px;">
+
+          <!-- CARD 1: PERSONAL INFORMATION -->
+          <div class="jmt-card" style="background: #0B286C !important; border: 1px solid rgba(255, 255, 255, 0.15) !important; border-radius: 14px; padding: 24px;">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 12px;">
+              <span style="font-size: 20px;">👤</span>
+              <h2 style="font-size: 17px; font-weight: 800; color: #00E676; margin: 0;">Personal Information</h2>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+              <div>
+                <label style="font-size: 12px; text-transform: uppercase; color: #94A3B8; font-weight: 700; display: block; margin-bottom: 4px;">Full Name</label>
+                <div style="font-size: 15px; font-weight: 600; color: #FFFFFF;">${escapeHTML(u.name || 'Not provided')}</div>
+              </div>
+              <div>
+                <label style="font-size: 12px; text-transform: uppercase; color: #94A3B8; font-weight: 700; display: block; margin-bottom: 4px;">Date of Birth</label>
+                <div style="font-size: 15px; font-weight: 600; color: #FFFFFF;">${p.dateOfBirth ? escapeHTML(p.dateOfBirth) : '<span style="color:#64748B;">Not specified</span>'}</div>
+              </div>
+              <div>
+                <label style="font-size: 12px; text-transform: uppercase; color: #94A3B8; font-weight: 700; display: block; margin-bottom: 4px;">Nationality</label>
+                <div style="font-size: 15px; font-weight: 600; color: #FFFFFF;">${p.nationality ? escapeHTML(p.nationality) : '<span style="color:#64748B;">Not specified</span>'}</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- CARD 2: CONTACT INFORMATION -->
+          <div class="jmt-card" style="background: #0B286C !important; border: 1px solid rgba(255, 255, 255, 0.15) !important; border-radius: 14px; padding: 24px;">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 12px;">
+              <span style="font-size: 20px;">📞</span>
+              <h2 style="font-size: 17px; font-weight: 800; color: #00E676; margin: 0;">Contact Information</h2>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+              <div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                  <label style="font-size: 12px; text-transform: uppercase; color: #94A3B8; font-weight: 700; margin: 0;">Email Address</label>
+                  <span style="font-size: 11px; background: rgba(59, 130, 246, 0.2); color: #93C5FD; padding: 2px 8px; border-radius: 6px;">Primary Login</span>
+                </div>
+                <div style="font-size: 15px; font-weight: 600; color: #FFFFFF;">${escapeHTML(u.email)}</div>
+              </div>
+              <div>
+                <label style="font-size: 12px; text-transform: uppercase; color: #94A3B8; font-weight: 700; display: block; margin-bottom: 4px;">Phone Number</label>
+                <div style="font-size: 15px; font-weight: 600; color: #FFFFFF;">${u.phone ? escapeHTML(u.phone) : '<span style="color:#64748B;">No phone linked</span>'}</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- CARD 3: PASSPORT & TRAVEL IDENTITY -->
+          <div class="jmt-card" style="background: #0B286C !important; border: 1px solid rgba(255, 255, 255, 0.15) !important; border-radius: 14px; padding: 24px;">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 12px;">
+              <span style="font-size: 20px;">🛂</span>
+              <h2 style="font-size: 17px; font-weight: 800; color: #00E676; margin: 0;">Passport & Travel Identity</h2>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+              <div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                  <label style="font-size: 12px; text-transform: uppercase; color: #94A3B8; font-weight: 700; margin: 0;">Passport Number</label>
+                  <span style="font-size: 11px; background: rgba(245, 158, 11, 0.2); color: #FCD34D; padding: 2px 8px; border-radius: 6px; font-weight: 700;">🔒 Read-Only</span>
+                </div>
+                <div style="font-size: 16px; font-family: monospace; font-weight: 700; color: #00E676; letter-spacing: 2px;">
+                  ${p.passportNumberMasked || '••••••••'}
+                </div>
+                <small style="font-size: 11.5px; color: #94A3B8; margin-top: 6px; display: block; line-height: 1.4;">
+                  Passport numbers are verified against official government visa documents. To update, please submit a passport update request via JMT Support.
+                </small>
+              </div>
+              <div style="border-top: 1px solid rgba(255,255,255,0.08); padding-top: 12px;">
+                <label style="font-size: 12px; text-transform: uppercase; color: #94A3B8; font-weight: 700; display: block; margin-bottom: 4px;">Address</label>
+                <div style="font-size: 14px; color: #E2E8F0;">${p.address ? escapeHTML(p.address) : '<span style="color:#64748B;">Not specified</span>'}</div>
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <div>
+                  <label style="font-size: 12px; text-transform: uppercase; color: #94A3B8; font-weight: 700; display: block; margin-bottom: 4px;">City</label>
+                  <div style="font-size: 14px; color: #E2E8F0;">${p.city ? escapeHTML(p.city) : '<span style="color:#64748B;">Not specified</span>'}</div>
+                </div>
+                <div>
+                  <label style="font-size: 12px; text-transform: uppercase; color: #94A3B8; font-weight: 700; display: block; margin-bottom: 4px;">Country</label>
+                  <div style="font-size: 14px; color: #E2E8F0;">${p.country ? escapeHTML(p.country) : '<span style="color:#64748B;">Not specified</span>'}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- CARD 4: PREFERENCES & REGIONAL SETTINGS -->
+          <div class="jmt-card" style="background: #0B286C !important; border: 1px solid rgba(255, 255, 255, 0.15) !important; border-radius: 14px; padding: 24px;">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 12px;">
+              <span style="font-size: 20px;">🌐</span>
+              <h2 style="font-size: 17px; font-weight: 800; color: #00E676; margin: 0;">Language & Currency</h2>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+              <div>
+                <label style="font-size: 12px; text-transform: uppercase; color: #94A3B8; font-weight: 700; display: block; margin-bottom: 4px;">Interface Language</label>
+                <div style="font-size: 15px; font-weight: 600; color: #FFFFFF;">
+                  ${u.preferredLanguage === 'ar' ? 'العربية (Arabic)' : 'English (EN)'}
+                </div>
+              </div>
+              <div>
+                <label style="font-size: 12px; text-transform: uppercase; color: #94A3B8; font-weight: 700; display: block; margin-bottom: 4px;">Preferred Currency</label>
+                <div style="font-size: 15px; font-weight: 600; color: #00E676;">
+                  ${escapeHTML(u.preferredCurrency || 'OMR')}
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      `;
+    }
+
+    function renderEditMode(u, p) {
+      return `
+        <form id="profile-form" onsubmit="event.preventDefault();" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px;">
+
+          <!-- EDIT CARD 1: PERSONAL INFORMATION -->
+          <div class="jmt-card" style="background: #0B286C !important; border: 1.5px solid #00E676 !important; border-radius: 14px; padding: 24px;">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 12px;">
+              <span style="font-size: 20px;">👤</span>
+              <h2 style="font-size: 17px; font-weight: 800; color: #00E676; margin: 0;">Edit Personal Information</h2>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+              <div>
+                <label for="profile-name" style="font-size: 12.5px; font-weight: 700; color: #E2E8F0; display: block; margin-bottom: 6px;">Full Name *</label>
+                <input type="text" id="profile-name" name="name" value="${escapeHTML(u.name || '')}" required minlength="2" maxlength="100" style="width: 100%; box-sizing: border-box; background: rgba(255,255,255,0.08); border: 1.5px solid rgba(255,255,255,0.25); border-radius: 10px; color: #FFFFFF; padding: 12px 14px; font-size: 14px;">
+              </div>
+              <div>
+                <label for="profile-dob" style="font-size: 12.5px; font-weight: 700; color: #E2E8F0; display: block; margin-bottom: 6px;">Date of Birth</label>
+                <input type="date" id="profile-dob" name="dateOfBirth" value="${escapeHTML(p.dateOfBirth || '')}" style="width: 100%; box-sizing: border-box; background: rgba(255,255,255,0.08); border: 1.5px solid rgba(255,255,255,0.25); border-radius: 10px; color: #FFFFFF; padding: 12px 14px; font-size: 14px;">
+              </div>
+              <div>
+                <label for="profile-nationality" style="font-size: 12.5px; font-weight: 700; color: #E2E8F0; display: block; margin-bottom: 6px;">Nationality</label>
+                <input type="text" id="profile-nationality" name="nationality" value="${escapeHTML(p.nationality || '')}" maxlength="60" placeholder="e.g. Omani, British, Indian" style="width: 100%; box-sizing: border-box; background: rgba(255,255,255,0.08); border: 1.5px solid rgba(255,255,255,0.25); border-radius: 10px; color: #FFFFFF; padding: 12px 14px; font-size: 14px;">
+              </div>
+            </div>
+          </div>
+
+          <!-- EDIT CARD 2: CONTACT INFORMATION -->
+          <div class="jmt-card" style="background: #0B286C !important; border: 1px solid rgba(255, 255, 255, 0.2) !important; border-radius: 14px; padding: 24px;">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 12px;">
+              <span style="font-size: 20px;">📞</span>
+              <h2 style="font-size: 17px; font-weight: 800; color: #00E676; margin: 0;">Edit Contact Details</h2>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+              <div>
+                <label for="profile-email" style="font-size: 12.5px; font-weight: 700; color: #94A3B8; display: block; margin-bottom: 6px;">Email Address (Locked)</label>
+                <input type="email" id="profile-email" value="${escapeHTML(u.email)}" disabled style="width: 100%; box-sizing: border-box; background: rgba(255,255,255,0.04); border: 1.5px solid rgba(255,255,255,0.12); border-radius: 10px; color: #94A3B8; padding: 12px 14px; font-size: 14px; cursor: not-allowed;">
+                <small style="color: #64748B; font-size: 11px; margin-top: 4px; display: block;">Primary login email cannot be edited directly.</small>
+              </div>
+              <div>
+                <label for="profile-phone" style="font-size: 12.5px; font-weight: 700; color: #E2E8F0; display: block; margin-bottom: 6px;">Phone Number</label>
+                <input type="tel" id="profile-phone" name="phone" value="${escapeHTML(u.phone || '')}" placeholder="+968 9123 4567" maxlength="25" style="width: 100%; box-sizing: border-box; background: rgba(255,255,255,0.08); border: 1.5px solid rgba(255,255,255,0.25); border-radius: 10px; color: #FFFFFF; padding: 12px 14px; font-size: 14px;">
+              </div>
+            </div>
+          </div>
+
+          <!-- EDIT CARD 3: PASSPORT & TRAVEL IDENTITY -->
+          <div class="jmt-card" style="background: #0B286C !important; border: 1px solid rgba(255, 255, 255, 0.2) !important; border-radius: 14px; padding: 24px;">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 12px;">
+              <span style="font-size: 20px;">🛂</span>
+              <h2 style="font-size: 17px; font-weight: 800; color: #00E676; margin: 0;">Passport & Travel Identity</h2>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+              <div>
+                <label style="font-size: 12.5px; font-weight: 700; color: #94A3B8; display: block; margin-bottom: 6px;">Passport Number (Masked / Verified)</label>
+                <input type="text" value="${p.passportNumberMasked || '••••••••'}" disabled style="width: 100%; box-sizing: border-box; background: rgba(255,255,255,0.04); border: 1.5px solid rgba(255,255,255,0.12); border-radius: 10px; color: #00E676; padding: 12px 14px; font-size: 15px; font-family: monospace; letter-spacing: 2px; cursor: not-allowed;">
+                <small style="color: #64748B; font-size: 11px; margin-top: 4px; display: block;">Official passport numbers cannot be altered self-service.</small>
+              </div>
+              <div>
+                <label for="profile-address" style="font-size: 12.5px; font-weight: 700; color: #E2E8F0; display: block; margin-bottom: 6px;">Residential Address</label>
+                <input type="text" id="profile-address" name="address" value="${escapeHTML(p.address || '')}" maxlength="200" placeholder="Street, Building, Unit" style="width: 100%; box-sizing: border-box; background: rgba(255,255,255,0.08); border: 1.5px solid rgba(255,255,255,0.25); border-radius: 10px; color: #FFFFFF; padding: 12px 14px; font-size: 14px;">
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <div>
+                  <label for="profile-city" style="font-size: 12.5px; font-weight: 700; color: #E2E8F0; display: block; margin-bottom: 6px;">City</label>
+                  <input type="text" id="profile-city" name="city" value="${escapeHTML(p.city || '')}" maxlength="100" placeholder="Muscat" style="width: 100%; box-sizing: border-box; background: rgba(255,255,255,0.08); border: 1.5px solid rgba(255,255,255,0.25); border-radius: 10px; color: #FFFFFF; padding: 12px 14px; font-size: 14px;">
+                </div>
+                <div>
+                  <label for="profile-country" style="font-size: 12.5px; font-weight: 700; color: #E2E8F0; display: block; margin-bottom: 6px;">Country</label>
+                  <input type="text" id="profile-country" name="country" value="${escapeHTML(p.country || '')}" maxlength="100" placeholder="Oman" style="width: 100%; box-sizing: border-box; background: rgba(255,255,255,0.08); border: 1.5px solid rgba(255,255,255,0.25); border-radius: 10px; color: #FFFFFF; padding: 12px 14px; font-size: 14px;">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- EDIT CARD 4: PREFERENCES & REGIONAL SETTINGS -->
+          <div class="jmt-card" style="background: #0B286C !important; border: 1px solid rgba(255, 255, 255, 0.2) !important; border-radius: 14px; padding: 24px;">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 12px;">
+              <span style="font-size: 20px;">🌐</span>
+              <h2 style="font-size: 17px; font-weight: 800; color: #00E676; margin: 0;">Language & Currency</h2>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+              <div>
+                <label for="profile-language" style="font-size: 12.5px; font-weight: 700; color: #E2E8F0; display: block; margin-bottom: 6px;">Interface Language</label>
+                <select id="profile-language" name="preferredLanguage" style="width: 100%; box-sizing: border-box; background: #07153B; border: 1.5px solid rgba(255,255,255,0.25); border-radius: 10px; color: #FFFFFF; padding: 12px 14px; font-size: 14px; cursor: pointer;">
+                  <option value="en" ${u.preferredLanguage === 'en' ? 'selected' : ''}>English (EN)</option>
+                  <option value="ar" ${u.preferredLanguage === 'ar' ? 'selected' : ''}>العربية (Arabic)</option>
+                </select>
+              </div>
+              <div>
+                <label for="profile-currency" style="font-size: 12.5px; font-weight: 700; color: #E2E8F0; display: block; margin-bottom: 6px;">Preferred Currency</label>
+                <select id="profile-currency" name="preferredCurrency" style="width: 100%; box-sizing: border-box; background: #07153B; border: 1.5px solid rgba(255,255,255,0.25); border-radius: 10px; color: #FFFFFF; padding: 12px 14px; font-size: 14px; cursor: pointer;">
+                  <option value="OMR" ${u.preferredCurrency === 'OMR' ? 'selected' : ''}>OMR — Omani Rial (﷼.ع.)</option>
+                  <option value="USD" ${u.preferredCurrency === 'USD' ? 'selected' : ''}>USD — US Dollar ($)</option>
+                  <option value="AED" ${u.preferredCurrency === 'AED' ? 'selected' : ''}>AED — UAE Dirham (د.إ)</option>
+                  <option value="SAR" ${u.preferredCurrency === 'SAR' ? 'selected' : ''}>SAR — Saudi Riyal (﷼)</option>
+                  <option value="INR" ${u.preferredCurrency === 'INR' ? 'selected' : ''}>INR — Indian Rupee (₹)</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+        </form>
+      `;
+    }
+
+    function attachEventListeners() {
+      const editBtn = document.getElementById('btn-edit-profile');
+      if (editBtn) {
+        editBtn.addEventListener('click', () => {
+          isEditing = true;
+          renderContent();
+        });
+      }
+
+      const cancelBtn = document.getElementById('btn-cancel-edit');
+      if (cancelBtn) {
+        cancelBtn.addEventListener('click', () => {
+          isEditing = false;
+          renderContent();
+        });
+      }
+
+      const form = document.getElementById('profile-form');
+      if (form) {
+        form.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const feedback = document.getElementById('profile-feedback');
+          const saveBtn = document.getElementById('btn-save-profile');
+          if (saveBtn) {
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = 'Saving...';
+          }
+
+          const payload = {
+            name: document.getElementById('profile-name').value.trim(),
+            phone: document.getElementById('profile-phone').value.trim(),
+            nationality: document.getElementById('profile-nationality').value.trim(),
+            dateOfBirth: document.getElementById('profile-dob').value.trim(),
+            address: document.getElementById('profile-address').value.trim(),
+            city: document.getElementById('profile-city').value.trim(),
+            country: document.getElementById('profile-country').value.trim(),
+            preferredLanguage: document.getElementById('profile-language').value,
+            preferredCurrency: document.getElementById('profile-currency').value
+          };
+
+          try {
+            const updated = await apiCall('/api/account/profile', 'PUT', payload);
+            if (updated && updated.success) {
+              currentData = updated;
+              // Update local state user
+              if (state.user) {
+                state.user.name = updated.user.name;
+                state.user.phone = updated.user.phone;
+                state.user.preferredLanguage = updated.user.preferredLanguage;
+                state.user.preferredCurrency = updated.user.preferredCurrency;
+                localStorage.setItem('jmt_user', JSON.stringify(state.user));
+              }
+              // If language changed, update state
+              if (payload.preferredLanguage !== state.lang) {
+                state.lang = payload.preferredLanguage;
+                localStorage.setItem('jmt_lang', state.lang);
+                document.documentElement.dir = state.lang === 'ar' ? 'rtl' : 'ltr';
+              }
+
+              isEditing = false;
+              renderContent();
+
+              const updatedFeedback = document.getElementById('profile-feedback');
+              if (updatedFeedback) {
+                updatedFeedback.style.display = 'block';
+                updatedFeedback.style.background = 'rgba(0, 230, 118, 0.15)';
+                updatedFeedback.style.color = '#00E676';
+                updatedFeedback.style.border = '1px solid rgba(0, 230, 118, 0.3)';
+                updatedFeedback.textContent = '✓ Profile information updated successfully.';
+              }
+            } else {
+              throw new Error(updated?.error?.message || 'Failed to update profile.');
+            }
+          } catch (err) {
+            if (feedback) {
+              feedback.style.display = 'block';
+              feedback.style.background = 'rgba(239, 68, 68, 0.15)';
+              feedback.style.color = '#FCA5A5';
+              feedback.style.border = '1px solid rgba(239, 68, 68, 0.3)';
+              feedback.textContent = `Error: ${err.message}`;
+            }
+            if (saveBtn) {
+              saveBtn.disabled = false;
+              saveBtn.innerHTML = '✓ Save Changes';
+            }
+          }
+        });
+      }
+    }
+
+    renderContent();
+
+  } catch (err) {
+    container.innerHTML = `
+      <div style="background: #07153B !important; min-height: 100vh; color: #FFFFFF !important;">
+        <div class="shell" style="padding: 60px 20px; text-align: center;">
+          <p style="color: #EF4444; font-size: 16px; font-weight: 700; margin-bottom: 16px;">Failed to load profile details.</p>
+          <p style="color: #94A3B8; font-size: 14px; margin-bottom: 24px;">${escapeHTML(err.message)}</p>
+          <button onclick="navigate('/account')" class="btn" style="background: #00A651 !important; color: #FFFFFF !important; border: 0; padding: 10px 24px; border-radius: 99px;">
+            Return to Dashboard
+          </button>
+        </div>
+      </div>
+    `;
+  }
 }
 
 function renderAboutPage(container) {

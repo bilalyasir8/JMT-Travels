@@ -318,6 +318,17 @@ function hashToken(rawToken) {
   return crypto.createHash('sha256').update(String(rawToken)).digest('hex');
 }
 
+// PASSPORT MASKING HELPER (V5.1 Customer Profile Foundation)
+function maskPassport(passport) {
+  if (!passport || typeof passport !== 'string') return null;
+  const trimmed = passport.trim();
+  if (trimmed.length === 0) return null;
+  if (trimmed.length <= 4) {
+    return '•'.repeat(trimmed.length);
+  }
+  return '••••••' + trimmed.slice(-4);
+}
+
 // Multer Storage Setup for Private Passport/Identity Documents
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, db.PRIVATE_UPLOADS_DIR),
@@ -989,6 +1000,291 @@ app.patch('/api/users/preferences', authenticate, async (req, res) => {
     res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: err.message } });
   }
 });
+
+// =============================================================
+// --- CUSTOMER PROFILE SELF-SERVICE ENDPOINTS (V5.1) ---
+// =============================================================
+
+// GET /api/account/profile - Safe customer profile retrieval
+app.get('/api/account/profile', authenticate, async (req, res) => {
+  try {
+    const user = await db.users.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'User not found.' } });
+    }
+
+    const profile = await db.customerProfiles.findOne({ userId: req.user.id });
+
+    res.json({
+      success: true,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone || '',
+        role: user.role,
+        verified: !!user.verified,
+        preferredLanguage: user.preferredLanguage || 'en',
+        preferredCurrency: user.preferredCurrency || 'OMR'
+      },
+      profile: {
+        nationality: profile ? (profile.nationality || '') : '',
+        dateOfBirth: profile ? (profile.dateOfBirth || '') : '',
+        address: profile ? (profile.address || '') : '',
+        city: profile ? (profile.city || '') : '',
+        country: profile ? (profile.country || '') : '',
+        passportNumberMasked: profile && profile.passportNumber ? maskPassport(profile.passportNumber) : null
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: err.message } });
+  }
+});
+
+// PUT /api/account/profile - Safe customer profile updates with explicit allowlist
+app.put('/api/account/profile', authenticate, async (req, res) => {
+  try {
+    const user = await db.users.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'User not found.' } });
+    }
+
+    const body = req.body || {};
+    const bodyKeys = Object.keys(body);
+
+    const ALLOWED_USER_FIELDS = ['name', 'phone', 'preferredLanguage', 'preferredCurrency'];
+    const ALLOWED_PROFILE_FIELDS = ['nationality', 'dateOfBirth', 'address', 'city', 'country'];
+    const ALLOWED_ALL_FIELDS = [...ALLOWED_USER_FIELDS, ...ALLOWED_PROFILE_FIELDS];
+    const FORBIDDEN_FIELDS = [
+      'role', 'status', 'verified', 'passwordHash', 'password',
+      'tokenInvalidatedBefore', 'failedLoginAttempts', 'lockUntil',
+      'mfaEnabled', 'mfaSecret', 'verificationToken', 'verificationTokenExpires',
+      'resetPasswordToken', 'resetPasswordExpires', 'userId', 'id', '_id', 'passportNumber'
+    ];
+
+    // Check for unrecognized / invalid field keys
+    for (const key of bodyKeys) {
+      if (!ALLOWED_ALL_FIELDS.includes(key) && !FORBIDDEN_FIELDS.includes(key)) {
+        return res.status(400).json({
+          success: false,
+          error: { code: 'VALIDATION_ERROR', message: `Invalid field: '${key}' is not an editable profile field.` }
+        });
+      }
+    }
+
+    const userUpdates = {};
+    const profileUpdates = {};
+
+    // 1. Validate & collect User updates
+    if (body.name !== undefined) {
+      if (typeof body.name !== 'string' || body.name.trim().length < 2 || body.name.trim().length > 100) {
+        return res.status(400).json({
+          success: false,
+          error: { code: 'VALIDATION_ERROR', message: 'Name must be a valid string between 2 and 100 characters.' }
+        });
+      }
+      userUpdates.name = body.name.trim();
+    }
+
+    if (body.phone !== undefined) {
+      if (body.phone !== null && body.phone !== '') {
+        if (typeof body.phone !== 'string') {
+          return res.status(400).json({
+            success: false,
+            error: { code: 'VALIDATION_ERROR', message: 'Phone number must be a string.' }
+          });
+        }
+        const cleanPhone = body.phone.trim();
+        if (!/^[+]?[0-9\s\-()]{7,25}$/.test(cleanPhone)) {
+          return res.status(400).json({
+            success: false,
+            error: { code: 'VALIDATION_ERROR', message: 'Invalid phone number format.' }
+          });
+        }
+        userUpdates.phone = cleanPhone;
+      } else {
+        userUpdates.phone = '';
+      }
+    }
+
+    if (body.preferredLanguage !== undefined) {
+      if (typeof body.preferredLanguage !== 'string' || !['en', 'ar'].includes(body.preferredLanguage.toLowerCase().trim())) {
+        return res.status(400).json({
+          success: false,
+          error: { code: 'INVALID_LANGUAGE', message: 'Invalid preferred language. Allowed values: en, ar.' }
+        });
+      }
+      userUpdates.preferredLanguage = body.preferredLanguage.toLowerCase().trim();
+    }
+
+    if (body.preferredCurrency !== undefined) {
+      if (typeof body.preferredCurrency !== 'string' || !['OMR', 'AED', 'SAR', 'INR', 'USD'].includes(body.preferredCurrency.toUpperCase().trim())) {
+        return res.status(400).json({
+          success: false,
+          error: { code: 'INVALID_CURRENCY', message: 'Invalid preferred currency. Allowed values: OMR, AED, SAR, INR, USD.' }
+        });
+      }
+      userUpdates.preferredCurrency = body.preferredCurrency.toUpperCase().trim();
+    }
+
+    // 2. Validate & collect Profile updates
+    if (body.nationality !== undefined) {
+      if (body.nationality !== null && body.nationality !== '') {
+        if (typeof body.nationality !== 'string' || body.nationality.trim().length > 60) {
+          return res.status(400).json({
+            success: false,
+            error: { code: 'VALIDATION_ERROR', message: 'Nationality must not exceed 60 characters.' }
+          });
+        }
+        profileUpdates.nationality = body.nationality.trim();
+      } else {
+        profileUpdates.nationality = '';
+      }
+    }
+
+    if (body.dateOfBirth !== undefined) {
+      if (body.dateOfBirth !== null && body.dateOfBirth !== '') {
+        if (typeof body.dateOfBirth !== 'string') {
+          return res.status(400).json({
+            success: false,
+            error: { code: 'VALIDATION_ERROR', message: 'Date of birth must be a string in YYYY-MM-DD format.' }
+          });
+        }
+        const cleanDob = body.dateOfBirth.trim();
+        const dobParsed = Date.parse(cleanDob);
+        if (isNaN(dobParsed)) {
+          return res.status(400).json({
+            success: false,
+            error: { code: 'VALIDATION_ERROR', message: 'Invalid date of birth format.' }
+          });
+        }
+        const dobDate = new Date(dobParsed);
+        const now = new Date();
+        if (dobDate >= now) {
+          return res.status(400).json({
+            success: false,
+            error: { code: 'VALIDATION_ERROR', message: 'Date of birth must be a past date.' }
+          });
+        }
+        if (now.getFullYear() - dobDate.getFullYear() > 130) {
+          return res.status(400).json({
+            success: false,
+            error: { code: 'VALIDATION_ERROR', message: 'Invalid date of birth: age exceeds valid range.' }
+          });
+        }
+        profileUpdates.dateOfBirth = cleanDob.slice(0, 10);
+      } else {
+        profileUpdates.dateOfBirth = '';
+      }
+    }
+
+    if (body.address !== undefined) {
+      if (body.address !== null && body.address !== '') {
+        if (typeof body.address !== 'string' || body.address.trim().length > 200) {
+          return res.status(400).json({
+            success: false,
+            error: { code: 'VALIDATION_ERROR', message: 'Address must not exceed 200 characters.' }
+          });
+        }
+        profileUpdates.address = body.address.trim();
+      } else {
+        profileUpdates.address = '';
+      }
+    }
+
+    if (body.city !== undefined) {
+      if (body.city !== null && body.city !== '') {
+        if (typeof body.city !== 'string' || body.city.trim().length > 100) {
+          return res.status(400).json({
+            success: false,
+            error: { code: 'VALIDATION_ERROR', message: 'City must not exceed 100 characters.' }
+          });
+        }
+        profileUpdates.city = body.city.trim();
+      } else {
+        profileUpdates.city = '';
+      }
+    }
+
+    if (body.country !== undefined) {
+      if (body.country !== null && body.country !== '') {
+        if (typeof body.country !== 'string' || body.country.trim().length > 100) {
+          return res.status(400).json({
+            success: false,
+            error: { code: 'VALIDATION_ERROR', message: 'Country must not exceed 100 characters.' }
+          });
+        }
+        profileUpdates.country = body.country.trim();
+      } else {
+        profileUpdates.country = '';
+      }
+    }
+
+    const hasUserUpdates = Object.keys(userUpdates).length > 0;
+    const hasProfileUpdates = Object.keys(profileUpdates).length > 0;
+
+    if (!hasUserUpdates && !hasProfileUpdates) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'VALIDATION_ERROR', message: 'At least one valid editable profile field must be provided.' }
+      });
+    }
+
+    // Apply User updates
+    let updatedUser = user;
+    if (hasUserUpdates) {
+      updatedUser = await db.users.update(req.user.id, userUpdates);
+    }
+
+    // Apply Profile updates
+    let existingProfile = await db.customerProfiles.findOne({ userId: req.user.id });
+    let updatedProfile;
+    if (existingProfile) {
+      updatedProfile = await db.customerProfiles.update(existingProfile.id, profileUpdates);
+    } else {
+      updatedProfile = await db.customerProfiles.create({
+        userId: req.user.id,
+        nationality: profileUpdates.nationality || '',
+        dateOfBirth: profileUpdates.dateOfBirth || '',
+        address: profileUpdates.address || '',
+        city: profileUpdates.city || '',
+        country: profileUpdates.country || ''
+      });
+    }
+
+    // Safe Audit Logging (contain ONLY field names, NEVER values or secrets)
+    const updatedFieldNames = [...Object.keys(userUpdates), ...Object.keys(profileUpdates)];
+    await logAudit(req, 'PROFILE_UPDATED', 'CUSTOMER_PROFILE', req.user.id, {
+      updatedFields: updatedFieldNames
+    });
+
+    res.json({
+      success: true,
+      message: 'Profile updated successfully.',
+      user: {
+        id: updatedUser.id,
+        name: updatedUser.name,
+        email: updatedUser.email,
+        phone: updatedUser.phone || '',
+        role: updatedUser.role,
+        verified: !!updatedUser.verified,
+        preferredLanguage: updatedUser.preferredLanguage || 'en',
+        preferredCurrency: updatedUser.preferredCurrency || 'OMR'
+      },
+      profile: {
+        nationality: updatedProfile ? (updatedProfile.nationality || '') : '',
+        dateOfBirth: updatedProfile ? (updatedProfile.dateOfBirth || '') : '',
+        address: updatedProfile ? (updatedProfile.address || '') : '',
+        city: updatedProfile ? (updatedProfile.city || '') : '',
+        country: updatedProfile ? (updatedProfile.country || '') : '',
+        passportNumberMasked: updatedProfile && updatedProfile.passportNumber ? maskPassport(updatedProfile.passportNumber) : null
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: err.message } });
+  }
+});
+
 
 // --- i18n & MULTI-CURRENCY ENDPOINTS (Task #7) ---
 app.get('/api/i18n/translations', (req, res) => {

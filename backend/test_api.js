@@ -2154,8 +2154,184 @@ async function runTestSuite() {
     assert.ok(sec22Res.reply.includes('own travel documents') || sec22Res.reply.includes('privacy') || sec22Res.reply.includes('security'));
     console.log('  ✅ SEC-22 PASSED: Cross-customer inquiry blocked at chatbot gateway');
 
+    // ================================================================
+    // 🔒 EXECUTING V5.1 CUSTOMER PROFILE FOUNDATION TEST SUITE
+    // ================================================================
+
+    // Set up initial CustomerProfile with passport number for Customer 1
+    await db.customerProfiles.delete(customer1User.id);
+    await db.customerProfiles.create({
+      userId: customer1User.id,
+      passportNumber: 'A12345678',
+      nationality: 'Omani',
+      dateOfBirth: '1992-06-15',
+      address: 'Al Khuwair St 42',
+      city: 'Muscat',
+      country: 'Oman'
+    });
+
+    // PROFILE-1: Unauthenticated GET -> 401
+    console.log('\n[PROFILE-1] Testing Unauthenticated GET /api/account/profile...');
+    const p1Res = await request('/api/account/profile', { method: 'GET' });
+    assert.strictEqual(p1Res.status, 401);
+    assert.strictEqual(p1Res.body.error.code, 'UNAUTHORIZED');
+    console.log('  ✅ PROFILE-1 PASSED: Unauthenticated GET blocked (401 UNAUTHORIZED)');
+
+    // PROFILE-2: Authenticated GET own profile -> 200
+    console.log('\n[PROFILE-2] Testing Authenticated GET own profile...');
+    const p2Res = await request('/api/account/profile', {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(p2Res.status, 200);
+    assert.strictEqual(p2Res.body.success, true);
+    assert.strictEqual(p2Res.body.user.id, customer1User.id);
+    assert.strictEqual(p2Res.body.profile.nationality, 'Omani');
+    console.log('  ✅ PROFILE-2 PASSED: Authenticated customer retrieves own profile (200 OK)');
+
+    // PROFILE-3: Sensitive fields absent -> PASS
+    console.log('\n[PROFILE-3] Testing Sensitive Fields Absent from Profile Response...');
+    assert.strictEqual(p2Res.body.user.passwordHash, undefined);
+    assert.strictEqual(p2Res.body.user.tokenInvalidatedBefore, undefined);
+    assert.strictEqual(p2Res.body.user.verificationToken, undefined);
+    assert.strictEqual(p2Res.body.user.mfaSecret, undefined);
+    assert.strictEqual(p2Res.body.user.resetPasswordToken, undefined);
+    assert.strictEqual(p2Res.body.profile.passportNumber, undefined);
+    console.log('  ✅ PROFILE-3 PASSED: Sensitive fields strictly excluded from payload');
+
+    // PROFILE-4: Passport number masked -> PASS
+    console.log('\n[PROFILE-4] Testing Passport Number Masking (••••••1234)...');
+    assert.strictEqual(p2Res.body.profile.passportNumberMasked, '••••••5678');
+    assert.strictEqual(p2Res.body.profile.passportNumberMasked.includes('A1234'), false);
+    console.log('  ✅ PROFILE-4 PASSED: Passport number masked with last-4 visible (••••••5678)');
+
+    // PROFILE-5: Authenticated PUT own profile -> 200
+    console.log('\n[PROFILE-5] Testing Authenticated PUT own profile...');
+    const p5Res = await request('/api/account/profile', {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${customer1Token}` },
+      body: {
+        name: 'Customer One Updated',
+        phone: '+96892222222',
+        nationality: 'Omani',
+        dateOfBirth: '1992-06-15',
+        city: 'Salalah',
+        country: 'Oman',
+        preferredLanguage: 'ar',
+        preferredCurrency: 'OMR'
+      }
+    });
+    assert.strictEqual(p5Res.status, 200);
+    assert.strictEqual(p5Res.body.success, true);
+    assert.strictEqual(p5Res.body.user.name, 'Customer One Updated');
+    assert.strictEqual(p5Res.body.user.phone, '+96892222222');
+    assert.strictEqual(p5Res.body.profile.city, 'Salalah');
+    assert.strictEqual(p5Res.body.user.preferredLanguage, 'ar');
+    console.log('  ✅ PROFILE-5 PASSED: Profile updated successfully (200 OK)');
+
+    // PROFILE-6: Forbidden fields cannot be modified -> PASS
+    console.log('\n[PROFILE-6] Testing Forbidden Fields Modification Defense (role, verified, status)...');
+    const p6Res = await request('/api/account/profile', {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${customer1Token}` },
+      body: {
+        name: 'Customer One Secure',
+        role: 'ADMIN',
+        status: 'SUSPENDED',
+        verified: false,
+        passwordHash: 'forged_hash',
+        passportNumber: 'HACKED9999'
+      }
+    });
+    assert.strictEqual(p6Res.status, 200);
+    assert.strictEqual(p6Res.body.user.role, 'CUSTOMER');
+    assert.strictEqual(p6Res.body.profile.passportNumberMasked, '••••••5678');
+    const dbUserCheck = await db.users.findById(customer1User.id);
+    assert.strictEqual(dbUserCheck.role, 'CUSTOMER');
+    const dbProfileCheck = await db.customerProfiles.findOne({ userId: customer1User.id });
+    assert.strictEqual(dbProfileCheck.passportNumber, 'A12345678');
+    console.log('  ✅ PROFILE-6 PASSED: Forbidden security fields (role, passport) remain unmodifiable');
+
+    // PROFILE-7: Invalid language rejected (400)
+    console.log('\n[PROFILE-7] Testing Invalid Language Rejection...');
+    const p7Res = await request('/api/account/profile', {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${customer1Token}` },
+      body: { preferredLanguage: 'fr' }
+    });
+    assert.strictEqual(p7Res.status, 400);
+    assert.strictEqual(p7Res.body.error.code, 'INVALID_LANGUAGE');
+    console.log('  ✅ PROFILE-7 PASSED: Unsupported language code rejected (400 INVALID_LANGUAGE)');
+
+    // PROFILE-8: Invalid currency rejected (400)
+    console.log('\n[PROFILE-8] Testing Invalid Currency Rejection...');
+    const p8Res = await request('/api/account/profile', {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${customer1Token}` },
+      body: { preferredCurrency: 'BITCOIN' }
+    });
+    assert.strictEqual(p8Res.status, 400);
+    assert.strictEqual(p8Res.body.error.code, 'INVALID_CURRENCY');
+    console.log('  ✅ PROFILE-8 PASSED: Unsupported currency code rejected (400 INVALID_CURRENCY)');
+
+    // PROFILE-9: Invalid field rejected (400)
+    console.log('\n[PROFILE-9] Testing Invalid Field Rejection (malformed date / unallowlisted field)...');
+    const p9Res1 = await request('/api/account/profile', {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${customer1Token}` },
+      body: { dateOfBirth: 'future-date-2099-01-01' }
+    });
+    assert.strictEqual(p9Res1.status, 400);
+    assert.strictEqual(p9Res1.body.error.code, 'VALIDATION_ERROR');
+
+    const p9Res2 = await request('/api/account/profile', {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${customer1Token}` },
+      body: { unrecognizedKey: 'injected_payload' }
+    });
+    assert.strictEqual(p9Res2.status, 400);
+    assert.strictEqual(p9Res2.body.error.code, 'VALIDATION_ERROR');
+    console.log('  ✅ PROFILE-9 PASSED: Malformed values and unallowlisted fields rejected (400 VALIDATION_ERROR)');
+
+    // PROFILE-10: No userId override possible
+    console.log('\n[PROFILE-10] Testing No userId Override Defense (IDOR Protection)...');
+    const p10Res = await request('/api/account/profile', {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${customer1Token}` },
+      body: {
+        userId: customer2User.id,
+        name: 'Attempted Impersonator'
+      }
+    });
+    assert.strictEqual(p10Res.status, 200);
+    assert.strictEqual(p10Res.body.user.id, customer1User.id);
+    const customer2Check = await db.users.findById(customer2User.id);
+    assert.notStrictEqual(customer2Check.name, 'Attempted Impersonator');
+    console.log('  ✅ PROFILE-10 PASSED: Client userId override ignored; cross-user mutation blocked');
+
+    // PROFILE-11: Profile update audit contains no sensitive values
+    console.log('\n[PROFILE-11] Testing Profile Update Audit Log Hygiene...');
+    const auditLogs = await db.auditLogs.find({ action: 'PROFILE_UPDATED', entityId: customer1User.id });
+    assert.ok(auditLogs.length > 0);
+    const latestAudit = auditLogs[0];
+    const auditStr = JSON.stringify(latestAudit);
+    assert.strictEqual(auditStr.includes('CustomerPass1!'), false);
+    assert.strictEqual(auditStr.includes('A12345678'), false);
+    assert.strictEqual(auditStr.includes('passwordHash'), false);
+    console.log('  ✅ PROFILE-11 PASSED: Profile audit entries contain zero credentials or passport values');
+
+    // PROFILE-12: Existing authentication tests still pass
+    console.log('\n[PROFILE-12] Testing Existing Authentication Endpoints Integrity...');
+    const p12MeRes = await request('/api/auth/me', {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(p12MeRes.status, 200);
+    assert.strictEqual(p12MeRes.body.user.id, customer1User.id);
+    console.log('  ✅ PROFILE-12 PASSED: Existing auth endpoints (/api/auth/me) 100% operational');
+
     console.log('\n================================================================');
-    console.log('🎉 ALL AUTOMATED TESTS PASSED SUCCESSFULLY! (143/143)');
+    console.log('🎉 ALL AUTOMATED TESTS PASSED SUCCESSFULLY! (155/155)');
     console.log('================================================================');
   } catch (err) {
     console.error('\n❌ Test Failure Details:', err);
