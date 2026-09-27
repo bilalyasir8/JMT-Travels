@@ -883,16 +883,17 @@ async function renderRoute() {
     if (state.user) {
       const unreadCount = state.unreadNotifications || 0;
       const unreadBadge = unreadCount > 0
-        ? `<span class="jmt-header-unread-badge" style="position:absolute; top:-4px; right:-4px; background:#00A859; color:#FFFFFF; font-size:10px; font-weight:800; border-radius:99px; min-width:16px; height:16px; display:inline-flex; align-items:center; justify-content:center; padding:0 3px; box-shadow:0 2px 5px rgba(0,0,0,0.2);">${unreadCount}</span>`
-        : `<span class="jmt-header-unread-badge" style="display:none; position:absolute; top:-4px; right:-4px; background:#00A859; color:#FFFFFF; font-size:10px; font-weight:800; border-radius:99px; min-width:16px; height:16px; align-items:center; justify-content:center; padding:0 3px;">0</span>`;
+        ? `<span class="jmt-header-unread-badge" style="position:absolute; top:-4px; right:-4px; background:#00E676; color:#07153B; font-size:10px; font-weight:800; border-radius:99px; min-width:16px; height:16px; display:inline-flex; align-items:center; justify-content:center; padding:0 3px; box-shadow:0 2px 5px rgba(0,0,0,0.2);">${unreadCount}</span>`
+        : `<span class="jmt-header-unread-badge" style="display:none; position:absolute; top:-4px; right:-4px; background:#00E676; color:#07153B; font-size:10px; font-weight:800; border-radius:99px; min-width:16px; height:16px; align-items:center; justify-content:center; padding:0 3px;">0</span>`;
 
-      const notifBellBtn = `<a href="/account/notifications" onclick="event.preventDefault(); navigate('/account/notifications')" class="btn-notif-header" title="Notifications" aria-label="Notifications (${unreadCount} unread)">🔔${unreadBadge}</a>`;
+      const notifBellBtn = `<a href="/account/notifications" onclick="event.preventDefault(); navigate('/account/notifications')" class="btn-notif-header" title="Notifications" aria-label="Notifications (${unreadCount} unread)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>${unreadBadge}</a>`;
 
-      const userHtml = `${notifBellBtn} <a href="/account" onclick="event.preventDefault(); navigate('/account')" class="btn-account-header">Account (${escapeHTML(state.user.name.split(' ')[0])})</a> <button onclick="logoutUser()" class="btn-signout-header">Sign Out</button>`;
+      const userName = escapeHTML(state.user.name.split(' ')[0]);
+      const userHtml = `${notifBellBtn} <a href="/account" onclick="event.preventDefault(); navigate('/account')" class="header-util-btn jmt-account-btn" title="My Account" aria-label="My Account (${userName})"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg><span>My Account (${userName})</span></a> <button onclick="logoutUser()" class="btn-signout-header" title="Sign Out">Sign Out</button>`;
       authNav.innerHTML = userHtml;
       if (mobileAuthNav) mobileAuthNav.innerHTML = userHtml;
     } else {
-      authNav.innerHTML = `<a href="/login" id="nav-signin-link" onclick="event.preventDefault(); navigate('/login')" class="nav-signin-link">Sign In</a> <a href="/register" onclick="event.preventDefault(); navigate('/register')" class="btn-create-account">Create Account →</a>`;
+      authNav.innerHTML = `<a href="/login" id="nav-signin-link" onclick="event.preventDefault(); navigate('/login')" class="header-util-btn jmt-signin-btn">Sign In</a> <a href="/register" onclick="event.preventDefault(); navigate('/register')" class="btn-create-account">Create Account</a>`;
       if (mobileAuthNav) mobileAuthNav.innerHTML = `<a href="/login" onclick="event.preventDefault(); toggleMobileMenu(); navigate('/login')" class="btn mobile-auth-signin">Sign In</a> <a href="/register" onclick="event.preventDefault(); toggleMobileMenu(); navigate('/register')" class="btn mobile-auth-register">Create Account</a>`;
     }
   }

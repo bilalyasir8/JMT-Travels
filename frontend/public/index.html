@@ -65,51 +65,44 @@
   <!-- MAIN INSTITUTIONAL HEADER (RTA-INSPIRED ARCHITECTURE) -->
   <header class="jmt-main-header" id="jmt-main-header">
 
-    <!-- TOP TIER: ZONE A - BRAND & INSTITUTIONAL HALLMARK (DESKTOP) -->
-    <div class="jmt-header-brand-tier">
-      <div class="shell jmt-brand-tier-shell">
+    <!-- SINGLE HORIZONTAL HEADER CONTAINER (~118PX) -->
+    <div class="jmt-header-container">
 
-        <!-- JMT Travel Identity (Left) -->
-        <div class="jmt-header-tagline" aria-hidden="true">
-          <span class="jmt-tagline-icon">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <circle cx="12" cy="12" r="10"></circle>
-              <line x1="2" y1="12" x2="22" y2="12"></line>
-              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
-            </svg>
-          </span>
-          <div class="jmt-tagline-text">
-            <span class="jmt-tagline-primary">OMAN &bull; GCC &bull; WORLDWIDE</span>
-            <span class="jmt-tagline-secondary">Travel &bull; Visa &bull; Tourism</span>
-          </div>
+      <!-- LEFT SIDE: UTILITY CONTROLS -->
+      <div class="jmt-header-left">
+        <!-- Search -->
+        <button class="header-util-btn jmt-search-btn" onclick="handleHeaderSearch()" aria-label="Search JMT Services" title="Search Travel &amp; Visas">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <span>Search</span>
+        </button>
+
+        <!-- Language Toggle -->
+        <button class="header-util-btn jmt-lang-btn" onclick="toggleLanguage()" aria-label="Switch Language (English / Arabic)" title="Change Language">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="2" y1="12" x2="22" y2="12"></line>
+            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+          </svg>
+          <span>EN / العربية</span>
+        </button>
+
+        <!-- Theme Toggle -->
+        <button id="theme-toggle-btn" class="header-util-btn jmt-theme-btn" onclick="toggleTheme()" aria-label="Toggle Dark / Light Theme" title="Toggle Theme">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.389 5.389 0 0 1-4.4 2.26 5.403 5.403 0 0 1-5.4-5.4c0-1.81.89-3.42 2.26-4.4C12.92 3.04 12.46 3 12 3z"/></svg>
+        </button>
+
+        <!-- Dynamic Auth Controls (My Account / Sign Out or Sign In / Create Account) -->
+        <div id="nav-auth" class="jmt-header-auth">
+          <a href="/login" id="nav-signin-link" onclick="event.preventDefault(); navigate('/login')" class="header-util-btn jmt-signin-btn">Sign In</a>
+          <a href="/register" onclick="event.preventDefault(); navigate('/register')" class="btn-create-account">Create Account</a>
         </div>
-
-        <!-- Zone A: JMT Travels Brand Lockup (Placed toward the RIGHT side) -->
-        <a class="brand-logo jmt-institutional-brand" href="/" onclick="event.preventDefault(); navigate('/')" aria-label="JMT Travels Home">
-          <img src="/assets/logo.png" alt="JMT TRAVELS Logo" class="jmt-brand-logo-img" width="58" height="58" fetchpriority="high" decoding="async">
-          <span class="brand-title">
-            <b class="brand-title-main">JMT TRAVELS</b>
-            <small class="brand-title-sub">JOURNEY MORE TOGETHER</small>
-          </span>
-        </a>
-
       </div>
-    </div>
 
-    <!-- BOTTOM TIER: ZONE B - PRIMARY NAVIGATION & UTILITY AREA -->
-    <nav class="jmt-header-nav-tier" aria-label="Main Navigation">
-      <div class="shell jmt-nav-tier-shell">
-
-        <!-- Mobile Brand Lockup (Visible <1024px) -->
-        <a class="brand-logo jmt-mobile-brand" href="/" onclick="event.preventDefault(); navigate('/')" aria-label="JMT Travels Home">
-          <img src="/assets/logo.png" alt="JMT TRAVELS Logo" width="46" height="46" fetchpriority="high" decoding="async">
-          <span class="brand-title">
-            <b style="font-size:18px; color:#07153B; font-weight:800; letter-spacing:-0.4px; line-height:1.1;">JMT TRAVELS</b>
-            <small style="color:#00A859; font-size:8.5px; font-weight:700; letter-spacing:1.2px; margin-top:2px;">JOURNEY MORE TOGETHER</small>
-          </span>
-        </a>
-
-        <!-- Zone B: Primary Navigation (Desktop) -->
+      <!-- CENTER: PRIMARY NAVIGATION -->
+      <nav class="jmt-header-center" aria-label="Primary Navigation">
         <ul class="nav-links jmt-desktop-nav-links" role="list">
           <li><a href="/" onclick="event.preventDefault(); navigate('/')" class="nav-link-item" data-nav="home">Home</a></li>
           <li><a href="/visa" onclick="event.preventDefault(); navigate('/visa')" class="nav-link-item" data-nav="visa">Visa</a></li>
@@ -119,48 +112,40 @@
           <li><a href="/about" onclick="event.preventDefault(); navigate('/about')" class="nav-link-item" data-nav="about">About</a></li>
           <li><a href="/contact" onclick="event.preventDefault(); navigate('/contact')" class="nav-link-item" data-nav="contact">Contact</a></li>
         </ul>
+      </nav>
 
-        <!-- Utility Area (On opposite side of navigation) -->
-        <div class="nav-actions jmt-header-utility">
+      <!-- RIGHT SIDE: SINGLE JMT BRAND LOCKUP -->
+      <div class="jmt-header-right">
+        <a class="brand-logo jmt-header-brand" href="/" onclick="event.preventDefault(); navigate('/')" aria-label="JMT Travels Home">
+          <img src="/assets/logo.png" alt="JMT TRAVELS Logo" class="jmt-brand-logo-img" width="58" height="58" fetchpriority="high" decoding="async">
+          <span class="brand-title">
+            <b class="brand-title-main">JMT TRAVELS</b>
+            <small class="brand-title-sub">JOURNEY MORE TOGETHER</small>
+          </span>
+        </a>
+      </div>
 
-          <!-- Search Utility Control -->
-          <button class="header-util-btn jmt-search-trigger-btn" onclick="handleHeaderSearch()" aria-label="Search JMT Services" title="Search Travel &amp; Visas">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <circle cx="11" cy="11" r="8"></circle>
-              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-            </svg>
+      <!-- MOBILE HEADER BAR (<1024px) -->
+      <div class="jmt-header-mobile">
+        <a class="brand-logo jmt-mobile-brand" href="/" onclick="event.preventDefault(); navigate('/')" aria-label="JMT Travels Home">
+          <img src="/assets/logo.png" alt="JMT TRAVELS Logo" width="46" height="46" fetchpriority="high" decoding="async">
+          <span class="brand-title">
+            <b style="font-size:18px; color:#07153B; font-weight:800; letter-spacing:-0.4px; line-height:1.1;">JMT TRAVELS</b>
+            <small style="color:#00A859; font-size:8.5px; font-weight:700; letter-spacing:1.2px; margin-top:2px;">JOURNEY MORE TOGETHER</small>
+          </span>
+        </a>
+
+        <div class="jmt-mobile-actions">
+          <button class="header-util-btn jmt-search-btn" onclick="handleHeaderSearch()" aria-label="Search JMT Services" title="Search">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
           </button>
-
-          <!-- Language Selector Control -->
-          <button class="header-util-btn jmt-lang-toggle-btn" onclick="toggleLanguage()" aria-label="Switch Language (English / Arabic)" title="Change Language">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <circle cx="12" cy="12" r="10"></circle>
-              <line x1="2" y1="12" x2="22" y2="12"></line>
-              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
-            </svg>
-            <span class="jmt-lang-label">EN / العربية</span>
+          <button class="mobile-menu-btn" onclick="toggleMobileMenu()" aria-label="Toggle Mobile Navigation Menu" aria-expanded="false" aria-controls="mobile-nav-drawer">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
           </button>
-
-          <!-- Theme Toggle Control -->
-          <button class="header-util-btn theme-toggle-btn" id="theme-toggle-btn" onclick="toggleTheme()" aria-label="Toggle theme" title="Toggle theme">
-            <span id="theme-toggle-icon">
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.389 5.389 0 0 1-4.4 2.26 5.403 5.403 0 0 1-5.4-5.4c0-1.81.89-3.42 2.26-4.4C12.92 3.04 12.46 3 12 3z"/></svg>
-            </span>
-          </button>
-
-          <!-- Auth Actions: Login / Create Account or Account -->
-          <div id="nav-auth" class="jmt-header-auth">
-            <a href="/login" id="nav-signin-link" onclick="event.preventDefault(); navigate('/login')" class="nav-signin-link">Sign In</a>
-            <a href="/register" onclick="event.preventDefault(); navigate('/register')" class="btn-create-account">Create Account →</a>
-          </div>
-
-          <!-- Mobile Hamburger Menu Button -->
-          <button class="mobile-menu-btn" onclick="toggleMobileMenu()" aria-label="Toggle Mobile Navigation Menu" aria-expanded="false">
-            <span class="mobile-hamburger-icon">☰</span>
-          </button>
-
         </div>
       </div>
+
+    </div>
 
       <!-- MOBILE NAVIGATION DRAWER -->
       <div id="mobile-nav-drawer" class="mobile-nav-drawer" style="display:none;">
@@ -229,7 +214,6 @@
           </div>
         </div>
       </div>
-    </nav>
   </header>
 
   <!-- MAIN VIEW CONTAINER (SPA ROUTED) -->
