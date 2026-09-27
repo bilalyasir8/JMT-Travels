@@ -287,6 +287,14 @@ const submissionLimiter = rateLimit({
   message: { success: false, error: { code: 'RATE_LIMITED', message: 'Too many submissions. Please wait 15 minutes.' } }
 });
 
+const uploadLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: { code: 'RATE_LIMITED', message: 'Too many file upload requests. Please wait 15 minutes.' } }
+});
+
 const adminLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 150,
@@ -316,6 +324,17 @@ function sanitizeUser(user) {
 
 function hashToken(rawToken) {
   return crypto.createHash('sha256').update(String(rawToken)).digest('hex');
+}
+
+// PASSPORT MASKING HELPER (V5.1 Customer Profile Foundation)
+function maskPassport(passport) {
+  if (!passport || typeof passport !== 'string') return null;
+  const trimmed = passport.trim();
+  if (trimmed.length === 0) return null;
+  if (trimmed.length <= 4) {
+    return '•'.repeat(trimmed.length);
+  }
+  return '••••••' + trimmed.slice(-4);
 }
 
 // Multer Storage Setup for Private Passport/Identity Documents
@@ -990,6 +1009,1179 @@ app.patch('/api/users/preferences', authenticate, async (req, res) => {
   }
 });
 
+// =============================================================
+// --- CUSTOMER PROFILE SELF-SERVICE ENDPOINTS (V5.1) ---
+// =============================================================
+
+// GET /api/account/profile - Safe customer profile retrieval
+app.get('/api/account/profile', authenticate, async (req, res) => {
+  try {
+    const user = await db.users.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'User not found.' } });
+    }
+
+    const profile = await db.customerProfiles.findOne({ userId: req.user.id });
+
+    res.json({
+      success: true,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone || '',
+        role: user.role,
+        verified: !!user.verified,
+        preferredLanguage: user.preferredLanguage || 'en',
+        preferredCurrency: user.preferredCurrency || 'OMR'
+      },
+      profile: {
+        nationality: profile ? (profile.nationality || '') : '',
+        dateOfBirth: profile ? (profile.dateOfBirth || '') : '',
+        address: profile ? (profile.address || '') : '',
+        city: profile ? (profile.city || '') : '',
+        country: profile ? (profile.country || '') : '',
+        passportNumberMasked: profile && profile.passportNumber ? maskPassport(profile.passportNumber) : null
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: err.message } });
+  }
+});
+
+// PUT /api/account/profile - Safe customer profile updates with explicit allowlist
+app.put('/api/account/profile', authenticate, async (req, res) => {
+  try {
+    const user = await db.users.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'User not found.' } });
+    }
+
+    const body = req.body || {};
+    const bodyKeys = Object.keys(body);
+
+    const ALLOWED_USER_FIELDS = ['name', 'phone', 'preferredLanguage', 'preferredCurrency'];
+    const ALLOWED_PROFILE_FIELDS = ['nationality', 'dateOfBirth', 'address', 'city', 'country'];
+    const ALLOWED_ALL_FIELDS = [...ALLOWED_USER_FIELDS, ...ALLOWED_PROFILE_FIELDS];
+    const FORBIDDEN_FIELDS = [
+      'role', 'status', 'verified', 'passwordHash', 'password',
+      'tokenInvalidatedBefore', 'failedLoginAttempts', 'lockUntil',
+      'mfaEnabled', 'mfaSecret', 'verificationToken', 'verificationTokenExpires',
+      'resetPasswordToken', 'resetPasswordExpires', 'userId', 'id', '_id', 'passportNumber'
+    ];
+
+    // Check for unrecognized / invalid field keys
+    for (const key of bodyKeys) {
+      if (!ALLOWED_ALL_FIELDS.includes(key) && !FORBIDDEN_FIELDS.includes(key)) {
+        return res.status(400).json({
+          success: false,
+          error: { code: 'VALIDATION_ERROR', message: `Invalid field: '${key}' is not an editable profile field.` }
+        });
+      }
+    }
+
+    const userUpdates = {};
+    const profileUpdates = {};
+
+    // 1. Validate & collect User updates
+    if (body.name !== undefined) {
+      if (typeof body.name !== 'string' || body.name.trim().length < 2 || body.name.trim().length > 100) {
+        return res.status(400).json({
+          success: false,
+          error: { code: 'VALIDATION_ERROR', message: 'Name must be a valid string between 2 and 100 characters.' }
+        });
+      }
+      userUpdates.name = body.name.trim();
+    }
+
+    if (body.phone !== undefined) {
+      if (body.phone !== null && body.phone !== '') {
+        if (typeof body.phone !== 'string') {
+          return res.status(400).json({
+            success: false,
+            error: { code: 'VALIDATION_ERROR', message: 'Phone number must be a string.' }
+          });
+        }
+        const cleanPhone = body.phone.trim();
+        if (!/^[+]?[0-9\s\-()]{7,25}$/.test(cleanPhone)) {
+          return res.status(400).json({
+            success: false,
+            error: { code: 'VALIDATION_ERROR', message: 'Invalid phone number format.' }
+          });
+        }
+        userUpdates.phone = cleanPhone;
+      } else {
+        userUpdates.phone = '';
+      }
+    }
+
+    if (body.preferredLanguage !== undefined) {
+      if (typeof body.preferredLanguage !== 'string' || !['en', 'ar'].includes(body.preferredLanguage.toLowerCase().trim())) {
+        return res.status(400).json({
+          success: false,
+          error: { code: 'INVALID_LANGUAGE', message: 'Invalid preferred language. Allowed values: en, ar.' }
+        });
+      }
+      userUpdates.preferredLanguage = body.preferredLanguage.toLowerCase().trim();
+    }
+
+    if (body.preferredCurrency !== undefined) {
+      if (typeof body.preferredCurrency !== 'string' || !['OMR', 'AED', 'SAR', 'INR', 'USD'].includes(body.preferredCurrency.toUpperCase().trim())) {
+        return res.status(400).json({
+          success: false,
+          error: { code: 'INVALID_CURRENCY', message: 'Invalid preferred currency. Allowed values: OMR, AED, SAR, INR, USD.' }
+        });
+      }
+      userUpdates.preferredCurrency = body.preferredCurrency.toUpperCase().trim();
+    }
+
+    // 2. Validate & collect Profile updates
+    if (body.nationality !== undefined) {
+      if (body.nationality !== null && body.nationality !== '') {
+        if (typeof body.nationality !== 'string' || body.nationality.trim().length > 60) {
+          return res.status(400).json({
+            success: false,
+            error: { code: 'VALIDATION_ERROR', message: 'Nationality must not exceed 60 characters.' }
+          });
+        }
+        profileUpdates.nationality = body.nationality.trim();
+      } else {
+        profileUpdates.nationality = '';
+      }
+    }
+
+    if (body.dateOfBirth !== undefined) {
+      if (body.dateOfBirth !== null && body.dateOfBirth !== '') {
+        if (typeof body.dateOfBirth !== 'string') {
+          return res.status(400).json({
+            success: false,
+            error: { code: 'VALIDATION_ERROR', message: 'Date of birth must be a string in YYYY-MM-DD format.' }
+          });
+        }
+        const cleanDob = body.dateOfBirth.trim();
+        const dobParsed = Date.parse(cleanDob);
+        if (isNaN(dobParsed)) {
+          return res.status(400).json({
+            success: false,
+            error: { code: 'VALIDATION_ERROR', message: 'Invalid date of birth format.' }
+          });
+        }
+        const dobDate = new Date(dobParsed);
+        const now = new Date();
+        if (dobDate >= now) {
+          return res.status(400).json({
+            success: false,
+            error: { code: 'VALIDATION_ERROR', message: 'Date of birth must be a past date.' }
+          });
+        }
+        if (now.getFullYear() - dobDate.getFullYear() > 130) {
+          return res.status(400).json({
+            success: false,
+            error: { code: 'VALIDATION_ERROR', message: 'Invalid date of birth: age exceeds valid range.' }
+          });
+        }
+        profileUpdates.dateOfBirth = cleanDob.slice(0, 10);
+      } else {
+        profileUpdates.dateOfBirth = '';
+      }
+    }
+
+    if (body.address !== undefined) {
+      if (body.address !== null && body.address !== '') {
+        if (typeof body.address !== 'string' || body.address.trim().length > 200) {
+          return res.status(400).json({
+            success: false,
+            error: { code: 'VALIDATION_ERROR', message: 'Address must not exceed 200 characters.' }
+          });
+        }
+        profileUpdates.address = body.address.trim();
+      } else {
+        profileUpdates.address = '';
+      }
+    }
+
+    if (body.city !== undefined) {
+      if (body.city !== null && body.city !== '') {
+        if (typeof body.city !== 'string' || body.city.trim().length > 100) {
+          return res.status(400).json({
+            success: false,
+            error: { code: 'VALIDATION_ERROR', message: 'City must not exceed 100 characters.' }
+          });
+        }
+        profileUpdates.city = body.city.trim();
+      } else {
+        profileUpdates.city = '';
+      }
+    }
+
+    if (body.country !== undefined) {
+      if (body.country !== null && body.country !== '') {
+        if (typeof body.country !== 'string' || body.country.trim().length > 100) {
+          return res.status(400).json({
+            success: false,
+            error: { code: 'VALIDATION_ERROR', message: 'Country must not exceed 100 characters.' }
+          });
+        }
+        profileUpdates.country = body.country.trim();
+      } else {
+        profileUpdates.country = '';
+      }
+    }
+
+    const hasUserUpdates = Object.keys(userUpdates).length > 0;
+    const hasProfileUpdates = Object.keys(profileUpdates).length > 0;
+
+    if (!hasUserUpdates && !hasProfileUpdates) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'VALIDATION_ERROR', message: 'At least one valid editable profile field must be provided.' }
+      });
+    }
+
+    // Apply User updates
+    let updatedUser = user;
+    if (hasUserUpdates) {
+      updatedUser = await db.users.update(req.user.id, userUpdates);
+    }
+
+    // Apply Profile updates
+    let existingProfile = await db.customerProfiles.findOne({ userId: req.user.id });
+    let updatedProfile;
+    if (existingProfile) {
+      updatedProfile = await db.customerProfiles.update(existingProfile.id, profileUpdates);
+    } else {
+      updatedProfile = await db.customerProfiles.create({
+        userId: req.user.id,
+        nationality: profileUpdates.nationality || '',
+        dateOfBirth: profileUpdates.dateOfBirth || '',
+        address: profileUpdates.address || '',
+        city: profileUpdates.city || '',
+        country: profileUpdates.country || ''
+      });
+    }
+
+    // Safe Audit Logging (contain ONLY field names, NEVER values or secrets)
+    const updatedFieldNames = [...Object.keys(userUpdates), ...Object.keys(profileUpdates)];
+    await logAudit(req, 'PROFILE_UPDATED', 'CUSTOMER_PROFILE', req.user.id, {
+      updatedFields: updatedFieldNames
+    });
+
+    res.json({
+      success: true,
+      message: 'Profile updated successfully.',
+      user: {
+        id: updatedUser.id,
+        name: updatedUser.name,
+        email: updatedUser.email,
+        phone: updatedUser.phone || '',
+        role: updatedUser.role,
+        verified: !!updatedUser.verified,
+        preferredLanguage: updatedUser.preferredLanguage || 'en',
+        preferredCurrency: updatedUser.preferredCurrency || 'OMR'
+      },
+      profile: {
+        nationality: updatedProfile ? (updatedProfile.nationality || '') : '',
+        dateOfBirth: updatedProfile ? (updatedProfile.dateOfBirth || '') : '',
+        address: updatedProfile ? (updatedProfile.address || '') : '',
+        city: updatedProfile ? (updatedProfile.city || '') : '',
+        country: updatedProfile ? (updatedProfile.country || '') : '',
+        passportNumberMasked: updatedProfile && updatedProfile.passportNumber ? maskPassport(updatedProfile.passportNumber) : null
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: err.message } });
+  }
+});
+
+// --- V5.2 CUSTOMER DASHBOARD ENDPOINT ---
+app.get('/api/account/dashboard', authenticate, async (req, res) => {
+  try {
+    // Authoritative customer identity strictly from req.user.id
+    const customerId = req.user.id;
+
+    // Concurrently fetch customer's records with bounded queries and selective projection
+    const [bookingsRaw, visasRaw, ticketsRaw] = await Promise.all([
+      db.tourBookings.find(
+        { userId: customerId },
+        { id: 1, bookingNumber: 1, packageTitle: 1, amount: 1, currency: 1, status: 1, travelDate: 1, createdAt: 1 },
+        { sort: { createdAt: -1 }, limit: 15, lean: true }
+      ),
+      db.visaApplications.find(
+        { userId: customerId },
+        { id: 1, applicationNumber: 1, destination: 1, visaType: 1, status: 1, travelDate: 1, requestedDocuments: 1, createdAt: 1 },
+        { sort: { createdAt: -1 }, limit: 15, lean: true }
+      ),
+      db.supportTickets.find(
+        { userId: customerId },
+        { id: 1, ticketId: 1, subject: 1, status: 1, priority: 1, createdAt: 1 },
+        { sort: { createdAt: -1 }, limit: 10, lean: true }
+      )
+    ]);
+
+    const bookings = Array.isArray(bookingsRaw) ? bookingsRaw : [];
+    const visas = Array.isArray(visasRaw) ? visasRaw : [];
+    const tickets = Array.isArray(ticketsRaw) ? ticketsRaw : [];
+
+    // Calculate Summary Metrics
+    const upcomingTrips = bookings.filter(b =>
+      ['CONFIRMED', 'PAID', 'PROCESSING', 'PENDING'].includes(b.status) &&
+      !['CANCELLED', 'REFUNDED', 'COMPLETED'].includes(b.status)
+    ).length;
+
+    const activeVisas = visas.filter(v =>
+      ['SUBMITTED', 'UNDER_REVIEW', 'ADDITIONAL_DOCUMENTS_REQUIRED', 'PROCESSING', 'PENDING_DOCUMENTS', 'APPROVED', 'Documents required'].includes(v.status) &&
+      !['CANCELLED', 'REJECTED', 'COMPLETED'].includes(v.status)
+    ).length;
+
+    const totalBookings = bookings.filter(b => b.status !== 'CANCELLED').length;
+
+    const pendingActions =
+      visas.filter(v => ['ADDITIONAL_DOCUMENTS_REQUIRED', 'PENDING_DOCUMENTS', 'Documents required'].includes(v.status)).length +
+      bookings.filter(b => ['PENDING_PAYMENT', 'PAYMENT_PENDING'].includes(b.status)).length +
+      tickets.filter(t => t.status === 'WAITING_FOR_CUSTOMER').length;
+
+    // Upcoming Activity (up to 5 items)
+    const upcomingItems = [];
+
+    bookings
+      .filter(b => ['CONFIRMED', 'PAID', 'PROCESSING', 'PENDING'].includes(b.status) && !['CANCELLED', 'REFUNDED', 'COMPLETED'].includes(b.status))
+      .forEach(b => {
+        upcomingItems.push({
+          id: b.id || b.bookingNumber,
+          type: 'TOUR_BOOKING',
+          title: b.packageTitle || 'Oman Tour Experience',
+          reference: b.bookingNumber || b.id,
+          date: b.travelDate || b.createdAt,
+          status: b.status,
+          amount: b.amount ? `${b.currency || 'OMR'} ${b.amount}` : null,
+          badgeColor: ['CONFIRMED', 'PAID'].includes(b.status) ? 'success' : 'warning'
+        });
+      });
+
+    visas
+      .filter(v => ['SUBMITTED', 'UNDER_REVIEW', 'ADDITIONAL_DOCUMENTS_REQUIRED', 'PROCESSING', 'PENDING_DOCUMENTS', 'APPROVED', 'Documents required'].includes(v.status) && !['CANCELLED', 'REJECTED', 'COMPLETED'].includes(v.status))
+      .forEach(v => {
+        upcomingItems.push({
+          id: v.id || v.applicationNumber,
+          type: 'VISA_APPLICATION',
+          title: `${v.destination} ${v.visaType} Visa`,
+          reference: v.applicationNumber || v.id,
+          date: v.travelDate || v.createdAt,
+          status: v.status,
+          amount: null,
+          badgeColor: v.status === 'APPROVED' ? 'success' : (['ADDITIONAL_DOCUMENTS_REQUIRED', 'PENDING_DOCUMENTS', 'Documents required'].includes(v.status) ? 'danger' : 'info')
+        });
+      });
+
+    const upcomingActivity = upcomingItems.slice(0, 5);
+
+    // Recent Activity (up to 5 items, sorted by date descending)
+    const recentItems = [];
+
+    bookings.forEach(b => {
+      recentItems.push({
+        id: b.id || b.bookingNumber,
+        type: 'TOUR_BOOKING',
+        title: b.packageTitle || 'Tour Reservation',
+        reference: b.bookingNumber || b.id,
+        date: b.createdAt || b.travelDate,
+        status: b.status,
+        badgeColor: ['CONFIRMED', 'PAID'].includes(b.status) ? 'success' : (b.status === 'CANCELLED' ? 'danger' : 'warning')
+      });
+    });
+
+    visas.forEach(v => {
+      recentItems.push({
+        id: v.id || v.applicationNumber,
+        type: 'VISA_APPLICATION',
+        title: `${v.destination} Visa Application`,
+        reference: v.applicationNumber || v.id,
+        date: v.createdAt,
+        status: v.status,
+        badgeColor: v.status === 'APPROVED' ? 'success' : (['CANCELLED', 'REJECTED'].includes(v.status) ? 'danger' : 'info')
+      });
+    });
+
+    tickets.forEach(t => {
+      recentItems.push({
+        id: t.id || t.ticketId,
+        type: 'SUPPORT_TICKET',
+        title: t.subject || 'Support Ticket',
+        reference: t.ticketId || t.id,
+        date: t.createdAt,
+        status: t.status,
+        badgeColor: t.status === 'RESOLVED' ? 'success' : 'info'
+      });
+    });
+
+    recentItems.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+    const recentActivity = recentItems.slice(0, 5);
+
+    // Sanitized Customer DTO (strictly excludes sensitive fields)
+    res.json({
+      success: true,
+      user: {
+        id: req.user.id,
+        name: req.user.name,
+        email: req.user.email,
+        phone: req.user.phone || '',
+        role: req.user.role || 'CUSTOMER',
+        verified: !!req.user.verified,
+        preferredLanguage: req.user.preferredLanguage || 'en',
+        preferredCurrency: req.user.preferredCurrency || 'OMR'
+      },
+      summary: {
+        upcomingTrips,
+        activeVisas,
+        bookings: totalBookings,
+        pendingActions
+      },
+      upcomingActivity,
+      recentActivity
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: err.message } });
+  }
+});
+
+// --- V5.3 UNIFIED MY TRIPS AGGREGATION & ENDPOINTS ---
+async function getCustomerTripsData(user) {
+  const customerId = user.id;
+
+  // Concurrent queries with bounded limits and selective projection
+  const userContacts = [user.email, user.phone].filter(Boolean);
+  const [bookingsRaw, visasRaw, documentsRaw, paymentsRaw, inquiriesRaw] = await Promise.all([
+    db.tourBookings.find(
+      { userId: customerId },
+      { id: 1, bookingNumber: 1, packageTitle: 1, travelDate: 1, amount: 1, currency: 1, status: 1, travellers: 1, travellerName: 1, createdAt: 1, updatedAt: 1 },
+      { sort: { createdAt: -1 }, limit: 25, lean: true }
+    ),
+    db.visaApplications.find(
+      { userId: customerId },
+      { id: 1, applicationNumber: 1, destination: 1, visaType: 1, travelDate: 1, passportNumber: 1, status: 1, requestedDocuments: 1, documents: 1, createdAt: 1, updatedAt: 1 },
+      { sort: { createdAt: -1 }, limit: 25, lean: true }
+    ),
+    db.visaDocuments.find(
+      { uploadedBy: customerId },
+      { id: 1, documentId: 1, applicationId: 1, documentType: 1, originalFilename: 1, displayFilename: 1, mimeType: 1, fileSize: 1, status: 1, createdAt: 1 },
+      { sort: { createdAt: -1 }, limit: 50, lean: true }
+    ),
+    db.payments.find(
+      { userId: customerId },
+      { id: 1, paymentNumber: 1, bookingId: 1, visaApplicationId: 1, amount: 1, currency: 1, status: 1, paymentMethod: 1, createdAt: 1 },
+      { sort: { createdAt: -1 }, limit: 50, lean: true }
+    ),
+    userContacts.length > 0 ? db.contactInquiries.find(
+      { contact: { $in: userContacts } },
+      { id: 1, type: 1, message: 1, status: 1, createdAt: 1 },
+      { sort: { createdAt: -1 }, limit: 20, lean: true }
+    ) : []
+  ]);
+
+  const bookings = Array.isArray(bookingsRaw) ? bookingsRaw : [];
+  const visas = Array.isArray(visasRaw) ? visasRaw : [];
+  const documents = Array.isArray(documentsRaw) ? documentsRaw : [];
+  const payments = Array.isArray(paymentsRaw) ? paymentsRaw : [];
+  const inquiries = Array.isArray(inquiriesRaw) ? inquiriesRaw : [];
+
+  // Index payments by bookingId and visaApplicationId
+  const paymentsByBooking = new Map();
+  const paymentsByVisa = new Map();
+  payments.forEach(p => {
+    const safePayment = {
+      id: p.id || p.paymentNumber,
+      reference: p.paymentNumber || p.id,
+      amount: p.amount,
+      currency: p.currency || 'OMR',
+      status: p.status,
+      paymentMethod: p.paymentMethod || 'Online Card Payment'
+    };
+    if (p.bookingId) paymentsByBooking.set(String(p.bookingId), safePayment);
+    if (p.visaApplicationId) paymentsByVisa.set(String(p.visaApplicationId), safePayment);
+  });
+
+  // Group sanitized documents by applicationId (no storageKey, no disk paths)
+  const docsByApp = new Map();
+  documents.forEach(d => {
+    const appId = String(d.applicationId || '');
+    if (!docsByApp.has(appId)) docsByApp.set(appId, []);
+    docsByApp.get(appId).push({
+      id: d.id || d.documentId,
+      documentId: d.documentId || d.id,
+      documentType: d.documentType,
+      filename: d.displayFilename || d.originalFilename,
+      fileSize: d.fileSize,
+      mimeType: d.mimeType,
+      status: d.status,
+      downloadUrl: `/api/documents/${d.id || d.documentId}/download`,
+      createdAt: d.createdAt
+    });
+  });
+
+  // Identify hotel/flight consultations from inquiries
+  const hotelInquiries = [];
+  const flightInquiries = [];
+  inquiries.forEach(inq => {
+    const isFlight = inq.type === 'flight' || /flight|airline|ticket|air/i.test(inq.message || '');
+    const isHotel = inq.type === 'hotel' || /hotel|resort|stay|suite|room/i.test(inq.message || '');
+    if (isFlight) {
+      flightInquiries.push({
+        id: inq.id,
+        type: 'Flight Consultation',
+        status: inq.status === 'RESOLVED' ? 'COMPLETED' : 'IN_PROGRESS',
+        message: (inq.message || '').slice(0, 120),
+        createdAt: inq.createdAt
+      });
+    } else if (isHotel) {
+      hotelInquiries.push({
+        id: inq.id,
+        type: 'Hotel Consultation',
+        status: inq.status === 'RESOLVED' ? 'COMPLETED' : 'IN_PROGRESS',
+        message: (inq.message || '').slice(0, 120),
+        createdAt: inq.createdAt
+      });
+    }
+  });
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const trips = [];
+  const linkedVisaIds = new Set();
+  const linkedInquiryIds = new Set();
+
+  // 1. Process Tour Bookings into Trips
+  bookings.forEach(b => {
+    const payment = paymentsByBooking.get(String(b.id)) || paymentsByBooking.get(String(b.bookingNumber));
+    let paymentStatus = payment ? payment.status : (['PAID', 'CONFIRMED'].includes(b.status) ? 'PAID' : (['CANCELLED', 'REFUNDED'].includes(b.status) ? b.status : (['PENDING_PAYMENT', 'PAYMENT_PENDING'].includes(b.status) ? 'PENDING' : 'PENDING')));
+
+    // Check for a related visa application for this destination / timing
+    const linkedVisa = visas.find(v => !linkedVisaIds.has(v.id) && (
+      (v.destination && b.packageTitle && b.packageTitle.toLowerCase().includes(v.destination.toLowerCase())) ||
+      (v.travelDate && b.travelDate && v.travelDate.slice(0, 7) === b.travelDate.slice(0, 7))
+    ));
+    if (linkedVisa) linkedVisaIds.add(linkedVisa.id);
+
+    // Associated documents from linked visa
+    const tripDocs = linkedVisa ? (docsByApp.get(String(linkedVisa.id)) || docsByApp.get(String(linkedVisa.applicationNumber)) || []) : [];
+
+    // Check for consultations
+    const linkedHotel = hotelInquiries.find(h => !linkedInquiryIds.has(h.id));
+    if (linkedHotel) linkedInquiryIds.add(linkedHotel.id);
+    const linkedFlight = flightInquiries.find(f => !linkedInquiryIds.has(f.id));
+    if (linkedFlight) linkedInquiryIds.add(linkedFlight.id);
+
+    // Classification
+    let tripStatus = 'UPCOMING';
+    let nextAction = 'Ready for departure';
+
+    const hasPendingDocs = linkedVisa && (
+      ['ADDITIONAL_DOCUMENTS_REQUIRED', 'PENDING_DOCUMENTS', 'Documents required'].includes(linkedVisa.status) ||
+      (Array.isArray(linkedVisa.requestedDocuments) && linkedVisa.requestedDocuments.some(r => r.status === 'PENDING'))
+    );
+    const hasPendingPayment = ['PENDING_PAYMENT', 'PAYMENT_PENDING'].includes(b.status) || paymentStatus === 'PENDING';
+
+    if (hasPendingDocs) {
+      tripStatus = 'ACTION_REQUIRED';
+      nextAction = 'Submit requested visa documents';
+    } else if (hasPendingPayment && b.status !== 'CANCELLED') {
+      tripStatus = 'ACTION_REQUIRED';
+      nextAction = 'Complete booking payment';
+    } else if (b.status === 'CANCELLED') {
+      tripStatus = 'COMPLETED';
+      nextAction = 'Booking cancelled';
+    } else if (b.travelDate) {
+      const tDate = new Date(b.travelDate);
+      if (!isNaN(tDate.getTime())) {
+        tDate.setHours(0, 0, 0, 0);
+        if (tDate.getTime() === today.getTime()) {
+          tripStatus = 'ONGOING';
+          nextAction = 'Tour departs today';
+        } else if (tDate < today || b.status === 'COMPLETED') {
+          tripStatus = 'COMPLETED';
+          nextAction = 'Tour journey completed';
+        } else {
+          tripStatus = 'UPCOMING';
+          nextAction = b.status === 'CONFIRMED' ? 'Confirmed departure' : 'Booking confirmation pending';
+        }
+      }
+    }
+
+    // Infer destination
+    let destination = 'Muscat, Oman';
+    const titleLower = (b.packageTitle || '').toLowerCase();
+    if (titleLower.includes('salalah')) destination = 'Salalah, Oman';
+    else if (titleLower.includes('wahiba') || titleLower.includes('desert')) destination = 'Wahiba Sands, Oman';
+    else if (titleLower.includes('musandam') || titleLower.includes('khasab')) destination = 'Musandam, Oman';
+    else if (titleLower.includes('jabal') || titleLower.includes('nizwa')) destination = 'Jabal Akhdar & Nizwa, Oman';
+    else if (titleLower.includes('dubai')) destination = 'Dubai, UAE';
+
+    trips.push({
+      id: b.id || b.bookingNumber,
+      reference: b.bookingNumber || b.id,
+      type: 'TOUR',
+      title: b.packageTitle || 'Oman Tour Journey',
+      destination,
+      startDate: b.travelDate || b.createdAt,
+      endDate: null,
+      status: tripStatus,
+      paymentStatus,
+      payment: payment || { status: paymentStatus, amount: b.amount, currency: b.currency || 'OMR' },
+      nextAction,
+      services: {
+        tour: {
+          id: b.id,
+          reference: b.bookingNumber,
+          title: b.packageTitle,
+          status: b.status,
+          travellers: b.travellers || 1,
+          travellerName: b.travellerName,
+          amount: b.amount,
+          currency: b.currency || 'OMR'
+        },
+        visa: linkedVisa ? {
+          id: linkedVisa.id,
+          reference: linkedVisa.applicationNumber,
+          visaType: linkedVisa.visaType,
+          destination: linkedVisa.destination,
+          status: linkedVisa.status,
+          passportNumberMasked: maskPassport(linkedVisa.passportNumber)
+        } : null,
+        hotel: linkedHotel ? {
+          reference: linkedHotel.id,
+          type: 'Hotel Consultation',
+          status: linkedHotel.status
+        } : null,
+        flight: linkedFlight ? {
+          reference: linkedFlight.id,
+          type: 'Flight Consultation',
+          status: linkedFlight.status
+        } : null
+      },
+      documents: tripDocs,
+      createdAt: b.createdAt
+    });
+  });
+
+  // 2. Process Standalone Visa Applications into Trips
+  visas.forEach(v => {
+    if (linkedVisaIds.has(v.id)) return; // Already linked to a tour booking
+
+    const payment = paymentsByVisa.get(String(v.id)) || paymentsByVisa.get(String(v.applicationNumber));
+    let paymentStatus = payment ? payment.status : (['APPROVED', 'PROCESSING', 'UNDER_REVIEW'].includes(v.status) ? 'PAID' : (['CANCELLED', 'REJECTED'].includes(v.status) ? v.status : 'PENDING'));
+
+    const tripDocs = docsByApp.get(String(v.id)) || docsByApp.get(String(v.applicationNumber)) || [];
+
+    const linkedHotel = hotelInquiries.find(h => !linkedInquiryIds.has(h.id));
+    if (linkedHotel) linkedInquiryIds.add(linkedHotel.id);
+    const linkedFlight = flightInquiries.find(f => !linkedInquiryIds.has(f.id));
+    if (linkedFlight) linkedInquiryIds.add(linkedFlight.id);
+
+    let tripStatus = 'UPCOMING';
+    let nextAction = v.status === 'APPROVED' ? 'Visa issued — ready to travel' : 'Application under consular review';
+
+    const hasPendingDocs = ['ADDITIONAL_DOCUMENTS_REQUIRED', 'PENDING_DOCUMENTS', 'Documents required'].includes(v.status) ||
+      (Array.isArray(v.requestedDocuments) && v.requestedDocuments.some(r => r.status === 'PENDING'));
+
+    if (hasPendingDocs) {
+      tripStatus = 'ACTION_REQUIRED';
+      nextAction = 'Submit requested documents for visa clearing';
+    } else if (v.status === 'CANCELLED' || v.status === 'REJECTED') {
+      tripStatus = 'COMPLETED';
+      nextAction = v.status === 'REJECTED' ? 'Application rejected' : 'Application cancelled';
+    } else if (v.travelDate) {
+      const tDate = new Date(v.travelDate);
+      if (!isNaN(tDate.getTime())) {
+        tDate.setHours(0, 0, 0, 0);
+        if (tDate.getTime() === today.getTime()) {
+          tripStatus = 'ONGOING';
+          nextAction = 'Travel window active today';
+        } else if (tDate < today || v.status === 'COMPLETED') {
+          tripStatus = 'COMPLETED';
+          nextAction = 'Travel date passed';
+        } else {
+          tripStatus = 'UPCOMING';
+          nextAction = v.status === 'APPROVED' ? 'Visa approved — ready to travel' : 'Visa processing in progress';
+        }
+      }
+    } else if (v.status === 'COMPLETED') {
+      tripStatus = 'COMPLETED';
+      nextAction = 'Visa processing completed';
+    }
+
+    trips.push({
+      id: v.id || v.applicationNumber,
+      reference: v.applicationNumber || v.id,
+      type: 'VISA',
+      title: `${v.destination} ${v.visaType} Journey`,
+      destination: v.destination,
+      startDate: v.travelDate || v.createdAt,
+      endDate: null,
+      status: tripStatus,
+      paymentStatus,
+      payment: payment || { status: paymentStatus, amount: null, currency: 'OMR' },
+      nextAction,
+      services: {
+        tour: null,
+        visa: {
+          id: v.id,
+          reference: v.applicationNumber,
+          visaType: v.visaType,
+          destination: v.destination,
+          status: v.status,
+          passportNumberMasked: maskPassport(v.passportNumber),
+          requestedDocuments: (v.requestedDocuments || []).map(r => ({
+            requestId: r.requestId,
+            documentType: r.documentType,
+            instruction: r.instruction,
+            status: r.status
+          }))
+        },
+        hotel: linkedHotel ? {
+          reference: linkedHotel.id,
+          type: 'Hotel Consultation',
+          status: linkedHotel.status
+        } : null,
+        flight: linkedFlight ? {
+          reference: linkedFlight.id,
+          type: 'Flight Consultation',
+          status: linkedFlight.status
+        } : null
+      },
+      documents: tripDocs,
+      createdAt: v.createdAt
+    });
+  });
+
+  // 3. Process remaining Standalone Hotel / Flight Consultations
+  [...hotelInquiries, ...flightInquiries].forEach(inq => {
+    if (linkedInquiryIds.has(inq.id)) return;
+    const isFlight = inq.type === 'Flight Consultation';
+    trips.push({
+      id: inq.id,
+      reference: inq.id,
+      type: isFlight ? 'FLIGHT_CONSULTATION' : 'HOTEL_CONSULTATION',
+      title: isFlight ? 'Flight Consultation Request' : 'Hotel Consultation Request',
+      destination: 'Oman / GCC',
+      startDate: inq.createdAt,
+      endDate: null,
+      status: inq.status === 'COMPLETED' ? 'COMPLETED' : 'UPCOMING',
+      paymentStatus: 'N/A',
+      payment: null,
+      nextAction: inq.status === 'COMPLETED' ? 'Consultation completed' : 'Concierge review in progress',
+      services: {
+        tour: null,
+        visa: null,
+        hotel: !isFlight ? { reference: inq.id, type: 'Hotel Consultation', status: inq.status, details: inq.message } : null,
+        flight: isFlight ? { reference: inq.id, type: 'Flight Consultation', status: inq.status, details: inq.message } : null
+      },
+      documents: [],
+      createdAt: inq.createdAt
+    });
+  });
+
+  // Sort all trips chronologically by start date / created date descending
+  trips.sort((a, b) => new Date(b.startDate || b.createdAt || 0) - new Date(a.startDate || a.createdAt || 0));
+
+  // Compute summary metrics
+  const summary = {
+    totalTrips: trips.length,
+    upcomingTrips: trips.filter(t => t.status === 'UPCOMING').length,
+    ongoingTrips: trips.filter(t => t.status === 'ONGOING').length,
+    completedTrips: trips.filter(t => t.status === 'COMPLETED').length,
+    actionRequired: trips.filter(t => t.status === 'ACTION_REQUIRED').length
+  };
+
+  return { summary, trips };
+}
+
+// GET /api/account/my-trips - Aggregated customer travel journeys
+app.get('/api/account/my-trips', authenticate, async (req, res) => {
+  try {
+    const allowedFilters = ['ALL', 'UPCOMING', 'ONGOING', 'ACTION_REQUIRED', 'COMPLETED'];
+    const filterStatus = req.query.status ? String(req.query.status).trim().toUpperCase() : 'ALL';
+    if (!allowedFilters.includes(filterStatus)) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'INVALID_STATUS_FILTER',
+          message: 'Status must be one of: ALL, UPCOMING, ONGOING, ACTION_REQUIRED, COMPLETED'
+        }
+      });
+    }
+
+    const { summary, trips } = await getCustomerTripsData(req.user);
+    const filteredTrips = filterStatus === 'ALL' ? trips : trips.filter(t => t.status === filterStatus);
+
+    res.json({
+      success: true,
+      summary,
+      trips: filteredTrips
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: err.message } });
+  }
+});
+
+// GET /api/account/my-trips/:id - Single trip detail for authenticated customer
+app.get('/api/account/my-trips/:id', authenticate, async (req, res) => {
+  try {
+    const targetId = String(req.params.id || '').trim();
+    if (!targetId) {
+      return res.status(400).json({ success: false, error: { code: 'INVALID_ID', message: 'Trip ID is required.' } });
+    }
+
+    const { trips } = await getCustomerTripsData(req.user);
+    const trip = trips.find(t => t.id === targetId || t.reference === targetId);
+
+    if (!trip) {
+      return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Trip not found.' } });
+    }
+
+    res.json({
+      success: true,
+      trip
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: err.message } });
+  }
+});
+
+// -------------------------------------------------------------
+// V5.4 CUSTOMER VISA APPLICATIONS & SECURE DOCUMENT VAULT (Task #V5.4)
+// -------------------------------------------------------------
+
+function sanitizeDocument(doc) {
+  if (!doc) return null;
+  const d = typeof doc.toObject === 'function' ? doc.toObject() : { ...doc };
+  delete d.storageKey;
+  delete d._id;
+  delete d.__v;
+  return {
+    id: d.id || d.documentId,
+    documentId: d.documentId || d.id,
+    applicationId: d.applicationId,
+    applicationNumber: d.applicationNumber || null,
+    destination: d.destination || null,
+    documentType: d.documentType,
+    originalFilename: d.originalFilename,
+    displayFilename: d.displayFilename || d.originalFilename,
+    mimeType: d.mimeType,
+    fileSize: d.fileSize,
+    uploadedBy: d.uploadedBy,
+    status: d.status,
+    reviewNote: d.reviewNote || null,
+    replacesDocumentId: d.replacesDocumentId || null,
+    replacedByDocumentId: d.replacedByDocumentId || null,
+    downloadUrl: `/api/documents/${d.id || d.documentId}/download`,
+    createdAt: d.createdAt,
+    updatedAt: d.updatedAt
+  };
+}
+
+// GET /api/account/visa - List customer-owned visa applications
+app.get('/api/account/visa', authenticate, async (req, res) => {
+  try {
+    const rawStatus = (req.query.status || 'ALL').trim().toUpperCase();
+    const validStatuses = [
+      'ALL', 'DRAFT', 'PENDING_DOCUMENTS', 'SUBMITTED', 'UNDER_REVIEW',
+      'ADDITIONAL_DOCUMENTS_REQUIRED', 'PROCESSING', 'APPROVED', 'REJECTED',
+      'CANCELLED', 'COMPLETED'
+    ];
+
+    if (!validStatuses.includes(rawStatus)) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'INVALID_STATUS',
+          message: `Status must be one of: ${validStatuses.join(', ')}`
+        }
+      });
+    }
+
+    const limit = Math.min(Math.max(parseInt(req.query.limit) || 50, 1), 100);
+    const page = Math.max(parseInt(req.query.page) || 1, 1);
+
+    const filter = { userId: req.user.id };
+    if (rawStatus !== 'ALL') {
+      filter.status = rawStatus;
+    }
+
+    const allApps = await db.visaApplications.find(filter);
+    const sortedApps = allApps.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+    const total = sortedApps.length;
+    const paginatedApps = sortedApps.slice((page - 1) * limit, page * limit);
+
+    const appIds = paginatedApps.map(a => a.id);
+    const docs = appIds.length > 0 ? await db.visaDocuments.find({ applicationId: { $in: appIds } }) : [];
+    const docCountMap = new Map();
+    docs.forEach(d => {
+      docCountMap.set(d.applicationId, (docCountMap.get(d.applicationId) || 0) + 1);
+    });
+
+    const applications = paginatedApps.map(a => {
+      const obj = typeof a.toObject === 'function' ? a.toObject() : { ...a };
+      delete obj.adminNotes;
+      delete obj._id;
+      delete obj.__v;
+
+      const requestedDocs = obj.requestedDocuments || [];
+      const pendingRequests = requestedDocs.filter(r => r.status === 'PENDING');
+
+      let requiredAction = 'None';
+      if (obj.status === 'ADDITIONAL_DOCUMENTS_REQUIRED' || pendingRequests.length > 0) {
+        requiredAction = `Upload requested document (${pendingRequests.length} pending)`;
+      } else if (obj.status === 'PENDING_DOCUMENTS') {
+        requiredAction = 'Upload required documents';
+      } else if (obj.status === 'DRAFT') {
+        requiredAction = 'Complete and submit application';
+      } else if (obj.status === 'UNDER_REVIEW' || obj.status === 'PROCESSING') {
+        requiredAction = 'Consular processing in progress';
+      } else if (obj.status === 'APPROVED' || obj.status === 'COMPLETED') {
+        requiredAction = 'Ready for travel';
+      } else if (obj.status === 'REJECTED') {
+        requiredAction = 'Application closed';
+      }
+
+      return {
+        id: obj.id,
+        applicationNumber: obj.applicationNumber,
+        destination: obj.destination,
+        visaType: obj.visaType,
+        nationality: obj.nationality,
+        fullName: obj.fullName,
+        email: obj.email,
+        phone: obj.phone,
+        passportNumber: maskPassport(obj.passportNumber),
+        dateOfBirth: obj.dateOfBirth,
+        passportExpiry: obj.passportExpiry,
+        travelDate: obj.travelDate,
+        status: obj.status,
+        uploadedDocumentsCount: docCountMap.get(obj.id) || (obj.documents || []).length,
+        requiredDocumentsCount: requestedDocs.length,
+        requiredAction,
+        createdAt: obj.createdAt,
+        updatedAt: obj.updatedAt
+      };
+    });
+
+    res.json({
+      success: true,
+      page,
+      limit,
+      total,
+      count: applications.length,
+      applications
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: err.message } });
+  }
+});
+
+// GET /api/account/visa/:id - Get single visa application detail for authenticated customer
+app.get('/api/account/visa/:id', authenticate, async (req, res) => {
+  try {
+    const targetId = String(req.params.id || '').trim();
+    if (!targetId) {
+      return res.status(400).json({ success: false, error: { code: 'INVALID_ID', message: 'Application ID is required.' } });
+    }
+
+    const appRecord = await db.visaApplications.findById(targetId) || await db.visaApplications.findOne({ applicationNumber: targetId });
+    if (!appRecord) {
+      return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Visa application not found.' } });
+    }
+
+    const isStaff = ['STAFF', 'ADMIN', 'SUPER_ADMIN'].includes(req.user.role);
+    if (!isStaff && appRecord.userId !== req.user.id) {
+      await logAudit(req, 'SUSPICIOUS_IDOR_VISA_ATTEMPT', 'VISA_APPLICATION', targetId);
+      return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Access denied: You do not own this application.' } });
+    }
+
+    const docs = await db.visaDocuments.find({ applicationId: appRecord.id });
+    const sanitizedDocs = docs.map(d => sanitizeDocument(d));
+
+    const payment = await db.payments.findOne({
+      $or: [
+        { visaApplicationId: appRecord.id },
+        { visaApplicationId: appRecord.applicationNumber }
+      ]
+    });
+
+    const safePayment = payment ? {
+      id: payment.id,
+      amount: payment.amount,
+      currency: payment.currency,
+      status: payment.status,
+      paymentMethod: payment.paymentMethod,
+      createdAt: payment.createdAt
+    } : null;
+
+    const sanitizedTimeline = (appRecord.timeline || []).map(t => ({
+      previousStatus: t.previousStatus,
+      newStatus: t.newStatus,
+      timestamp: t.timestamp,
+      note: t.note || ''
+    }));
+
+    const requestedDocs = (appRecord.requestedDocuments || []).map(r => ({
+      requestId: r.requestId,
+      documentType: r.documentType,
+      instruction: r.instruction,
+      status: r.status,
+      requestedAt: r.requestedAt
+    }));
+
+    const obj = typeof appRecord.toObject === 'function' ? appRecord.toObject() : { ...appRecord };
+    delete obj.adminNotes;
+    delete obj._id;
+    delete obj.__v;
+
+    res.json({
+      success: true,
+      application: {
+        id: obj.id,
+        applicationNumber: obj.applicationNumber,
+        destination: obj.destination,
+        visaType: obj.visaType,
+        nationality: obj.nationality,
+        fullName: obj.fullName,
+        email: obj.email,
+        phone: obj.phone,
+        passportNumber: maskPassport(obj.passportNumber),
+        dateOfBirth: obj.dateOfBirth,
+        passportExpiry: obj.passportExpiry,
+        travelDate: obj.travelDate,
+        status: obj.status,
+        timeline: sanitizedTimeline,
+        documents: sanitizedDocs,
+        requestedDocuments: requestedDocs,
+        payment: safePayment,
+        createdAt: obj.createdAt,
+        updatedAt: obj.updatedAt
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: err.message } });
+  }
+});
+
+// GET /api/account/documents - List customer-owned documents in Document Vault
+app.get('/api/account/documents', authenticate, async (req, res) => {
+  try {
+    const rawType = (req.query.type || 'ALL').trim().toUpperCase();
+    const validTypes = ['ALL', 'PASSPORT_COPY', 'PHOTO', 'CIVIL_ID', 'TRAVEL_ITINERARY', 'OTHER'];
+    if (!validTypes.includes(rawType)) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'INVALID_DOCUMENT_TYPE',
+          message: `Document type must be one of: ${validTypes.join(', ')}`
+        }
+      });
+    }
+
+    const rawStatus = (req.query.status || 'ALL').trim().toUpperCase();
+    const validStatuses = ['ALL', 'UPLOADED', 'UNDER_REVIEW', 'ACCEPTED', 'REJECTED', 'REPLACED'];
+    if (!validStatuses.includes(rawStatus)) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'INVALID_STATUS',
+          message: `Status must be one of: ${validStatuses.join(', ')}`
+        }
+      });
+    }
+
+    const limit = Math.min(Math.max(parseInt(req.query.limit) || 50, 1), 100);
+    const page = Math.max(parseInt(req.query.page) || 1, 1);
+
+    const userApps = await db.visaApplications.find({ userId: req.user.id });
+    const appMap = new Map();
+    userApps.forEach(a => {
+      appMap.set(a.id, a);
+      if (a.applicationNumber) appMap.set(a.applicationNumber, a);
+    });
+    const appIds = userApps.map(a => a.id);
+
+    const filter = {
+      $or: [
+        { uploadedBy: req.user.id },
+        { applicationId: { $in: appIds } }
+      ]
+    };
+
+    if (rawType !== 'ALL') {
+      filter.documentType = rawType;
+    }
+    if (rawStatus !== 'ALL') {
+      filter.status = rawStatus;
+    }
+
+    const allDocs = await db.visaDocuments.find(filter);
+    const sortedDocs = allDocs.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+    const total = sortedDocs.length;
+    const paginatedDocs = sortedDocs.slice((page - 1) * limit, page * limit);
+
+    const documents = paginatedDocs.map(d => {
+      const sanitized = sanitizeDocument(d);
+      const app = appMap.get(sanitized.applicationId);
+      if (app) {
+        sanitized.applicationNumber = app.applicationNumber || app.id;
+        sanitized.destination = app.destination || null;
+      }
+      return sanitized;
+    });
+
+    res.json({
+      success: true,
+      page,
+      limit,
+      total,
+      count: documents.length,
+      documents
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: err.message } });
+  }
+});
+
+// GET /api/account/documents/:id - Single document metadata for authenticated customer
+app.get('/api/account/documents/:id', authenticate, async (req, res) => {
+  try {
+    const targetId = String(req.params.id || '').trim();
+    if (!targetId) {
+      return res.status(400).json({ success: false, error: { code: 'INVALID_ID', message: 'Document ID is required.' } });
+    }
+
+    const docRecord = await db.visaDocuments.findById(targetId) || await db.visaDocuments.findOne({ documentId: targetId });
+    if (!docRecord) {
+      return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Document not found.' } });
+    }
+
+    const appRecord = await db.visaApplications.findById(docRecord.applicationId) || await db.visaApplications.findOne({ applicationNumber: docRecord.applicationId });
+    const isStaff = ['STAFF', 'ADMIN', 'SUPER_ADMIN'].includes(req.user.role);
+    const isOwner = docRecord.uploadedBy === req.user.id || (appRecord && appRecord.userId === req.user.id);
+
+    if (!isStaff && !isOwner) {
+      await logAudit(req, 'SUSPICIOUS_IDOR_DOCUMENT_VIEW_ATTEMPT', 'VISA_DOCUMENT', targetId);
+      return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Access denied: You do not own this document.' } });
+    }
+
+    const sanitized = sanitizeDocument(docRecord);
+    if (appRecord) {
+      sanitized.applicationNumber = appRecord.applicationNumber || appRecord.id;
+      sanitized.destination = appRecord.destination || null;
+    }
+
+    res.json({
+      success: true,
+      document: sanitized
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: err.message } });
+  }
+});
+
 // --- i18n & MULTI-CURRENCY ENDPOINTS (Task #7) ---
 app.get('/api/i18n/translations', (req, res) => {
   const translations = i18nService.getTranslations(req.locale);
@@ -1188,16 +2380,31 @@ app.post('/api/visa/applications/:id/request-documents', authenticate, authorize
   }
 });
 
-// --- 4. SECURE PRIVATE FILE UPLOADS, REVIEW & DOWNLOADS (Task #3 Section 8–16) ---
-app.post('/api/documents/upload', authenticate, memoryUpload.single('document'), async (req, res) => {
+// --- 4. SECURE PRIVATE FILE UPLOADS, REVIEW & DOWNLOADS (Task #3 Section 8–16 & V5.4) ---
+app.post('/api/documents/upload', authenticate, uploadLimiter, memoryUpload.single('document'), async (req, res) => {
   try {
-    if (!req.file) {
-      return res.status(400).json({ success: false, error: { code: 'NO_FILE', message: 'Please select a document file to upload.' } });
+    if (!req.file || req.file.size === 0) {
+      return res.status(400).json({ success: false, error: { code: 'NO_FILE', message: 'Please select a valid, non-empty document file to upload.' } });
+    }
+
+    if (req.file.originalname && req.file.originalname.length > 255) {
+      return res.status(400).json({ success: false, error: { code: 'FILENAME_TOO_LONG', message: 'Filename exceeds maximum length of 255 characters.' } });
     }
 
     const { applicationId, documentType } = req.body || {};
     if (!applicationId) {
       return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Application ID is required for document upload.' } });
+    }
+
+    const isStaff = ['STAFF', 'ADMIN', 'SUPER_ADMIN'].includes(req.user.role);
+    const appRecord = await db.visaApplications.findById(applicationId) || await db.visaApplications.findOne({ applicationNumber: applicationId });
+    if (!appRecord) {
+      return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Visa application not found.' } });
+    }
+
+    if (!isStaff && appRecord.userId !== req.user.id) {
+      await logAudit(req, 'SUSPICIOUS_IDOR_DOCUMENT_UPLOAD_ATTEMPT', 'VISA_APPLICATION', applicationId);
+      return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Access denied: You do not own this application.' } });
     }
 
     const docRecord = await visaService.uploadDocument(
@@ -1210,9 +2417,54 @@ app.post('/api/documents/upload', authenticate, memoryUpload.single('document'),
     );
 
     await logAudit(req, `Uploaded document: ${docRecord.documentType}`, 'VISA_DOCUMENT', docRecord.id);
-    res.status(201).json({ success: true, document: docRecord });
+    res.status(201).json({ success: true, document: sanitizeDocument(docRecord) });
   } catch (err) {
     res.status(400).json({ success: false, error: { code: 'UPLOAD_ERROR', message: err.message } });
+  }
+});
+
+// SAFE DOCUMENT REPLACEMENT (Section 13A)
+app.post('/api/documents/:id/replace', authenticate, uploadLimiter, memoryUpload.single('document'), async (req, res) => {
+  try {
+    if (!req.file || req.file.size === 0) {
+      return res.status(400).json({ success: false, error: { code: 'NO_FILE', message: 'Please select a valid, non-empty replacement file.' } });
+    }
+
+    if (req.file.originalname && req.file.originalname.length > 255) {
+      return res.status(400).json({ success: false, error: { code: 'FILENAME_TOO_LONG', message: 'Filename exceeds maximum length of 255 characters.' } });
+    }
+
+    const docRecord = await db.visaDocuments.findById(req.params.id) || await db.visaDocuments.findOne({ documentId: req.params.id });
+    if (!docRecord) {
+      return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Document not found.' } });
+    }
+
+    if (docRecord.status === 'REPLACED') {
+      return res.status(400).json({ success: false, error: { code: 'DOCUMENT_ALREADY_REPLACED', message: 'This document has already been replaced and cannot be replaced again.' } });
+    }
+
+    const appRecord = await db.visaApplications.findById(docRecord.applicationId) || await db.visaApplications.findOne({ applicationNumber: docRecord.applicationId });
+    const isStaff = ['STAFF', 'ADMIN', 'SUPER_ADMIN'].includes(req.user.role);
+    const isOwner = docRecord.uploadedBy === req.user.id || (appRecord && appRecord.userId === req.user.id);
+
+    if (!isStaff && !isOwner) {
+      await logAudit(req, 'SUSPICIOUS_IDOR_DOCUMENT_REPLACE_ATTEMPT', 'VISA_DOCUMENT', req.params.id);
+      return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Access denied: You do not own this document.' } });
+    }
+
+    const newDoc = await visaService.replaceDocument(
+      docRecord.id || docRecord.documentId,
+      req.file.buffer,
+      req.file.originalname,
+      req.file.mimetype,
+      req.user
+    );
+
+    await logAudit(req, `Replaced document: ${newDoc.documentType}`, 'VISA_DOCUMENT', newDoc.id);
+    res.json({ success: true, document: sanitizeDocument(newDoc), message: 'Document replaced successfully.' });
+  } catch (err) {
+    const status = err.statusCode || (err.code === 'CONCURRENT_REPLACEMENT' ? 409 : (err.code === 'NOT_FOUND' ? 404 : (err.code === 'FORBIDDEN' ? 403 : 400)));
+    res.status(status).json({ success: false, error: { code: err.code || 'REPLACE_ERROR', message: err.message } });
   }
 });
 

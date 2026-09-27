@@ -2154,8 +2154,934 @@ async function runTestSuite() {
     assert.ok(sec22Res.reply.includes('own travel documents') || sec22Res.reply.includes('privacy') || sec22Res.reply.includes('security'));
     console.log('  ✅ SEC-22 PASSED: Cross-customer inquiry blocked at chatbot gateway');
 
+    // ================================================================
+    // 🔒 EXECUTING V5.1 CUSTOMER PROFILE FOUNDATION TEST SUITE
+    // ================================================================
+
+    // Set up initial CustomerProfile with passport number for Customer 1
+    await db.customerProfiles.delete(customer1User.id);
+    await db.customerProfiles.create({
+      userId: customer1User.id,
+      passportNumber: 'A12345678',
+      nationality: 'Omani',
+      dateOfBirth: '1992-06-15',
+      address: 'Al Khuwair St 42',
+      city: 'Muscat',
+      country: 'Oman'
+    });
+
+    // PROFILE-1: Unauthenticated GET -> 401
+    console.log('\n[PROFILE-1] Testing Unauthenticated GET /api/account/profile...');
+    const p1Res = await request('/api/account/profile', { method: 'GET' });
+    assert.strictEqual(p1Res.status, 401);
+    assert.strictEqual(p1Res.body.error.code, 'UNAUTHORIZED');
+    console.log('  ✅ PROFILE-1 PASSED: Unauthenticated GET blocked (401 UNAUTHORIZED)');
+
+    // PROFILE-2: Authenticated GET own profile -> 200
+    console.log('\n[PROFILE-2] Testing Authenticated GET own profile...');
+    const p2Res = await request('/api/account/profile', {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(p2Res.status, 200);
+    assert.strictEqual(p2Res.body.success, true);
+    assert.strictEqual(p2Res.body.user.id, customer1User.id);
+    assert.strictEqual(p2Res.body.profile.nationality, 'Omani');
+    console.log('  ✅ PROFILE-2 PASSED: Authenticated customer retrieves own profile (200 OK)');
+
+    // PROFILE-3: Sensitive fields absent -> PASS
+    console.log('\n[PROFILE-3] Testing Sensitive Fields Absent from Profile Response...');
+    assert.strictEqual(p2Res.body.user.passwordHash, undefined);
+    assert.strictEqual(p2Res.body.user.tokenInvalidatedBefore, undefined);
+    assert.strictEqual(p2Res.body.user.verificationToken, undefined);
+    assert.strictEqual(p2Res.body.user.mfaSecret, undefined);
+    assert.strictEqual(p2Res.body.user.resetPasswordToken, undefined);
+    assert.strictEqual(p2Res.body.profile.passportNumber, undefined);
+    console.log('  ✅ PROFILE-3 PASSED: Sensitive fields strictly excluded from payload');
+
+    // PROFILE-4: Passport number masked -> PASS
+    console.log('\n[PROFILE-4] Testing Passport Number Masking (••••••1234)...');
+    assert.strictEqual(p2Res.body.profile.passportNumberMasked, '••••••5678');
+    assert.strictEqual(p2Res.body.profile.passportNumberMasked.includes('A1234'), false);
+    console.log('  ✅ PROFILE-4 PASSED: Passport number masked with last-4 visible (••••••5678)');
+
+    // PROFILE-5: Authenticated PUT own profile -> 200
+    console.log('\n[PROFILE-5] Testing Authenticated PUT own profile...');
+    const p5Res = await request('/api/account/profile', {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${customer1Token}` },
+      body: {
+        name: 'Customer One Updated',
+        phone: '+96892222222',
+        nationality: 'Omani',
+        dateOfBirth: '1992-06-15',
+        city: 'Salalah',
+        country: 'Oman',
+        preferredLanguage: 'ar',
+        preferredCurrency: 'OMR'
+      }
+    });
+    assert.strictEqual(p5Res.status, 200);
+    assert.strictEqual(p5Res.body.success, true);
+    assert.strictEqual(p5Res.body.user.name, 'Customer One Updated');
+    assert.strictEqual(p5Res.body.user.phone, '+96892222222');
+    assert.strictEqual(p5Res.body.profile.city, 'Salalah');
+    assert.strictEqual(p5Res.body.user.preferredLanguage, 'ar');
+    console.log('  ✅ PROFILE-5 PASSED: Profile updated successfully (200 OK)');
+
+    // PROFILE-6: Forbidden fields cannot be modified -> PASS
+    console.log('\n[PROFILE-6] Testing Forbidden Fields Modification Defense (role, verified, status)...');
+    const p6Res = await request('/api/account/profile', {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${customer1Token}` },
+      body: {
+        name: 'Customer One Secure',
+        role: 'ADMIN',
+        status: 'SUSPENDED',
+        verified: false,
+        passwordHash: 'forged_hash',
+        passportNumber: 'HACKED9999'
+      }
+    });
+    assert.strictEqual(p6Res.status, 200);
+    assert.strictEqual(p6Res.body.user.role, 'CUSTOMER');
+    assert.strictEqual(p6Res.body.profile.passportNumberMasked, '••••••5678');
+    const dbUserCheck = await db.users.findById(customer1User.id);
+    assert.strictEqual(dbUserCheck.role, 'CUSTOMER');
+    const dbProfileCheck = await db.customerProfiles.findOne({ userId: customer1User.id });
+    assert.strictEqual(dbProfileCheck.passportNumber, 'A12345678');
+    console.log('  ✅ PROFILE-6 PASSED: Forbidden security fields (role, passport) remain unmodifiable');
+
+    // PROFILE-7: Invalid language rejected (400)
+    console.log('\n[PROFILE-7] Testing Invalid Language Rejection...');
+    const p7Res = await request('/api/account/profile', {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${customer1Token}` },
+      body: { preferredLanguage: 'fr' }
+    });
+    assert.strictEqual(p7Res.status, 400);
+    assert.strictEqual(p7Res.body.error.code, 'INVALID_LANGUAGE');
+    console.log('  ✅ PROFILE-7 PASSED: Unsupported language code rejected (400 INVALID_LANGUAGE)');
+
+    // PROFILE-8: Invalid currency rejected (400)
+    console.log('\n[PROFILE-8] Testing Invalid Currency Rejection...');
+    const p8Res = await request('/api/account/profile', {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${customer1Token}` },
+      body: { preferredCurrency: 'BITCOIN' }
+    });
+    assert.strictEqual(p8Res.status, 400);
+    assert.strictEqual(p8Res.body.error.code, 'INVALID_CURRENCY');
+    console.log('  ✅ PROFILE-8 PASSED: Unsupported currency code rejected (400 INVALID_CURRENCY)');
+
+    // PROFILE-9: Invalid field rejected (400)
+    console.log('\n[PROFILE-9] Testing Invalid Field Rejection (malformed date / unallowlisted field)...');
+    const p9Res1 = await request('/api/account/profile', {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${customer1Token}` },
+      body: { dateOfBirth: 'future-date-2099-01-01' }
+    });
+    assert.strictEqual(p9Res1.status, 400);
+    assert.strictEqual(p9Res1.body.error.code, 'VALIDATION_ERROR');
+
+    const p9Res2 = await request('/api/account/profile', {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${customer1Token}` },
+      body: { unrecognizedKey: 'injected_payload' }
+    });
+    assert.strictEqual(p9Res2.status, 400);
+    assert.strictEqual(p9Res2.body.error.code, 'VALIDATION_ERROR');
+    console.log('  ✅ PROFILE-9 PASSED: Malformed values and unallowlisted fields rejected (400 VALIDATION_ERROR)');
+
+    // PROFILE-10: No userId override possible
+    console.log('\n[PROFILE-10] Testing No userId Override Defense (IDOR Protection)...');
+    const p10Res = await request('/api/account/profile', {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${customer1Token}` },
+      body: {
+        userId: customer2User.id,
+        name: 'Attempted Impersonator'
+      }
+    });
+    assert.strictEqual(p10Res.status, 200);
+    assert.strictEqual(p10Res.body.user.id, customer1User.id);
+    const customer2Check = await db.users.findById(customer2User.id);
+    assert.notStrictEqual(customer2Check.name, 'Attempted Impersonator');
+    console.log('  ✅ PROFILE-10 PASSED: Client userId override ignored; cross-user mutation blocked');
+
+    // PROFILE-11: Profile update audit contains no sensitive values
+    console.log('\n[PROFILE-11] Testing Profile Update Audit Log Hygiene...');
+    const auditLogs = await db.auditLogs.find({ action: 'PROFILE_UPDATED', entityId: customer1User.id });
+    assert.ok(auditLogs.length > 0);
+    const latestAudit = auditLogs[0];
+    const auditStr = JSON.stringify(latestAudit);
+    assert.strictEqual(auditStr.includes('CustomerPass1!'), false);
+    assert.strictEqual(auditStr.includes('A12345678'), false);
+    assert.strictEqual(auditStr.includes('passwordHash'), false);
+    console.log('  ✅ PROFILE-11 PASSED: Profile audit entries contain zero credentials or passport values');
+
+    // PROFILE-12: Existing authentication tests still pass
+    console.log('\n[PROFILE-12] Testing Existing Authentication Endpoints Integrity...');
+    const p12MeRes = await request('/api/auth/me', {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(p12MeRes.status, 200);
+    assert.strictEqual(p12MeRes.body.user.id, customer1User.id);
+    console.log('  ✅ PROFILE-12 PASSED: Existing auth endpoints (/api/auth/me) 100% operational');
+
+    // ================================================================
+    // 🔒 EXECUTING V5.2 CUSTOMER DASHBOARD TEST SUITE
+    // ================================================================
+
+    // DASH-1: Unauthenticated dashboard → 401
+    console.log('\n[DASH-1] Testing Unauthenticated GET /api/account/dashboard...');
+    const d1Res = await request('/api/account/dashboard', { method: 'GET' });
+    assert.strictEqual(d1Res.status, 401);
+    assert.strictEqual(d1Res.body.error.code, 'UNAUTHORIZED');
+    console.log('  ✅ DASH-1 PASSED: Unauthenticated dashboard request blocked (401 UNAUTHORIZED)');
+
+    // DASH-2: Authenticated customer → dashboard 200
+    console.log('\n[DASH-2] Testing Authenticated Customer GET /api/account/dashboard...');
+    const d2Res = await request('/api/account/dashboard', {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(d2Res.status, 200);
+    assert.strictEqual(d2Res.body.success, true);
+    assert.strictEqual(d2Res.body.user.id, customer1User.id);
+    assert.ok(typeof d2Res.body.summary === 'object');
+    assert.ok(typeof d2Res.body.summary.upcomingTrips === 'number');
+    assert.ok(typeof d2Res.body.summary.activeVisas === 'number');
+    assert.ok(typeof d2Res.body.summary.bookings === 'number');
+    assert.ok(typeof d2Res.body.summary.pendingActions === 'number');
+    assert.ok(Array.isArray(d2Res.body.upcomingActivity));
+    assert.ok(Array.isArray(d2Res.body.recentActivity));
+    console.log('  ✅ DASH-2 PASSED: Authenticated customer retrieves dashboard summary (200 OK)');
+
+    // DASH-3: Dashboard contains only customer-owned data (isolation between Customer 1 and Customer 2)
+    console.log('\n[DASH-3] Testing Dashboard Customer Data Isolation (Tenant Boundary)...');
+    const cust1BookingNum = `JMT-B-C1-${Date.now()}`;
+    const cust2BookingNum = `JMT-B-C2-${Date.now()}`;
+
+    await db.tourBookings.create({
+      id: `tb_c1_${Date.now()}`,
+      bookingNumber: cust1BookingNum,
+      packageId: 'pkg-muscat',
+      packageTitle: 'Customer 1 Exclusive Heritage Tour',
+      userId: customer1User.id,
+      travellerName: customer1User.name,
+      email: customer1User.email,
+      phone: '+96891234567',
+      travellers: 2,
+      travelDate: '2026-11-15',
+      amount: 240,
+      currency: 'OMR',
+      status: 'CONFIRMED'
+    });
+
+    await db.tourBookings.create({
+      id: `tb_c2_${Date.now()}`,
+      bookingNumber: cust2BookingNum,
+      packageId: 'pkg-dubai',
+      packageTitle: 'Customer 2 Exclusive Getaway',
+      userId: customer2User.id,
+      travellerName: customer2User.name,
+      email: customer2User.email,
+      phone: '+96892345678',
+      travellers: 1,
+      travelDate: '2026-12-01',
+      amount: 245,
+      currency: 'OMR',
+      status: 'CONFIRMED'
+    });
+
+    const d3Cust1Res = await request('/api/account/dashboard', {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(d3Cust1Res.status, 200);
+    const c1DashboardStr = JSON.stringify(d3Cust1Res.body);
+    assert.ok(c1DashboardStr.includes(cust1BookingNum));
+    assert.strictEqual(c1DashboardStr.includes(cust2BookingNum), false);
+
+    const d3Cust2Res = await request('/api/account/dashboard', {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${customer2Token}` }
+    });
+    assert.strictEqual(d3Cust2Res.status, 200);
+    const c2DashboardStr = JSON.stringify(d3Cust2Res.body);
+    assert.ok(c2DashboardStr.includes(cust2BookingNum));
+    assert.strictEqual(c2DashboardStr.includes(cust1BookingNum), false);
+    console.log('  ✅ DASH-3 PASSED: Dashboard data strictly isolated per authenticated customer');
+
+    // DASH-4: userId override ignored (IDOR Defense)
+    console.log('\n[DASH-4] Testing Query & Body userId Override Rejection (IDOR Defense)...');
+    const d4Res = await request(`/api/account/dashboard?userId=${customer2User.id}`, {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(d4Res.status, 200);
+    assert.strictEqual(d4Res.body.user.id, customer1User.id);
+    const d4Str = JSON.stringify(d4Res.body);
+    assert.strictEqual(d4Str.includes(cust2BookingNum), false);
+    console.log('  ✅ DASH-4 PASSED: Client userId override ignored; customer data boundary intact');
+
+    // DASH-5: Bounded result sizes
+    console.log('\n[DASH-5] Testing Bounded Activity Result Sizes (Max 5 items)...');
+    assert.ok(d3Cust1Res.body.upcomingActivity.length <= 5);
+    assert.ok(d3Cust1Res.body.recentActivity.length <= 5);
+    console.log('  ✅ DASH-5 PASSED: Upcoming & recent activities strictly bounded to max 5 items');
+
+    // DASH-6: Sensitive fields absent
+    console.log('\n[DASH-6] Testing Sensitive Fields Absent from Dashboard Response...');
+    assert.strictEqual(d2Res.body.user.passwordHash, undefined);
+    assert.strictEqual(d2Res.body.user.mfaSecret, undefined);
+    assert.strictEqual(d2Res.body.user.tokenInvalidatedBefore, undefined);
+    assert.strictEqual(d2Res.body.user.verificationToken, undefined);
+    assert.strictEqual(d2Res.body.user.resetPasswordToken, undefined);
+    assert.strictEqual(d2Res.body.user.failedLoginAttempts, undefined);
+    assert.strictEqual(d2Res.body.user.lockUntil, undefined);
+    const d6Str = JSON.stringify(d2Res.body);
+    assert.strictEqual(d6Str.includes('passwordHash'), false);
+    assert.strictEqual(d6Str.includes('mfaSecret'), false);
+    console.log('  ✅ DASH-6 PASSED: Sensitive fields strictly excluded from dashboard payload');
+
+    // DASH-7: Existing profile tests remain passing
+    console.log('\n[DASH-7] Testing Existing Profile Endpoint Co-Existence...');
+    const d7ProfileRes = await request('/api/account/profile', {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(d7ProfileRes.status, 200);
+    assert.strictEqual(d7ProfileRes.body.user.id, customer1User.id);
+    assert.ok(d7ProfileRes.body.profile);
+    console.log('  ✅ DASH-7 PASSED: Existing /api/account/profile endpoint remains 100% operational');
+
+    // ================================================================
+    // 🔒 EXECUTING V5.3 UNIFIED MY TRIPS TEST SUITE
+    // ================================================================
+
+    // TRIP-1: Unauthenticated GET /api/account/my-trips → 401
+    console.log('\n[TRIP-1] Testing Unauthenticated GET /api/account/my-trips...');
+    const trip1Res = await request('/api/account/my-trips', { method: 'GET' });
+    assert.strictEqual(trip1Res.status, 401);
+    assert.strictEqual(trip1Res.body.error.code, 'UNAUTHORIZED');
+    console.log('  ✅ TRIP-1 PASSED: Unauthenticated trips request blocked (401 UNAUTHORIZED)');
+
+    // TRIP-2: Authenticated customer → own trips → 200
+    console.log('\n[TRIP-2] Testing Authenticated Customer GET /api/account/my-trips...');
+    const trip2Res = await request('/api/account/my-trips', {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(trip2Res.status, 200);
+    assert.strictEqual(trip2Res.body.success, true);
+    assert.ok(typeof trip2Res.body.summary === 'object');
+    assert.ok(typeof trip2Res.body.summary.totalTrips === 'number');
+    assert.ok(typeof trip2Res.body.summary.upcomingTrips === 'number');
+    assert.ok(typeof trip2Res.body.summary.ongoingTrips === 'number');
+    assert.ok(typeof trip2Res.body.summary.completedTrips === 'number');
+    assert.ok(typeof trip2Res.body.summary.actionRequired === 'number');
+    assert.ok(Array.isArray(trip2Res.body.trips));
+    console.log('  ✅ TRIP-2 PASSED: Authenticated customer retrieves own trips (200 OK)');
+
+    // TRIP-3: Customer A cannot retrieve Customer B trip (Tenant boundary / IDOR)
+    console.log('\n[TRIP-3] Testing Customer Data Boundary & Cross-Customer Trip Isolation (IDOR Defense)...');
+    const cust1TripsStr = JSON.stringify(trip2Res.body.trips);
+    assert.ok(cust1TripsStr.includes(cust1BookingNum));
+    assert.strictEqual(cust1TripsStr.includes(cust2BookingNum), false);
+
+    const trip3CrossRes = await request(`/api/account/my-trips/${cust2BookingNum}`, {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(trip3CrossRes.status, 404);
+    assert.strictEqual(trip3CrossRes.body.error.code, 'NOT_FOUND');
+    console.log('  ✅ TRIP-3 PASSED: Cross-customer trip access blocked; tenant boundary enforced');
+
+    // TRIP-4: userId override ignored
+    console.log('\n[TRIP-4] Testing Query & Body userId Override Defense (IDOR Protection)...');
+    const trip4Res = await request(`/api/account/my-trips?userId=${customer2User.id}`, {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(trip4Res.status, 200);
+    const trip4Str = JSON.stringify(trip4Res.body.trips);
+    assert.strictEqual(trip4Str.includes(cust2BookingNum), false);
+    assert.ok(trip4Str.includes(cust1BookingNum));
+    console.log('  ✅ TRIP-4 PASSED: Client userId override ignored; customer data boundary intact');
+
+    // TRIP-5: Invalid trip ID handled safely
+    console.log('\n[TRIP-5] Testing Invalid Trip ID Safe Handling...');
+    const trip5Res = await request('/api/account/my-trips/non-existent-trip-999', {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(trip5Res.status, 404);
+    assert.strictEqual(trip5Res.body.error.code, 'NOT_FOUND');
+    console.log('  ✅ TRIP-5 PASSED: Non-existent trip ID returns 404 NOT_FOUND safely');
+
+    // TRIP-6: Sensitive fields absent
+    console.log('\n[TRIP-6] Testing Sensitive Fields Absent from My Trips Response...');
+    const tripPayloadStr = JSON.stringify(trip2Res.body);
+    assert.strictEqual(tripPayloadStr.includes('passwordHash'), false);
+    assert.strictEqual(tripPayloadStr.includes('mfaSecret'), false);
+    assert.strictEqual(tripPayloadStr.includes('verificationToken'), false);
+    assert.strictEqual(tripPayloadStr.includes('tokenInvalidatedBefore'), false);
+    assert.strictEqual(tripPayloadStr.includes('resetPasswordToken'), false);
+    console.log('  ✅ TRIP-6 PASSED: Sensitive authentication fields strictly absent from trips payload');
+
+    // TRIP-7: Raw passport number absent
+    console.log('\n[TRIP-7] Testing Raw Passport Number Absent & Masked (••••••4321)...');
+    const cust1RawPassport = 'N98765432';
+    const cust1VisaAppNum = `JMT-V-TRIP-${Date.now()}`;
+    await db.visaApplications.create({
+      id: `va_trip_${Date.now()}`,
+      applicationNumber: cust1VisaAppNum,
+      userId: customer1User.id,
+      destination: 'Oman',
+      visaType: 'Tourist 30 Days',
+      fullName: customer1User.name,
+      email: customer1User.email,
+      phone: '+96891234567',
+      passportNumber: cust1RawPassport,
+      status: 'UNDER_REVIEW',
+      travelDate: '2026-11-20'
+    });
+
+    const trip7Res = await request('/api/account/my-trips', {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(trip7Res.status, 200);
+    const trip7Str = JSON.stringify(trip7Res.body);
+    assert.strictEqual(trip7Str.includes(cust1RawPassport), false);
+    assert.ok(trip7Str.includes('••••••5432'));
+    console.log('  ✅ TRIP-7 PASSED: Raw passport number absent; passport masked as ••••••5432');
+
+    // TRIP-8: Payment secrets absent
+    console.log('\n[TRIP-8] Testing Payment Gateway Secrets & Keys Absent from Response...');
+    await db.payments.create({
+      id: `pay_trip_${Date.now()}`,
+      paymentNumber: `JMT-P-TRIP-${Date.now()}`,
+      userId: customer1User.id,
+      bookingId: cust1BookingNum,
+      provider: 'THAWANI',
+      providerOrderId: 'order_secret_thawani_123',
+      providerPaymentId: 'pay_secret_thawani_456',
+      amount: 240,
+      amountMinor: 240000,
+      currency: 'OMR',
+      status: 'COMPLETED',
+      providerMetadata: { serverKey: 'sk_live_secret_key_12345', webhookSecret: 'whsec_secret_signature' }
+    });
+
+    const trip8Res = await request('/api/account/my-trips', {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(trip8Res.status, 200);
+    const trip8Str = JSON.stringify(trip8Res.body);
+    assert.strictEqual(trip8Str.includes('sk_live_secret_key_12345'), false);
+    assert.strictEqual(trip8Str.includes('whsec_secret_signature'), false);
+    assert.strictEqual(trip8Str.includes('order_secret_thawani_123'), false);
+    assert.strictEqual(trip8Str.includes('providerMetadata'), false);
+    console.log('  ✅ TRIP-8 PASSED: Payment secrets and gateway credentials strictly absent');
+
+    // TRIP-9: Customer cannot access another user's documents
+    console.log('\n[TRIP-9] Testing Customer Cannot Access Another User Documents (IDOR Defense)...');
+    const cust2DocId = `doc_c2_${Date.now()}`;
+    await db.visaDocuments.create({
+      id: cust2DocId,
+      documentId: cust2DocId,
+      applicationId: 'app_c2_xyz',
+      documentType: 'PASSPORT_COPY',
+      storageKey: 'mock-storage-key-c2.pdf',
+      originalFilename: 'customer2_passport.pdf',
+      mimeType: 'application/pdf',
+      fileSize: 1024,
+      uploadedBy: customer2User.id,
+      status: 'UPLOADED'
+    });
+
+    const trip9Res = await request(`/api/documents/${cust2DocId}/download`, {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(trip9Res.status, 403);
+    assert.strictEqual(trip9Res.body.error.code, 'FORBIDDEN');
+    console.log('  ✅ TRIP-9 PASSED: Unauthorized cross-customer document download blocked (403 FORBIDDEN)');
+
+    // TRIP-10: Existing V5.1/V5.2 security tests remain passing
+    console.log('\n[TRIP-10] Verifying Existing Profile & Dashboard Integration Integrity...');
+    const trip10DashRes = await request('/api/account/dashboard', {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(trip10DashRes.status, 200);
+    assert.ok(trip10DashRes.body.summary);
+
+    const trip10ProfileRes = await request('/api/account/profile', {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(trip10ProfileRes.status, 200);
+    assert.ok(trip10ProfileRes.body.user);
+    console.log('  ✅ TRIP-10 PASSED: Existing V5.1 and V5.2 endpoints remain 100% operational');
+
+    // =================================================================
+    // V5.4 CUSTOMER VISA & SECURE DOCUMENT VAULT TESTS (DOC-1 to DOC-16, VISA-1 to VISA-9)
+    // =================================================================
+
+    // Seed V5.4 Visa Applications for Customer 1 and Customer 2
+    const v54Cust1VisaAppNum = `JMT-V-V54-C1-${Date.now()}`;
+    const v54Cust1RawPassport = 'K11223344';
+    const v54Cust1Visa = await db.visaApplications.create({
+      id: `va_v54_c1_${Date.now()}`,
+      applicationNumber: v54Cust1VisaAppNum,
+      userId: customer1User.id,
+      destination: 'Oman',
+      visaType: 'Tourist 30-Day Express',
+      fullName: customer1User.name,
+      email: customer1User.email,
+      phone: '+96891234567',
+      passportNumber: v54Cust1RawPassport,
+      status: 'UNDER_REVIEW',
+      travelDate: '2026-12-15',
+      requestedDocuments: [{
+        requestId: `req_v54_${Date.now()}`,
+        documentType: 'PHOTO',
+        instruction: 'Please upload white-background passport photograph',
+        status: 'PENDING'
+      }],
+      timeline: [{
+        applicationId: v54Cust1VisaAppNum,
+        previousStatus: 'DRAFT',
+        newStatus: 'UNDER_REVIEW',
+        changedBy: customer1User.id,
+        timestamp: new Date(),
+        note: 'Submitted application for review.'
+      }]
+    });
+
+    const v54Cust2VisaAppNum = `JMT-V-V54-C2-${Date.now()}`;
+    const v54Cust2RawPassport = 'L99887766';
+    const v54Cust2Visa = await db.visaApplications.create({
+      id: `va_v54_c2_${Date.now()}`,
+      applicationNumber: v54Cust2VisaAppNum,
+      userId: customer2User.id,
+      destination: 'Schengen Area',
+      visaType: 'Schengen Tourist C',
+      fullName: customer2User.name,
+      email: customer2User.email,
+      phone: '+96898765432',
+      passportNumber: v54Cust2RawPassport,
+      status: 'PROCESSING',
+      travelDate: '2027-01-20',
+      timeline: [{
+        applicationId: v54Cust2VisaAppNum,
+        previousStatus: 'UNDER_REVIEW',
+        newStatus: 'PROCESSING',
+        changedBy: customer2User.id,
+        timestamp: new Date(),
+        note: 'Processing in progress at embassy.'
+      }]
+    });
+
+    const samplePdfBuffer = Buffer.from('%PDF-1.4\n1 0 obj\n<<\n>>\nendobj\ntrailer\n<<\n>>\n%%EOF');
+
+    // Upload initial document for Customer 1
+    const cust1UploadRes = await uploadMultipart('/api/documents/upload', customer1Token, {
+      applicationId: v54Cust1Visa.id,
+      documentType: 'PASSPORT_COPY'
+    }, samplePdfBuffer, 'customer1_passport.pdf', 'application/pdf');
+    assert.strictEqual(cust1UploadRes.status, 201);
+    const cust1Doc = cust1UploadRes.body.document;
+    assert.ok(cust1Doc && cust1Doc.id);
+
+    // Upload initial document for Customer 2
+    const cust2UploadRes = await uploadMultipart('/api/documents/upload', customer2Token, {
+      applicationId: v54Cust2Visa.id,
+      documentType: 'PASSPORT_COPY'
+    }, samplePdfBuffer, 'customer2_passport.pdf', 'application/pdf');
+    assert.strictEqual(cust2UploadRes.status, 201);
+    const cust2Doc = cust2UploadRes.body.document;
+    assert.ok(cust2Doc && cust2Doc.id);
+
+    // DOC-1: Unauthenticated document list → 401
+    console.log('\n[DOC-1] Testing Unauthenticated Document List...');
+    const doc1Res = await request('/api/account/documents');
+    assert.strictEqual(doc1Res.status, 401);
+    console.log('  ✅ DOC-1 PASSED: Unauthenticated document list blocked (401 UNAUTHORIZED)');
+
+    // DOC-2: Unauthenticated download → 401
+    console.log('\n[DOC-2] Testing Unauthenticated Document Download...');
+    const doc2Res = await request(`/api/documents/${cust1Doc.id}/download`);
+    assert.strictEqual(doc2Res.status, 401);
+    console.log('  ✅ DOC-2 PASSED: Unauthenticated download blocked (401 UNAUTHORIZED)');
+
+    // DOC-3: Customer can list own documents
+    console.log('\n[DOC-3] Testing Customer Listing Own Documents...');
+    const doc3Res = await request('/api/account/documents', {
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(doc3Res.status, 200);
+    assert.ok(Array.isArray(doc3Res.body.documents));
+    const cust1DocIds = doc3Res.body.documents.map(d => d.id);
+    assert.ok(cust1DocIds.includes(cust1Doc.id));
+    assert.strictEqual(cust1DocIds.includes(cust2Doc.id), false);
+    console.log('  ✅ DOC-3 PASSED: Customer retrieves own documents only');
+
+    // DOC-4: Customer can download own document
+    console.log('\n[DOC-4] Testing Customer Downloading Own Document...');
+    const doc4Res = await request(`/api/documents/${cust1Doc.id}/download`, {
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(doc4Res.status, 200);
+    assert.strictEqual(doc4Res.headers['content-type'], 'application/pdf');
+    console.log('  ✅ DOC-4 PASSED: Customer downloads own document successfully (200 OK)');
+
+    // DOC-5: Customer A cannot download Customer B document
+    console.log('\n[DOC-5] Testing Customer A Accessing Customer B Document Download (IDOR)...');
+    const doc5Res = await request(`/api/documents/${cust2Doc.id}/download`, {
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(doc5Res.status, 403);
+    assert.strictEqual(doc5Res.body.error.code, 'FORBIDDEN');
+    console.log('  ✅ DOC-5 PASSED: Cross-customer document download blocked (403 FORBIDDEN)');
+
+    // DOC-6: Customer A cannot view Customer B document metadata
+    console.log('\n[DOC-6] Testing Customer A Viewing Customer B Document Metadata (IDOR)...');
+    const doc6Res = await request(`/api/account/documents/${cust2Doc.id}`, {
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(doc6Res.status, 403);
+    assert.strictEqual(doc6Res.body.error.code, 'FORBIDDEN');
+    console.log('  ✅ DOC-6 PASSED: Cross-customer document metadata viewing blocked (403 FORBIDDEN)');
+
+    // DOC-7: userId override rejected
+    console.log('\n[DOC-7] Testing Query Parameter userId Override Rejection...');
+    const doc7Res = await request(`/api/account/documents?userId=${customer2User.id}`, {
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(doc7Res.status, 200);
+    const doc7Ids = doc7Res.body.documents.map(d => d.id);
+    assert.strictEqual(doc7Ids.includes(cust2Doc.id), false);
+    console.log('  ✅ DOC-7 PASSED: Client userId query parameter ignored; tenant boundary intact');
+
+    // DOC-8: applicationId override rejected (cannot associate with unowned application)
+    console.log('\n[DOC-8] Testing Document Upload to Unowned Application Rejection...');
+    const doc8Res = await uploadMultipart('/api/documents/upload', customer1Token, {
+      applicationId: v54Cust2Visa.id,
+      documentType: 'PHOTO'
+    }, samplePdfBuffer, 'spoof_upload.pdf', 'application/pdf');
+    assert.strictEqual(doc8Res.status, 403);
+    assert.strictEqual(doc8Res.body.error.code, 'FORBIDDEN');
+    console.log('  ✅ DOC-8 PASSED: Unauthorized cross-customer application upload blocked (403 FORBIDDEN)');
+
+    // DOC-9: raw storage path absent
+    console.log('\n[DOC-9] Testing Raw Storage Path Absent from Response...');
+    const doc9Str = JSON.stringify(doc3Res.body) + JSON.stringify(cust1UploadRes.body);
+    assert.strictEqual(doc9Str.includes('storageKey'), false);
+    assert.strictEqual(doc9Str.includes('private-uploads'), false);
+    console.log('  ✅ DOC-9 PASSED: Raw physical storageKey and paths strictly absent from DTO');
+
+    // DOC-10: passport number masked
+    console.log('\n[DOC-10] Testing Passport Number Masking in Document Vault Responses...');
+    const doc10VisaRes = await request('/api/account/visa', {
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(doc10VisaRes.status, 200);
+    const doc10Str = JSON.stringify(doc10VisaRes.body);
+    assert.strictEqual(doc10Str.includes(v54Cust1RawPassport), false);
+    assert.ok(doc10Str.includes('••••••3344'));
+    console.log('  ✅ DOC-10 PASSED: Passport number securely masked (••••••3344)');
+
+    // DOC-11: invalid document ID safely rejected
+    console.log('\n[DOC-11] Testing Non-Existent Document ID Handling...');
+    const doc11Res = await request('/api/account/documents/non_existent_doc_99999', {
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(doc11Res.status, 404);
+    assert.strictEqual(doc11Res.body.error.code, 'NOT_FOUND');
+    console.log('  ✅ DOC-11 PASSED: Non-existent document ID safely returns 404 NOT_FOUND');
+
+    // DOC-12: path traversal attempt rejected
+    console.log('\n[DOC-12] Testing Path Traversal Defense in Document Download...');
+    const doc12Res = await request('/api/documents/..%2f..%2fpackage.json/download', {
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.ok(doc12Res.status === 403 || doc12Res.status === 404);
+    console.log('  ✅ DOC-12 PASSED: Path traversal attack safely rejected');
+
+    // DOC-13: unauthorized upload rejected (empty file, archive file, oversized filename)
+    console.log('\n[DOC-13] Testing Upload Abuse Protections (Empty, Archive, Oversized Name)...');
+    const emptyBuf = Buffer.alloc(0);
+    const doc13EmptyRes = await uploadMultipart('/api/documents/upload', customer1Token, {
+      applicationId: v54Cust1Visa.id,
+      documentType: 'PHOTO'
+    }, emptyBuf, 'empty.pdf', 'application/pdf');
+    assert.strictEqual(doc13EmptyRes.status, 400);
+
+    const archiveBuf = Buffer.from('PK\x03\x04\x14\x00\x00\x00\x08\x00');
+    const doc13ArchiveRes = await uploadMultipart('/api/documents/upload', customer1Token, {
+      applicationId: v54Cust1Visa.id,
+      documentType: 'PHOTO'
+    }, archiveBuf, 'exploit.zip', 'application/zip');
+    assert.strictEqual(doc13ArchiveRes.status, 400);
+
+    const longName = 'a'.repeat(260) + '.pdf';
+    const doc13LongNameRes = await uploadMultipart('/api/documents/upload', customer1Token, {
+      applicationId: v54Cust1Visa.id,
+      documentType: 'PHOTO'
+    }, samplePdfBuffer, longName, 'application/pdf');
+    assert.strictEqual(doc13LongNameRes.status, 400);
+    console.log('  ✅ DOC-13 PASSED: Empty file, archive, and oversized filename correctly rejected (400)');
+
+    // DOC-14: cross-customer application/document association rejected
+    console.log('\n[DOC-14] Testing Cross-Customer Document Replace Attempt (IDOR)...');
+    const doc14Res = await uploadMultipart(`/api/documents/${cust1Doc.id}/replace`, customer2Token, {}, samplePdfBuffer, 'replace_attack.pdf', 'application/pdf');
+    assert.strictEqual(doc14Res.status, 403);
+    assert.strictEqual(doc14Res.body.error.code, 'FORBIDDEN');
+    console.log('  ✅ DOC-14 PASSED: Cross-customer document replacement blocked (403 FORBIDDEN)');
+
+    // DOC-15: sensitive fields absent
+    console.log('\n[DOC-15] Testing Sensitive Authentication & Admin Fields Absent from Document Payload...');
+    const doc15Str = JSON.stringify(doc3Res.body);
+    assert.strictEqual(doc15Str.includes('passwordHash'), false);
+    assert.strictEqual(doc15Str.includes('verificationToken'), false);
+    assert.strictEqual(doc15Str.includes('apiKey'), false);
+    assert.strictEqual(doc15Str.includes('adminNotes'), false);
+    console.log('  ✅ DOC-15 PASSED: Sensitive fields strictly absent from documents response');
+
+    // DOC-16: existing security tests remain passing + replacement consistency (Section 13A)
+    console.log('\n[DOC-16] Testing Document Replacement Consistency (Section 13A)...');
+    const updatedPdfBuffer = Buffer.from('%PDF-1.4\n2 0 obj\n<<\n>>\nendobj\ntrailer\n<<\n>>\n%%EOF');
+    const replaceRes = await uploadMultipart(`/api/documents/${cust1Doc.id}/replace`, customer1Token, {}, updatedPdfBuffer, 'updated_passport.pdf', 'application/pdf');
+    assert.strictEqual(replaceRes.status, 200);
+    const newDocRecord = replaceRes.body.document;
+    assert.ok(newDocRecord && newDocRecord.id);
+    assert.strictEqual(newDocRecord.status, 'UPLOADED');
+    assert.strictEqual(newDocRecord.replacesDocumentId, cust1Doc.id);
+
+    // Verify old document is marked REPLACED
+    const oldDocVerify = await db.visaDocuments.findById(cust1Doc.id);
+    assert.strictEqual(oldDocVerify.status, 'REPLACED');
+    console.log('  ✅ DOC-16 PASSED: Safe document replacement consistency verified (Section 13A)');
+
+    // VISA-1: Unauthenticated application list → 401
+    console.log('\n[VISA-1] Testing Unauthenticated Visa Application List...');
+    const visa1Res = await request('/api/account/visa');
+    assert.strictEqual(visa1Res.status, 401);
+    console.log('  ✅ VISA-1 PASSED: Unauthenticated visa list blocked (401 UNAUTHORIZED)');
+
+    // VISA-2: Customer sees own applications
+    console.log('\n[VISA-2] Testing Customer Retrieving Own Visa Applications...');
+    const visa2Res = await request('/api/account/visa', {
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(visa2Res.status, 200);
+    assert.ok(Array.isArray(visa2Res.body.applications));
+    const c1AppNumbers = visa2Res.body.applications.map(a => a.applicationNumber);
+    assert.ok(c1AppNumbers.includes(v54Cust1VisaAppNum));
+    console.log('  ✅ VISA-2 PASSED: Customer retrieves own visa applications (200 OK)');
+
+    // VISA-3: Customer cannot see another user's application
+    console.log('\n[VISA-3] Testing Cross-Customer Application Isolation in List...');
+    assert.strictEqual(c1AppNumbers.includes(v54Cust2VisaAppNum), false);
+    console.log('  ✅ VISA-3 PASSED: Customer B application absent from Customer A list');
+
+    // VISA-4: Application detail ownership enforced
+    console.log('\n[VISA-4] Testing Application Detail Ownership Enforcement (IDOR)...');
+    const visa4Res = await request(`/api/account/visa/${v54Cust2Visa.id}`, {
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(visa4Res.status, 403);
+    assert.strictEqual(visa4Res.body.error.code, 'FORBIDDEN');
+    console.log('  ✅ VISA-4 PASSED: Customer blocked from accessing foreign application detail (403)');
+
+    // VISA-5: Sensitive internal fields absent
+    console.log('\n[VISA-5] Testing Internal Staff Notes Absent from Customer DTO...');
+    const visa5Res = await request(`/api/account/visa/${v54Cust1Visa.id}`, {
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(visa5Res.status, 200);
+    const visa5Str = JSON.stringify(visa5Res.body);
+    assert.strictEqual(visa5Str.includes('adminNotes'), false);
+    assert.strictEqual(visa5Str.includes('internalNotes'), false);
+    console.log('  ✅ VISA-5 PASSED: Internal staff notes strictly absent from visa detail response');
+
+    // VISA-6: Passport masked
+    console.log('\n[VISA-6] Testing Masked Passport in Visa Detail Response...');
+    assert.strictEqual(visa5Str.includes(v54Cust1RawPassport), false);
+    assert.ok(visa5Str.includes('••••••3344'));
+    console.log('  ✅ VISA-6 PASSED: Passport number masked as ••••••3344 in visa detail');
+
+    // VISA-7: Application status rendered from authoritative state
+    console.log('\n[VISA-7] Testing Authoritative State and Timeline Rendering...');
+    assert.strictEqual(visa5Res.body.application.status, 'UNDER_REVIEW');
+    assert.ok(Array.isArray(visa5Res.body.application.timeline));
+    assert.strictEqual(visa5Res.body.application.timeline[0].newStatus, 'UNDER_REVIEW');
+    console.log('  ✅ VISA-7 PASSED: Authoritative status and timeline verified');
+
+    // VISA-8: Required documents derived from actual data
+    console.log('\n[VISA-8] Testing Required Documents Derived from Actual Data...');
+    const reqDocs = visa5Res.body.application.requestedDocuments;
+    assert.ok(Array.isArray(reqDocs));
+    assert.strictEqual(reqDocs.length, 1);
+    assert.strictEqual(reqDocs[0].documentType, 'PHOTO');
+    assert.strictEqual(reqDocs[0].status, 'PENDING');
+    console.log('  ✅ VISA-8 PASSED: Required document states derived accurately from data');
+
+    // VISA-9: Existing visa workflow unaffected + concurrency verification (Section 28A)
+    console.log('\n[VISA-9] Testing Existing Visa Application Workflow & Concurrency (Section 28A)...');
+    const concurrentFetches = await Promise.all([
+      request('/api/account/visa', { headers: { Authorization: `Bearer ${customer1Token}` } }),
+      request('/api/account/documents', { headers: { Authorization: `Bearer ${customer1Token}` } }),
+      request('/api/account/visa', { headers: { Authorization: `Bearer ${customer2Token}` } }),
+      request('/api/account/documents', { headers: { Authorization: `Bearer ${customer2Token}` } })
+    ]);
+    concurrentFetches.forEach(res => assert.strictEqual(res.status, 200));
+    console.log('  ✅ VISA-9 PASSED: Existing workflow and concurrent data access verified cleanly');
+
+    // -------------------------------------------------------------------------
+    // V5.4 FINDINGS REMEDIATION REGRESSION TESTS (REM-1 through REM-7)
+    // -------------------------------------------------------------------------
+
+    // REM-1: AES-256 Claim Absent from Customer UI
+    console.log('\n[REM-1] Testing AES-256 Claims Absent from Customer UI...');
+    const appJsPath = path.join(__dirname, '../frontend/public/assets/js/app.js');
+    const remAppJsContent = fs.readFileSync(appJsPath, 'utf8');
+    assert.strictEqual(remAppJsContent.includes('Secured with AES-256 encrypted storage'), false, 'Found misleading AES-256 storage claim in app.js');
+    assert.strictEqual(remAppJsContent.includes('256-Bit Encrypted Storage'), false, 'Found misleading 256-bit encrypted storage badge in app.js');
+    assert.strictEqual(remAppJsContent.includes('AES-256'), false, 'Found AES-256 claim in customer-facing frontend');
+    console.log('  ✅ REM-1 PASSED: False AES-256 claims strictly absent from frontend UI');
+
+    // REM-2, REM-3, REM-4: Failed replacement rollback (no dangling DB doc, valid old doc preserved, physical file cleaned)
+    console.log('\n[REM-2..4] Testing Replacement Rollback on Database Failure...');
+    const visaService = require('./services/visa');
+    const testRollbackDoc = await db.visaDocuments.create({
+      documentId: `doc_test_rollback_${Date.now()}`,
+      applicationId: v54Cust1Visa.id,
+      documentType: 'PASSPORT_COPY',
+      storageKey: `doc_dummy_rollback_${Date.now()}.pdf`,
+      originalFilename: 'rollback_test.pdf',
+      displayFilename: 'rollback_test.pdf',
+      mimeType: 'application/pdf',
+      fileSize: 120,
+      uploadedBy: customer1User.id,
+      status: 'UPLOADED'
+    });
+
+    const dummyFilePath = path.join(__dirname, 'data/private-uploads', testRollbackDoc.storageKey);
+    if (!fs.existsSync(path.dirname(dummyFilePath))) fs.mkdirSync(path.dirname(dummyFilePath), { recursive: true });
+    fs.writeFileSync(dummyFilePath, '%PDF-1.4\nrollback dummy\n%%EOF');
+
+    const origAppUpdate = db.visaApplications.update;
+    db.visaApplications.update = async () => { throw new Error('SIMULATED_DB_ERROR_ON_APP_UPDATE'); };
+
+    let rollbackCaught = false;
+    try {
+      const newPdfBuffer = Buffer.from('%PDF-1.4\nrollback attempt payload\n%%EOF');
+      await visaService.replaceDocument(testRollbackDoc.id, newPdfBuffer, 'new_file.pdf', 'application/pdf', customer1User);
+    } catch (err) {
+      rollbackCaught = true;
+      assert.ok(err.message.includes('SIMULATED_DB_ERROR_ON_APP_UPDATE'));
+    } finally {
+      db.visaApplications.update = origAppUpdate;
+    }
+    assert.strictEqual(rollbackCaught, true, 'replaceDocument must throw when DB update fails');
+
+    // REM-2: No dangling DB document record created
+    const danglingDocs = await db.visaDocuments.find({ replacesDocumentId: testRollbackDoc.id });
+    assert.strictEqual(danglingDocs.length, 0, 'No dangling DB document should exist after failed replacement');
+    console.log('  ✅ REM-2 PASSED: Failed replacement does not leave dangling DB document');
+
+    // REM-3: Valid old document is preserved and still UPLOADED
+    const preservedOldDoc = await db.visaDocuments.findById(testRollbackDoc.id);
+    assert.ok(preservedOldDoc, 'Old document must still exist');
+    assert.strictEqual(preservedOldDoc.status, 'UPLOADED', 'Old document status must remain UPLOADED');
+    assert.strictEqual(preservedOldDoc.replacedByDocumentId || null, null, 'Old document must not have replacedByDocumentId');
+    console.log('  ✅ REM-3 PASSED: Failed replacement preserves valid old document in active state');
+
+    // REM-4: Cleaned newly stored physical file
+    const storageFiles = fs.readdirSync(path.join(__dirname, 'data/private-uploads'));
+    const orphanFiles = storageFiles.filter(f => f.includes('new_file'));
+    assert.strictEqual(orphanFiles.length, 0, 'Newly stored physical file must be unlinked on failure');
+    console.log('  ✅ REM-4 PASSED: Failed replacement unlinks and cleans physical file from storage');
+
+    await db.visaDocuments.delete(testRollbackDoc.id);
+    if (fs.existsSync(dummyFilePath)) fs.unlinkSync(dummyFilePath);
+
+    // REM-5: Already-REPLACED document cannot be replaced again
+    console.log('\n[REM-5] Testing Already-REPLACED Document Cannot Be Replaced Again...');
+    const secondReplaceRes = await uploadMultipart(
+      `/api/documents/${cust1Doc.id}/replace`,
+      customer1Token,
+      {},
+      updatedPdfBuffer,
+      'second_attempt.pdf',
+      'application/pdf'
+    );
+    assert.strictEqual(secondReplaceRes.status, 400);
+    assert.strictEqual(secondReplaceRes.body.error.code, 'DOCUMENT_ALREADY_REPLACED');
+    console.log('  ✅ REM-5 PASSED: Already-REPLACED document cannot be replaced again (400 DOCUMENT_ALREADY_REPLACED)');
+
+    // REM-6: Concurrent replacement cannot produce two successful replacements
+    console.log('\n[REM-6] Testing Concurrent Replacement Protection (No Double Replacement)...');
+    const testConcurrentDoc = await db.visaDocuments.create({
+      documentId: `doc_test_concurrent_${Date.now()}`,
+      applicationId: v54Cust1Visa.id,
+      documentType: 'PASSPORT_COPY',
+      storageKey: `doc_concurrent_${Date.now()}.pdf`,
+      originalFilename: 'concurrent_target.pdf',
+      displayFilename: 'concurrent_target.pdf',
+      mimeType: 'application/pdf',
+      fileSize: 150,
+      uploadedBy: customer1User.id,
+      status: 'UPLOADED'
+    });
+    const concurrentDummyPath = path.join(__dirname, 'data/private-uploads', testConcurrentDoc.storageKey);
+    fs.writeFileSync(concurrentDummyPath, '%PDF-1.4\nconcurrent target\n%%EOF');
+
+    const concPdf1 = Buffer.from('%PDF-1.4\nconcurrent replacement 1\n%%EOF');
+    const concPdf2 = Buffer.from('%PDF-1.4\nconcurrent replacement 2\n%%EOF');
+
+    const [cRes1, cRes2] = await Promise.all([
+      uploadMultipart(`/api/documents/${testConcurrentDoc.id}/replace`, customer1Token, {}, concPdf1, 'concurrent_1.pdf', 'application/pdf'),
+      uploadMultipart(`/api/documents/${testConcurrentDoc.id}/replace`, customer1Token, {}, concPdf2, 'concurrent_2.pdf', 'application/pdf')
+    ]);
+
+    const statuses = [cRes1.status, cRes2.status];
+    const successes = statuses.filter(s => s === 200);
+    const failures = statuses.filter(s => s === 409 || s === 400);
+
+    assert.strictEqual(successes.length, 1, 'Exactly one concurrent replacement request must succeed');
+    assert.strictEqual(failures.length, 1, 'The competing concurrent replacement request must safely fail (409/400)');
+
+    const replacementsInDb = await db.visaDocuments.find({ replacesDocumentId: testConcurrentDoc.id });
+    assert.strictEqual(replacementsInDb.length, 1, 'Only one replacement document must exist in database');
+
+    await db.visaDocuments.delete(testConcurrentDoc.id);
+    if (fs.existsSync(concurrentDummyPath)) fs.unlinkSync(concurrentDummyPath);
+    if (replacementsInDb[0]) {
+      await db.visaDocuments.delete(replacementsInDb[0].id);
+      const repFile = path.join(__dirname, 'data/private-uploads', replacementsInDb[0].storageKey);
+      if (fs.existsSync(repFile)) fs.unlinkSync(repFile);
+    }
+    console.log('  ✅ REM-6 PASSED: Concurrent replacement protection enforced (exactly 1 success, competing request safely blocked)');
+
+    // REM-7: Upload rate limit documentation matches actual 30/15m configuration
+    console.log('\n[REM-7] Testing Upload Rate Limit Documentation Matches Server Configuration (30/15m)...');
+    const reportPath = path.join(__dirname, '../docs/V5.4_VISA_DOCUMENT_VAULT_REPORT.md');
+    const reportContent = fs.readFileSync(reportPath, 'utf8');
+    assert.ok(reportContent.includes('30 uploads per 15 minutes'), 'Report must state 30 uploads per 15 minutes');
+    assert.strictEqual(reportContent.includes('100 uploads per 15 minutes'), false, 'Report must NOT state 100 uploads per 15 minutes');
+    console.log('  ✅ REM-7 PASSED: Upload rate limit documentation accurately matches 30/15m server configuration');
+
     console.log('\n================================================================');
-    console.log('🎉 ALL AUTOMATED TESTS PASSED SUCCESSFULLY! (143/143)');
+    console.log('🎉 ALL AUTOMATED TESTS PASSED SUCCESSFULLY! (204/204)');
     console.log('================================================================');
   } catch (err) {
     console.error('\n❌ Test Failure Details:', err);

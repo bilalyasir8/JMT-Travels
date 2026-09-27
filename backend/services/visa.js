@@ -26,6 +26,10 @@ const LEGAL_TRANSITIONS = {
 };
 
 class VisaService {
+  constructor() {
+    this.activeReplacements = new Set();
+  }
+
   /**
    * Generates a unique durable application reference (e.g. JMT-V-1234567)
    */
@@ -63,6 +67,10 @@ class VisaService {
     const obj = typeof appRecord.toObject === 'function' ? appRecord.toObject() : { ...appRecord };
     if (!isStaff) {
       delete obj.adminNotes;
+      if (obj.passportNumber) {
+        const p = String(obj.passportNumber).trim();
+        obj.passportNumber = p.length > 4 ? `••••••${p.slice(-4)}` : '••••••';
+      }
     }
     return obj;
   }
@@ -202,47 +210,195 @@ class VisaService {
       throw new Error('Permission Denied: You do not own this application.');
     }
 
-    // Save to private storage via StorageService
-    const stored = await storageService.upload(fileBuffer, originalName, mimeType);
+    // Save to private storage via StorageService (validates signature & magic bytes)
+    let stored = null;
+    let docRecord = null;
+    try {
+      stored = await storageService.upload(fileBuffer, originalName, mimeType);
 
-    const docRecord = await db.visaDocuments.create({
-      documentId: `doc_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`,
-      applicationId: appRecord.id,
-      documentType: documentType || 'PASSPORT_COPY',
-      storageKey: stored.storageKey,
-      originalFilename: originalName,
-      displayFilename: path.basename(originalName),
-      mimeType: stored.mimeType,
-      fileSize: stored.size,
-      uploadedBy: actorUser.id,
-      status: 'UPLOADED'
-    });
+      docRecord = await db.visaDocuments.create({
+        documentId: `doc_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`,
+        applicationId: appRecord.id,
+        documentType: documentType || 'PASSPORT_COPY',
+        storageKey: stored.storageKey,
+        originalFilename: originalName,
+        displayFilename: path.basename(originalName),
+        mimeType: stored.mimeType,
+        fileSize: stored.size,
+        uploadedBy: actorUser.id,
+        status: 'UPLOADED'
+      });
 
-    // Attach document ID to application
-    const docs = appRecord.documents || [];
-    docs.push(docRecord.id);
+      // Attach document ID to application
+      const docs = appRecord.documents || [];
+      docs.push(docRecord.id);
 
-    // Fulfill any matching pending requested document
-    const requests = appRecord.requestedDocuments || [];
-    let fulfilledAny = false;
-    requests.forEach(req => {
-      if (req.documentType === documentType && req.status === 'PENDING') {
-        req.status = 'FULFILLED';
-        fulfilledAny = true;
+      // Fulfill any matching pending requested document
+      const requests = appRecord.requestedDocuments || [];
+      let fulfilledAny = false;
+      requests.forEach(req => {
+        if (req.documentType === documentType && req.status === 'PENDING') {
+          req.status = 'FULFILLED';
+          fulfilledAny = true;
+        }
+      });
+
+      await db.visaApplications.update(appRecord.id, {
+        documents: docs,
+        requestedDocuments: requests
+      });
+
+      // If customer responded to additional document request, transition back to UNDER_REVIEW
+      if (fulfilledAny && appRecord.status === 'ADDITIONAL_DOCUMENTS_REQUIRED') {
+        await this.transitionStatus(appRecord.id, 'UNDER_REVIEW', actorUser, 'Customer submitted requested additional document.', true);
       }
-    });
 
-    await db.visaApplications.update(appRecord.id, {
-      documents: docs,
-      requestedDocuments: requests
-    });
+      return docRecord;
+    } catch (err) {
+      // Compensating Rollback: remove DB record if created
+      if (docRecord && docRecord.id) {
+        try { await db.visaDocuments.delete(docRecord.id); } catch (_) {}
+      }
+      // Orphan File Prevention: remove stored file if DB record creation or update fails
+      if (stored && stored.storageKey) {
+        try { await storageService.delete(stored.storageKey); } catch (_) {}
+      }
+      throw err;
+    }
+  }
 
-    // If customer responded to additional document request, transition back to UNDER_REVIEW
-    if (fulfilledAny && appRecord.status === 'ADDITIONAL_DOCUMENTS_REQUIRED') {
-      await this.transitionStatus(appRecord.id, 'UNDER_REVIEW', actorUser, 'Customer submitted requested additional document.', true);
+  /**
+   * Safe Document Replacement (Section 13A)
+   * Validates ownership & status -> in-flight lock -> persists new file -> creates new DB doc
+   * -> updates application references -> marks old doc REPLACED.
+   * If any step fails, compensating rollback cleans up new file, deletes new DB doc,
+   * restores application references, and ensures old document remains valid.
+   */
+  async replaceDocument(existingDocumentId, fileBuffer, originalName, mimeType, actorUser) {
+    const oldDoc = await db.visaDocuments.findById(existingDocumentId) || await db.visaDocuments.findOne({ documentId: existingDocumentId });
+    if (!oldDoc) {
+      const err = new Error('Document not found.');
+      err.code = 'NOT_FOUND';
+      err.statusCode = 404;
+      throw err;
     }
 
-    return docRecord;
+    if (oldDoc.status === 'REPLACED') {
+      const err = new Error('Document has already been replaced and cannot be replaced again.');
+      err.code = 'DOCUMENT_ALREADY_REPLACED';
+      err.statusCode = 400;
+      throw err;
+    }
+
+    const appRecord = await db.visaApplications.findById(oldDoc.applicationId) || await db.visaApplications.findOne({ applicationNumber: oldDoc.applicationId });
+    const isStaff = ['STAFF', 'ADMIN', 'SUPER_ADMIN'].includes(actorUser.role);
+    if (!isStaff && oldDoc.uploadedBy !== actorUser.id && (!appRecord || appRecord.userId !== actorUser.id)) {
+      const err = new Error('Permission Denied: You do not own this document.');
+      err.code = 'FORBIDDEN';
+      err.statusCode = 403;
+      throw err;
+    }
+
+    const lockKey = String(oldDoc.id || oldDoc.documentId);
+    if (this.activeReplacements.has(lockKey)) {
+      const err = new Error('Document replacement is already in progress. Please wait.');
+      err.code = 'CONCURRENT_REPLACEMENT';
+      err.statusCode = 409;
+      throw err;
+    }
+    this.activeReplacements.add(lockKey);
+
+    let newStored = null;
+    let newDocRecord = null;
+    let originalAppDocs = null;
+    let appDocsModified = false;
+
+    try {
+      newStored = await storageService.upload(fileBuffer, originalName, mimeType);
+
+      newDocRecord = await db.visaDocuments.create({
+        documentId: `doc_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`,
+        applicationId: oldDoc.applicationId,
+        documentType: oldDoc.documentType,
+        storageKey: newStored.storageKey,
+        originalFilename: originalName,
+        displayFilename: path.basename(originalName),
+        mimeType: newStored.mimeType,
+        fileSize: newStored.size,
+        uploadedBy: actorUser.id,
+        status: 'UPLOADED',
+        replacesDocumentId: oldDoc.id || oldDoc.documentId
+      });
+
+      if (appRecord) {
+        originalAppDocs = Array.isArray(appRecord.documents) ? [...appRecord.documents] : [];
+        const docs = originalAppDocs.filter(dId => dId !== oldDoc.id && dId !== oldDoc.documentId);
+        docs.push(newDocRecord.id);
+        await db.visaApplications.update(appRecord.id, { documents: docs });
+        appDocsModified = true;
+      }
+
+      // Re-verify authoritative state before marking REPLACED
+      const freshOldDoc = await db.visaDocuments.findById(oldDoc.id) || await db.visaDocuments.findOne({ documentId: oldDoc.documentId });
+      if (freshOldDoc && freshOldDoc.status === 'REPLACED') {
+        const conflictErr = new Error('Document was already replaced by another request.');
+        conflictErr.code = 'DOCUMENT_ALREADY_REPLACED';
+        conflictErr.statusCode = 400;
+        throw conflictErr;
+      }
+
+      await db.visaDocuments.update(oldDoc.id, {
+        status: 'REPLACED',
+        replacedByDocumentId: newDocRecord.id
+      });
+
+      return newDocRecord;
+    } catch (err) {
+      // Compensating Rollback:
+      // 1. Revert visa application document references if modified
+      if (appDocsModified && appRecord && originalAppDocs) {
+        try {
+          await db.visaApplications.update(appRecord.id, { documents: originalAppDocs });
+        } catch (appErr) {
+          console.error('[Rollback Error] Failed to restore application documents:', appErr.message);
+        }
+      }
+
+      // 2. Remove newly created DB document record
+      if (newDocRecord && newDocRecord.id) {
+        try {
+          await db.visaDocuments.delete(newDocRecord.id);
+        } catch (dbErr) {
+          console.error('[Rollback Error] Failed to delete replacement document DB record:', dbErr.message);
+        }
+      }
+
+      // 3. Remove physical file from private storage
+      if (newStored && newStored.storageKey) {
+        try {
+          await storageService.delete(newStored.storageKey);
+        } catch (fsErr) {
+          console.error('[Rollback Error] Failed to delete physical storage file:', fsErr.message);
+        }
+      }
+
+      // 4. Ensure old document retains original valid status
+      if (oldDoc && oldDoc.id) {
+        try {
+          const currentOld = await db.visaDocuments.findById(oldDoc.id);
+          if (currentOld && currentOld.status === 'REPLACED' && (!newDocRecord || currentOld.replacedByDocumentId === newDocRecord.id)) {
+            await db.visaDocuments.update(oldDoc.id, {
+              status: oldDoc.status || 'UPLOADED',
+              replacedByDocumentId: oldDoc.replacedByDocumentId || null
+            });
+          }
+        } catch (_) {}
+      }
+
+      throw err;
+    } finally {
+      this.activeReplacements.delete(lockKey);
+    }
   }
 
   /**
