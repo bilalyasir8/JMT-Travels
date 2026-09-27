@@ -255,7 +255,377 @@ function escapeHTML(str) {
 // V2.9 UNIFIED ENQUIRY MODAL & CONVERSION ENGINE
 // -------------------------------------------------------------
 
+// V2.9 UNIFIED ENQUIRY MODAL & V5.5 TRAVEL CONSULTATION ENGINE
+// -------------------------------------------------------------
+
+window.openTravelEnquiryModal = function(category = 'hotel', itemData = {}) {
+  let modalContainer = document.getElementById('jmt-enquiry-modal-overlay');
+  if (!modalContainer) {
+    modalContainer = document.createElement('div');
+    modalContainer.id = 'jmt-enquiry-modal-overlay';
+    modalContainer.className = 'jmt-modal-overlay';
+    document.body.appendChild(modalContainer);
+  }
+
+  const isHotel = category === 'hotel';
+  const modalTitle = isHotel ? 'Hotel Accommodation Consultation' : 'Flight Ticketing Consultation';
+  const subtitle = isHotel
+    ? (itemData.preferredHotel ? `${itemData.preferredHotel} • ${itemData.destination || ''}` : 'Personalized Hotel & Resort Consultation in Oman & GCC')
+    : (itemData.preferredAirline ? `${itemData.preferredAirline} • ${itemData.origin || 'MCT'} to ${itemData.destination || 'DXB'}` : 'International & Domestic Flight Ticketing');
+
+  // Pre-calculate dates from search state or defaults
+  const today = new Date();
+  const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+  const nextWeek = new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0];
+
+  const destVal = itemData.destination || (isHotel ? (hotelSearchState.destination || 'Muscat, Oman') : (flightSearchState.toAirport ? `${flightSearchState.toAirport.name} (${flightSearchState.toAirport.iataCode})` : 'Dubai (DXB)'));
+  const originVal = itemData.origin || (!isHotel ? (flightSearchState.fromAirport ? `${flightSearchState.fromAirport.name} (${flightSearchState.fromAirport.iataCode})` : 'Muscat (MCT)') : '');
+  const startDateVal = itemData.checkIn || itemData.departureDate || (isHotel ? (hotelSearchState.checkIn || tomorrow) : (flightSearchState.deptDate || tomorrow));
+  const endDateVal = itemData.checkOut || itemData.returnDate || (isHotel ? (hotelSearchState.checkOut || nextWeek) : (flightSearchState.returnDate || nextWeek));
+  const adultsVal = itemData.adults || (isHotel ? (hotelSearchState.adults || 2) : (flightSearchState.adults || 1));
+  const childrenVal = itemData.children !== undefined ? itemData.children : (isHotel ? (hotelSearchState.children || 0) : (flightSearchState.children || 0));
+  const infantsVal = itemData.infants || (flightSearchState.infants || 0);
+  const roomsVal = itemData.rooms || (hotelSearchState.rooms || 1);
+  const cabinVal = itemData.preferredCabin || (flightSearchState.cabinClass || 'Economy');
+  const tripTypeVal = itemData.tripType || (flightSearchState.tripType || 'round-trip');
+  const hotelPref = itemData.preferredHotel || '';
+  const airlinePref = itemData.preferredAirline || '';
+
+  const user = state.user;
+  const userName = user ? user.name : '';
+  const userEmail = user ? user.email : '';
+  const userPhone = user ? (user.phone || '') : '';
+
+  modalContainer.innerHTML = `
+    <div class="jmt-modal-card" role="dialog" aria-modal="true" aria-labelledby="travel-enquiry-title" style="max-width: 580px; width: 100%; max-height: 90vh; overflow-y: auto; box-sizing: border-box;">
+      <div class="jmt-modal-header" style="background: linear-gradient(135deg, #07153B 0%, #0B286C 100%); padding: 22px 24px; border-bottom: 1px solid rgba(255,255,255,0.15);">
+        <div>
+          <span style="background: rgba(0, 230, 118, 0.15); color: #00E676; padding: 4px 12px; border-radius: 99px; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">
+            ${isHotel ? '🏨 JMT HOTEL DESK' : '✈️ JMT AIRLINE DESK'}
+          </span>
+          <h3 id="travel-enquiry-title" style="font-size: 20px; font-weight: 800; color: #FFFFFF; margin: 8px 0 3px;">
+            ${escapeHTML(modalTitle)}
+          </h3>
+          <div style="font-size: 13px; color: #D6E0F4;">${escapeHTML(subtitle)}</div>
+        </div>
+        <button type="button" class="jmt-modal-close" onclick="closeEnquiryModal()" aria-label="Close Modal" style="color: #FFF; background: none; border: 0; font-size: 24px; cursor: pointer;">×</button>
+      </div>
+
+      <div class="jmt-modal-body" style="padding: 24px; background: #07153B; color: #FFFFFF;">
+        <!-- CONSULTATION NOTICE (Strictly no fake live inventory claims) -->
+        <div style="background: rgba(0, 230, 118, 0.08); border: 1px solid rgba(0, 230, 118, 0.25); border-radius: 12px; padding: 12px 16px; margin-bottom: 20px; font-size: 12.5px; line-height: 1.5; color: #D6E0F4;">
+          <strong style="color: #00E676;">Consultation Request:</strong> Submit your travel preferences below. The JMT travel team will check live partner availability, verify negotiated rates, and prepare personalized options for you.
+        </div>
+
+        <form id="travel-request-form" onsubmit="handleTravelRequestSubmit(event, '${category}')">
+          ${!isHotel ? `
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
+              <div>
+                <label for="req-origin" style="display: block; font-size: 12px; font-weight: 700; color: #D6E0F4; margin-bottom: 4px;">Origin City / Airport *</label>
+                <input type="text" id="req-origin" required value="${escapeHTML(originVal)}" placeholder="e.g. Muscat (MCT)" style="width: 100%; box-sizing: border-box; font-size: 14px; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.2); background: rgba(11,40,108,0.7); color: #FFF;">
+              </div>
+              <div>
+                <label for="req-destination" style="display: block; font-size: 12px; font-weight: 700; color: #D6E0F4; margin-bottom: 4px;">Destination City / Airport *</label>
+                <input type="text" id="req-destination" required value="${escapeHTML(destVal)}" placeholder="e.g. Dubai (DXB)" style="width: 100%; box-sizing: border-box; font-size: 14px; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.2); background: rgba(11,40,108,0.7); color: #FFF;">
+              </div>
+            </div>
+            <div style="margin-bottom: 14px;">
+              <label for="req-triptype" style="display: block; font-size: 12px; font-weight: 700; color: #D6E0F4; margin-bottom: 4px;">Trip Type</label>
+              <select id="req-triptype" onchange="toggleFlightReturnDate(this.value)" style="width: 100%; box-sizing: border-box; font-size: 14px; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.2); background: #0B286C; color: #FFF; cursor: pointer;">
+                <option value="round-trip" ${tripTypeVal === 'round-trip' ? 'selected' : ''}>Round Trip</option>
+                <option value="one-way" ${tripTypeVal === 'one-way' ? 'selected' : ''}>One Way</option>
+                <option value="multi-city" ${tripTypeVal === 'multi-city' ? 'selected' : ''}>Multi City</option>
+              </select>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
+              <div>
+                <label for="req-start-date" style="display: block; font-size: 12px; font-weight: 700; color: #D6E0F4; margin-bottom: 4px;">Departure Date *</label>
+                <input type="date" id="req-start-date" required value="${startDateVal}" style="width: 100%; box-sizing: border-box; font-size: 14px; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.2); background: rgba(11,40,108,0.7); color: #FFF;">
+              </div>
+              <div id="req-return-date-wrap" style="${tripTypeVal === 'one-way' ? 'display: none;' : ''}">
+                <label for="req-end-date" style="display: block; font-size: 12px; font-weight: 700; color: #D6E0F4; margin-bottom: 4px;">Return Date *</label>
+                <input type="date" id="req-end-date" value="${endDateVal}" style="width: 100%; box-sizing: border-box; font-size: 14px; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.2); background: rgba(11,40,108,0.7); color: #FFF;">
+              </div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 14px;">
+              <div>
+                <label for="req-adults" style="display: block; font-size: 12px; font-weight: 700; color: #D6E0F4; margin-bottom: 4px;">Adults (12+)</label>
+                <input type="number" id="req-adults" min="1" max="20" value="${adultsVal}" style="width: 100%; box-sizing: border-box; font-size: 14px; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.2); background: rgba(11,40,108,0.7); color: #FFF;">
+              </div>
+              <div>
+                <label for="req-children" style="display: block; font-size: 12px; font-weight: 700; color: #D6E0F4; margin-bottom: 4px;">Children (2-11)</label>
+                <input type="number" id="req-children" min="0" max="20" value="${childrenVal}" style="width: 100%; box-sizing: border-box; font-size: 14px; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.2); background: rgba(11,40,108,0.7); color: #FFF;">
+              </div>
+              <div>
+                <label for="req-infants" style="display: block; font-size: 12px; font-weight: 700; color: #D6E0F4; margin-bottom: 4px;">Infants (&lt;2)</label>
+                <input type="number" id="req-infants" min="0" max="10" value="${infantsVal}" style="width: 100%; box-sizing: border-box; font-size: 14px; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.2); background: rgba(11,40,108,0.7); color: #FFF;">
+              </div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
+              <div>
+                <label for="req-cabin" style="display: block; font-size: 12px; font-weight: 700; color: #D6E0F4; margin-bottom: 4px;">Cabin Class</label>
+                <select id="req-cabin" style="width: 100%; box-sizing: border-box; font-size: 14px; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.2); background: #0B286C; color: #FFF;">
+                  <option value="Economy" ${cabinVal === 'Economy' ? 'selected' : ''}>Economy Class</option>
+                  <option value="Premium Economy" ${cabinVal === 'Premium Economy' ? 'selected' : ''}>Premium Economy</option>
+                  <option value="Business" ${cabinVal === 'Business' ? 'selected' : ''}>Business Class</option>
+                  <option value="First" ${cabinVal === 'First' ? 'selected' : ''}>First Class</option>
+                </select>
+              </div>
+              <div>
+                <label for="req-airline" style="display: block; font-size: 12px; font-weight: 700; color: #D6E0F4; margin-bottom: 4px;">Preferred Airline (Optional)</label>
+                <input type="text" id="req-airline" value="${escapeHTML(airlinePref)}" placeholder="e.g. Oman Air, Emirates" style="width: 100%; box-sizing: border-box; font-size: 14px; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.2); background: rgba(11,40,108,0.7); color: #FFF;">
+              </div>
+            </div>
+          ` : `
+            <div style="margin-bottom: 14px;">
+              <label for="req-destination" style="display: block; font-size: 12px; font-weight: 700; color: #D6E0F4; margin-bottom: 4px;">Destination / City *</label>
+              <input type="text" id="req-destination" required value="${escapeHTML(destVal)}" placeholder="e.g. Muscat, Salalah, Dubai" style="width: 100%; box-sizing: border-box; font-size: 14px; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.2); background: rgba(11,40,108,0.7); color: #FFF;">
+            </div>
+            <div style="margin-bottom: 14px;">
+              <label for="req-hotel-name" style="display: block; font-size: 12px; font-weight: 700; color: #D6E0F4; margin-bottom: 4px;">Preferred Hotel / Property (Optional)</label>
+              <input type="text" id="req-hotel-name" value="${escapeHTML(hotelPref)}" placeholder="e.g. Al Bustan Palace, Chedi Muscat" style="width: 100%; box-sizing: border-box; font-size: 14px; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.2); background: rgba(11,40,108,0.7); color: #FFF;">
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
+              <div>
+                <label for="req-start-date" style="display: block; font-size: 12px; font-weight: 700; color: #D6E0F4; margin-bottom: 4px;">Check-in Date *</label>
+                <input type="date" id="req-start-date" required value="${startDateVal}" style="width: 100%; box-sizing: border-box; font-size: 14px; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.2); background: rgba(11,40,108,0.7); color: #FFF;">
+              </div>
+              <div>
+                <label for="req-end-date" style="display: block; font-size: 12px; font-weight: 700; color: #D6E0F4; margin-bottom: 4px;">Check-out Date *</label>
+                <input type="date" id="req-end-date" required value="${endDateVal}" style="width: 100%; box-sizing: border-box; font-size: 14px; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.2); background: rgba(11,40,108,0.7); color: #FFF;">
+              </div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 14px;">
+              <div>
+                <label for="req-rooms" style="display: block; font-size: 12px; font-weight: 700; color: #D6E0F4; margin-bottom: 4px;">Rooms</label>
+                <input type="number" id="req-rooms" min="1" max="10" value="${roomsVal}" style="width: 100%; box-sizing: border-box; font-size: 14px; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.2); background: rgba(11,40,108,0.7); color: #FFF;">
+              </div>
+              <div>
+                <label for="req-adults" style="display: block; font-size: 12px; font-weight: 700; color: #D6E0F4; margin-bottom: 4px;">Adults</label>
+                <input type="number" id="req-adults" min="1" max="20" value="${adultsVal}" style="width: 100%; box-sizing: border-box; font-size: 14px; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.2); background: rgba(11,40,108,0.7); color: #FFF;">
+              </div>
+              <div>
+                <label for="req-children" style="display: block; font-size: 12px; font-weight: 700; color: #D6E0F4; margin-bottom: 4px;">Children</label>
+                <input type="number" id="req-children" min="0" max="20" value="${childrenVal}" style="width: 100%; box-sizing: border-box; font-size: 14px; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.2); background: rgba(11,40,108,0.7); color: #FFF;">
+              </div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
+              <div>
+                <label for="req-room-pref" style="display: block; font-size: 12px; font-weight: 700; color: #D6E0F4; margin-bottom: 4px;">Room Preference</label>
+                <input type="text" id="req-room-pref" placeholder="e.g. Sea View, Deluxe King" style="width: 100%; box-sizing: border-box; font-size: 14px; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.2); background: rgba(11,40,108,0.7); color: #FFF;">
+              </div>
+              <div>
+                <label for="req-budget" style="display: block; font-size: 12px; font-weight: 700; color: #D6E0F4; margin-bottom: 4px;">Budget Range (OMR / night)</label>
+                <input type="text" id="req-budget" placeholder="e.g. 50-100 OMR" style="width: 100%; box-sizing: border-box; font-size: 14px; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.2); background: rgba(11,40,108,0.7); color: #FFF;">
+              </div>
+            </div>
+          `}
+
+          <!-- Customer Identity Section -->
+          ${!user ? `
+            <div style="background: rgba(255,255,255,0.05); border: 1px dashed rgba(255,255,255,0.25); border-radius: 12px; padding: 14px; margin-bottom: 14px;">
+              <div style="font-size: 12.5px; color: #CBD5E1; margin-bottom: 10px;">
+                💡 <strong>Track in Portal:</strong> <a href="/login" onclick="event.preventDefault(); closeEnquiryModal(); navigate('/login');" style="color: #00E676; font-weight: 700;">Sign in to your JMT Account</a> to track this inquiry live on your customer dashboard. Or submit below as guest:
+              </div>
+              <div style="margin-bottom: 10px;">
+                <label for="guest-name" style="display: block; font-size: 12px; font-weight: 700; color: #D6E0F4; margin-bottom: 4px;">Full Name *</label>
+                <input type="text" id="guest-name" required placeholder="Enter full name" style="width: 100%; box-sizing: border-box; font-size: 14px; padding: 9px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: rgba(11,40,108,0.7); color: #FFF;">
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <div>
+                  <label for="guest-phone" style="display: block; font-size: 12px; font-weight: 700; color: #D6E0F4; margin-bottom: 4px;">Phone / WhatsApp *</label>
+                  <input type="tel" id="guest-phone" required placeholder="+968 9XXXXXXX" style="width: 100%; box-sizing: border-box; font-size: 14px; padding: 9px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: rgba(11,40,108,0.7); color: #FFF;">
+                </div>
+                <div>
+                  <label for="guest-email" style="display: block; font-size: 12px; font-weight: 700; color: #D6E0F4; margin-bottom: 4px;">Email Address *</label>
+                  <input type="email" id="guest-email" required placeholder="name@example.com" style="width: 100%; box-sizing: border-box; font-size: 14px; padding: 9px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: rgba(11,40,108,0.7); color: #FFF;">
+                </div>
+              </div>
+            </div>
+          ` : `
+            <div style="background: rgba(0, 230, 118, 0.08); border: 1px solid rgba(0, 230, 118, 0.2); border-radius: 10px; padding: 10px 14px; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between;">
+              <span style="font-size: 12.5px; color: #D6E0F4;">
+                Submitting as authenticated customer: <strong style="color: #00E676;">${escapeHTML(userName)}</strong> (${escapeHTML(userEmail)})
+              </span>
+              <span style="font-size: 10.5px; font-weight: 800; color: #00E676; background: rgba(0,230,118,0.15); padding: 2px 8px; border-radius: 99px;">Linked to Portal</span>
+            </div>
+          `}
+
+          <!-- Special Requests -->
+          <div style="margin-bottom: 14px;">
+            <label for="req-special" style="display: block; font-size: 12px; font-weight: 700; color: #D6E0F4; margin-bottom: 4px;">Special Requirements &amp; Notes</label>
+            <textarea id="req-special" rows="2" placeholder="e.g. Late check-in, dietary preferences, extra baggage, specific flight timing..." style="width: 100%; box-sizing: border-box; font-size: 13.5px; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.2); background: rgba(11,40,108,0.7); color: #FFF; resize: vertical;"></textarea>
+          </div>
+
+          <!-- Contact Preference -->
+          <div style="margin-bottom: 20px;">
+            <label for="req-contact-pref" style="display: block; font-size: 12px; font-weight: 700; color: #D6E0F4; margin-bottom: 4px;">Preferred Contact Channel</label>
+            <select id="req-contact-pref" style="width: 100%; box-sizing: border-box; font-size: 13.5px; padding: 9px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.2); background: #0B286C; color: #FFF;">
+              <option value="WHATSAPP">WhatsApp (+968 9760 8999)</option>
+              <option value="PHONE">Phone Call</option>
+              <option value="EMAIL">Email</option>
+            </select>
+          </div>
+
+          <div id="travel-request-feedback" style="display: none; margin-bottom: 16px; padding: 12px 16px; border-radius: 10px; font-size: 13px; font-weight: 600;"></div>
+
+          <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+            <button type="submit" id="travel-request-submit-btn" class="jmt-btn-primary" style="flex: 1; min-height: 44px; justify-content: center; background: #00E676; color: #07153B !important; font-weight: 800; border-radius: 99px; border: 0; cursor: pointer; font-size: 14px; box-shadow: 0 4px 14px rgba(0, 230, 118, 0.35);">
+              Send Request to JMT →
+            </button>
+            <a href="https://wa.me/96897608999?text=${encodeURIComponent(`Hi JMT Travels, I would like to request assistance for ${modalTitle} to ${destVal}.`)}" target="_blank" rel="noopener" class="jmt-btn-whatsapp" style="padding: 12px 18px; border-radius: 99px; font-weight: 700; font-size: 13.5px; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; background: #00A651; color: #FFF; white-space: nowrap;">
+              💬 WhatsApp JMT
+            </a>
+          </div>
+        </form>
+      </div>
+    </div>
+  `;
+
+  modalContainer.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+
+  const closeBtn = modalContainer.querySelector('.jmt-modal-close');
+  if (closeBtn) closeBtn.focus();
+};
+
+window.toggleFlightReturnDate = function(tripType) {
+  const wrap = document.getElementById('req-return-date-wrap');
+  if (wrap) {
+    wrap.style.display = tripType === 'one-way' ? 'none' : 'block';
+  }
+};
+
+window.handleTravelRequestSubmit = async function(event, category) {
+  event.preventDefault();
+  const btn = document.getElementById('travel-request-submit-btn');
+  const feedback = document.getElementById('travel-request-feedback');
+
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Submitting Request...';
+  }
+
+  const isHotel = category === 'hotel';
+  const destination = document.getElementById('req-destination')?.value.trim() || '';
+  const startDate = document.getElementById('req-start-date')?.value || '';
+  const endDate = document.getElementById('req-end-date')?.value || '';
+  const adults = parseInt(document.getElementById('req-adults')?.value || '1', 10);
+  const children = parseInt(document.getElementById('req-children')?.value || '0', 10);
+  const specialRequirements = document.getElementById('req-special')?.value.trim() || '';
+  const contactPreference = document.getElementById('req-contact-pref')?.value || 'WHATSAPP';
+
+  try {
+    if (state.user) {
+      // Authenticated Customer Travel Request
+      const payload = isHotel ? {
+        type: 'HOTEL_INQUIRY',
+        destination,
+        checkInDate: startDate,
+        checkOutDate: endDate,
+        adults,
+        children,
+        rooms: parseInt(document.getElementById('req-rooms')?.value || '1', 10),
+        preferredHotel: document.getElementById('req-hotel-name')?.value.trim() || '',
+        roomPreference: document.getElementById('req-room-pref')?.value.trim() || '',
+        budgetRange: document.getElementById('req-budget')?.value.trim() || '',
+        specialRequirements,
+        contactPreference
+      } : {
+        type: 'FLIGHT_INQUIRY',
+        origin: document.getElementById('req-origin')?.value.trim() || 'Muscat (MCT)',
+        destination,
+        tripType: document.getElementById('req-triptype')?.value || 'round-trip',
+        departureDate: startDate,
+        returnDate: document.getElementById('req-triptype')?.value === 'one-way' ? null : endDate,
+        adults,
+        children,
+        infants: parseInt(document.getElementById('req-infants')?.value || '0', 10),
+        preferredCabin: document.getElementById('req-cabin')?.value || 'Economy',
+        preferredAirline: document.getElementById('req-airline')?.value.trim() || '',
+        specialRequirements,
+        contactPreference
+      };
+
+      const res = await apiCall('/api/account/travel-requests', 'POST', payload);
+      if (!res || !res.success) {
+        throw new Error(res?.error?.message || 'Failed to submit travel request.');
+      }
+
+      if (feedback) {
+        feedback.style.display = 'block';
+        feedback.style.background = 'rgba(0, 230, 118, 0.15)';
+        feedback.style.border = '1px solid #00E676';
+        feedback.style.color = '#00E676';
+        feedback.innerHTML = `
+          <div style="font-weight: 800; font-size: 14.5px; margin-bottom: 6px;">✓ Request Sent to JMT Concierge!</div>
+          <div style="font-size: 12.5px; color: #D6E0F4; margin-bottom: 10px;">
+            Reference: <strong style="color: #FFF; font-family: monospace; font-size: 13.5px;">${escapeHTML(res.request?.reference || res.request?.id || '')}</strong>.<br>
+            Our travel specialists will verify partner availability and contact you via ${escapeHTML(contactPreference)}.
+          </div>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button type="button" onclick="closeEnquiryModal(); navigate('/account/travel-requests');" style="background: #00A651; color: #FFF; font-weight: 700; border: 0; padding: 6px 14px; border-radius: 99px; font-size: 12px; cursor: pointer;">
+              View in Travel Requests →
+            </button>
+            <button type="button" onclick="closeEnquiryModal(); navigate('/account/my-trips');" style="background: rgba(255,255,255,0.12); color: #FFF; font-weight: 700; border: 1px solid rgba(255,255,255,0.25); padding: 6px 14px; border-radius: 99px; font-size: 12px; cursor: pointer;">
+              View in My Trips →
+            </button>
+          </div>
+        `;
+      }
+
+      if (btn) {
+        btn.textContent = '✓ Request Submitted';
+        btn.style.background = '#00A651';
+      }
+    } else {
+      // Unauthenticated Guest Submission fallback
+      const guestName = document.getElementById('guest-name')?.value.trim() || '';
+      const guestPhone = document.getElementById('guest-phone')?.value.trim() || '';
+      const guestEmail = document.getElementById('guest-email')?.value.trim() || '';
+
+      await apiCall('/api/feedback', 'POST', {
+        name: guestName,
+        contact: guestPhone || guestEmail,
+        type: isHotel ? 'hotel' : 'flight',
+        message: `${isHotel ? 'Hotel' : 'Flight'} Consultation Request for ${destination}. Dates: ${startDate} to ${endDate}. Guests: ${adults} adults. Contact: ${guestPhone} / ${guestEmail}. Special: ${specialRequirements}`
+      });
+
+      if (feedback) {
+        feedback.style.display = 'block';
+        feedback.style.background = 'rgba(0, 230, 118, 0.15)';
+        feedback.style.border = '1px solid #00E676';
+        feedback.style.color = '#00E676';
+        feedback.innerHTML = `✓ <strong>Request Received!</strong> JMT travel team will check availability and contact you on ${escapeHTML(guestPhone || guestEmail)}.`;
+      }
+
+      if (btn) {
+        btn.textContent = '✓ Enquiry Sent';
+        btn.style.background = '#00A651';
+      }
+      setTimeout(() => { closeEnquiryModal(); }, 3000);
+    }
+  } catch (err) {
+    if (feedback) {
+      feedback.style.display = 'block';
+      feedback.style.background = 'rgba(239, 68, 68, 0.15)';
+      feedback.style.border = '1px solid #EF4444';
+      feedback.style.color = '#FCA5A5';
+      feedback.textContent = `Error: ${err.message}`;
+    }
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = 'Retry Submission';
+    }
+  }
+};
+
 window.openEnquiryModal = function(type = 'general', title = 'Travel Enquiry', itemData = {}) {
+  if (type === 'hotel' || type === 'flight') {
+    window.openTravelEnquiryModal(type, { title, ...itemData });
+    return;
+  }
+
   let modalContainer = document.getElementById('jmt-enquiry-modal-overlay');
   if (!modalContainer) {
     modalContainer = document.createElement('div');
@@ -348,11 +718,10 @@ window.handleEnquiryFormSubmit = async function(event, type, title) {
   }
 
   try {
-    await apiCall('/api/contact', 'POST', {
+    await apiCall('/api/feedback', 'POST', {
       name,
-      email,
-      phone,
-      subject: `[V2.9 Enquiry] ${type.toUpperCase()}: ${title}`,
+      contact: phone || email,
+      type: type || 'general',
       message: `Enquiry Type: ${type}\nItem: ${title}\nCustomer Name: ${name}\nPhone: ${phone}\nEmail: ${email}\n\nDetails:\n${message}`
     });
   } catch (err) {
@@ -503,6 +872,8 @@ async function renderRoute() {
     renderProfilePage(container);
   } else if (path === '/account/my-trips' || path.startsWith('/account/my-trips/')) {
     renderMyTripsPage(container, path);
+  } else if (path === '/account/travel-requests' || path.startsWith('/account/travel-requests/')) {
+    renderTravelRequestsPage(container, path);
   } else if (path.startsWith('/account/visa/')) {
     renderAccountVisaDetailPage(container, path);
   } else if (path === '/account/visa') {
@@ -7195,8 +7566,11 @@ window.renderHotelResultsList = function() {
       <div class="jmt-card" style="text-align: center; padding: 48px 24px; max-width: 600px; margin: 0 auto; background: linear-gradient(135deg, #07153B 0%, #0B286C 100%); border: 1px solid rgba(255, 255, 255, 0.18); color: #FFFFFF !important; border-radius: 20px;">
         <div style="font-size: 44px; margin-bottom: 12px;">🏨</div>
         <h3 style="color: #00E676 !important; font-weight: 800; margin-bottom: 8px;">No Hotels Found</h3>
-        <p style="color: #D6E0F4 !important; font-size: 14px; margin-bottom: 20px;">We couldn't find any hotels matching your destination or active filters. Try resetting your search parameters.</p>
-        <button onclick="clearAllHotelFilters()" class="jmt-btn-primary" style="background: #00A651; color: #FFFFFF !important; font-weight: 700; padding: 12px 24px; border-radius: 999px; cursor: pointer; border: none; box-shadow: 0 4px 14px rgba(0, 166, 81, 0.35);">Reset Filters &amp; Search</button>
+        <p style="color: #D6E0F4 !important; font-size: 14px; margin-bottom: 20px;">We couldn't find any hotels matching your destination or active filters. Submit a custom hotel consultation request and our concierge team will source suitable accommodations.</p>
+        <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+          <button onclick="clearAllHotelFilters()" class="jmt-btn-secondary" style="background: rgba(255, 255, 255, 0.12); color: #FFFFFF !important; font-weight: 700; padding: 12px 24px; border-radius: 999px; cursor: pointer; border: 1px solid rgba(255, 255, 255, 0.3);">Reset Filters &amp; Search</button>
+          <button onclick="openTravelEnquiryModal('HOTEL', { destination: hotelSearchState.destination })" class="jmt-btn-primary" style="background: #00E676; color: #07153B !important; font-weight: 800; padding: 12px 24px; border-radius: 999px; cursor: pointer; border: none; box-shadow: 0 4px 14px rgba(0, 230, 118, 0.35);">Request Hotel Consultation →</button>
+        </div>
       </div>
     `;
     return;
@@ -9093,8 +9467,11 @@ async function renderFlightsPage(container) {
           <div style="background: linear-gradient(135deg, #07153B 0%, #0B286C 100%); border-radius: 20px; padding: 48px 32px; text-align: center; color: #FFFFFF; border: 1px solid rgba(255,255,255,0.18);">
             <div style="font-size: 40px; margin-bottom: 12px;">✈️</div>
             <h3 style="font-size: 20px; font-weight: 800; color: #FFFFFF; margin: 0 0 8px;">No flights found for these criteria</h3>
-            <p style="font-size: 14px; color: #D6E0F4; margin: 0 0 20px;">Please try modifying your origin, destination, or travel dates above.</p>
-            <button onclick="navigate('/flights')" style="background: #00E676; color: #07153B; border: 0; padding: 10px 22px; border-radius: 99px; font-weight: 800; cursor: pointer;">Reset Search Parameters</button>
+            <p style="font-size: 14px; color: #D6E0F4; margin: 0 0 20px;">Please try modifying your origin, destination, or travel dates above, or submit a custom flight consultation request.</p>
+            <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+              <button onclick="navigate('/flights')" style="background: rgba(255,255,255,0.12); color: #FFFFFF; border: 1px solid rgba(255,255,255,0.3); padding: 10px 22px; border-radius: 99px; font-weight: 700; cursor: pointer;">Reset Search</button>
+              <button onclick="openTravelEnquiryModal('FLIGHT', { origin: flightSearchState.fromAirport?.city || 'Muscat', destination: flightSearchState.toAirport?.city || 'Dubai' })" style="background: #00E676; color: #07153B; border: 0; padding: 10px 22px; border-radius: 99px; font-weight: 800; cursor: pointer; box-shadow: 0 4px 14px rgba(0, 230, 118, 0.35);">Request Flight Consultation →</button>
+            </div>
           </div>
         ` : `
           <div class="jmt-flight-card-list">
@@ -9189,7 +9566,7 @@ async function renderFlightsPage(container) {
               Flight Ticketing
             </h3>
             <p style="font-size: 14px; color: #D6E0F4 !important; line-height: 1.6; margin: 0 0 20px;">
-              Economy, Business &amp; First Class ticketing for GCC, Asia, Europe, and the Americas with instant GDS seat confirmation.
+              Economy, Business &amp; First Class ticketing for GCC, Asia, Europe, and the Americas with expert travel specialist assistance.
             </p>
             <div style="font-size: 12.5px; color: #00E676; font-weight: 700; display: flex; align-items: center; gap: 6px;">
               <span>✓</span> 100+ Partner Airlines
@@ -12574,6 +12951,9 @@ async function renderAccountPage(container) {
               <a href="/account/my-trips" onclick="event.preventDefault(); navigate('/account/my-trips')" style="background: rgba(255,255,255,0.08); color: #E2E8F0; padding: 8px 16px; border-radius: 99px; font-size: 12.5px; font-weight: 600; text-decoration: none; white-space: nowrap; border: 1px solid rgba(255,255,255,0.15);">
                 🧳 My Trips
               </a>
+              <a href="/account/travel-requests" onclick="event.preventDefault(); navigate('/account/travel-requests')" style="background: rgba(255,255,255,0.08); color: #E2E8F0; padding: 8px 16px; border-radius: 99px; font-size: 12.5px; font-weight: 600; text-decoration: none; white-space: nowrap; border: 1px solid rgba(255,255,255,0.15);">
+                📝 Travel Requests
+              </a>
               <a href="/account/visa" onclick="event.preventDefault(); navigate('/account/visa')" style="background: rgba(255,255,255,0.08); color: #E2E8F0; padding: 8px 16px; border-radius: 99px; font-size: 12.5px; font-weight: 600; text-decoration: none; white-space: nowrap; border: 1px solid rgba(255,255,255,0.15);">
                 🛂 Visa Applications
               </a>
@@ -12616,6 +12996,9 @@ async function renderAccountPage(container) {
                 </a>
                 <a href="/account/my-trips" class="myjmt-nav-item" onclick="event.preventDefault(); navigate('/account/my-trips')">
                   <span>🧳</span> My Trips
+                </a>
+                <a href="/account/travel-requests" class="myjmt-nav-item" onclick="event.preventDefault(); navigate('/account/travel-requests')">
+                  <span>📝</span> Travel Requests
                 </a>
                 <a href="/account/visa" class="myjmt-nav-item" onclick="event.preventDefault(); navigate('/account/visa')">
                   <span>🛂</span> Visa Applications
@@ -12734,6 +13117,23 @@ async function renderAccountPage(container) {
                   </div>
                   <span style="font-size: 12px; color: #94A3B8;">Action Required</span>
                 </div>
+
+                <!-- 5. TRAVEL REQUESTS -->
+                <div class="jmt-card" style="background: #0B286C !important; border: 1px solid rgba(255, 255, 255, 0.15) !important; border-top: 4px solid #A855F7 !important; border-radius: 14px; padding: 20px; box-sizing: border-box;">
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-size: 12.5px; font-weight: 700; color: #CBD5E1; text-transform: uppercase;">Travel Requests</span>
+                    <span style="font-size: 20px;">📝</span>
+                  </div>
+                  <div style="font-size: 34px; font-weight: 800; color: #C084FC; margin: 8px 0 4px;">
+                    ${summary.activeTravelRequests || 0}
+                  </div>
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px; flex-wrap: wrap; gap: 4px;">
+                    <span style="font-size: 12px; color: #94A3B8;">Hotel &amp; Flight Inquiries</span>
+                    <a href="/account/travel-requests" onclick="event.preventDefault(); navigate('/account/travel-requests')" style="color: #C084FC; font-size: 11.5px; font-weight: 700; text-decoration: none;">
+                      View Requests →
+                    </a>
+                  </div>
+                </div>
               </div>
 
               <!-- QUICK ACTIONS GRID -->
@@ -12743,7 +13143,19 @@ async function renderAccountPage(container) {
                   <div class="myjmt-quick-action" onclick="navigate('/visa')">
                     <span style="font-size: 26px;">🛂</span>
                     <span style="font-size: 14px; font-weight: 700;">Apply for Visa</span>
-                    <span style="font-size: 11.5px; color: #94A3B8;">Oman & Schengen Visas</span>
+                    <span style="font-size: 11.5px; color: #94A3B8;">Oman &amp; Schengen Visas</span>
+                  </div>
+
+                  <div class="myjmt-quick-action" onclick="openTravelEnquiryModal('HOTEL')">
+                    <span style="font-size: 26px;">🏨</span>
+                    <span style="font-size: 14px; font-weight: 700;">Hotel Consultation</span>
+                    <span style="font-size: 11.5px; color: #94A3B8;">Custom Stay Inquiry</span>
+                  </div>
+
+                  <div class="myjmt-quick-action" onclick="openTravelEnquiryModal('FLIGHT')">
+                    <span style="font-size: 26px;">✈️</span>
+                    <span style="font-size: 14px; font-weight: 700;">Flight Consultation</span>
+                    <span style="font-size: 11.5px; color: #94A3B8;">Custom Route Inquiry</span>
                   </div>
 
                   <div class="myjmt-quick-action" onclick="navigate('/tourism')">
@@ -13520,6 +13932,9 @@ async function renderMyTripsPage(container, path) {
               <span style="background: #00A651; color: #FFFFFF; padding: 8px 16px; border-radius: 99px; font-size: 12.5px; font-weight: 700; white-space: nowrap; box-shadow: 0 4px 12px rgba(0,166,81,0.3);">
                 🧳 My Trips
               </span>
+              <a href="/account/travel-requests" onclick="event.preventDefault(); navigate('/account/travel-requests')" style="background: rgba(255,255,255,0.08); color: #E2E8F0; padding: 8px 16px; border-radius: 99px; font-size: 12.5px; font-weight: 600; text-decoration: none; white-space: nowrap; border: 1px solid rgba(255,255,255,0.15);">
+                📝 Travel Requests
+              </a>
               <a href="/account/profile" onclick="event.preventDefault(); navigate('/account/profile')" style="background: rgba(255,255,255,0.08); color: #E2E8F0; padding: 8px 16px; border-radius: 99px; font-size: 12.5px; font-weight: 600; text-decoration: none; white-space: nowrap; border: 1px solid rgba(255,255,255,0.15);">
                 👤 Profile
               </a>
@@ -13565,6 +13980,9 @@ async function renderMyTripsPage(container, path) {
                 </a>
                 <a href="/account/my-trips" class="myjmt-nav-item active" aria-current="page" onclick="event.preventDefault();">
                   <span>🧳</span> My Trips
+                </a>
+                <a href="/account/travel-requests" class="myjmt-nav-item" onclick="event.preventDefault(); navigate('/account/travel-requests')">
+                  <span>📝</span> Travel Requests
                 </a>
                 <a href="/account/visa" class="myjmt-nav-item" onclick="event.preventDefault(); navigate('/account/visa')">
                   <span>🛂</span> Visa Applications
@@ -14290,6 +14708,9 @@ async function renderAccountVisaPage(container, path) {
               <a href="/account/my-trips" onclick="event.preventDefault(); navigate('/account/my-trips')" style="background: rgba(255,255,255,0.08); color: #E2E8F0; padding: 8px 16px; border-radius: 99px; font-size: 12.5px; font-weight: 600; text-decoration: none; white-space: nowrap; border: 1px solid rgba(255,255,255,0.15);">
                 🧳 My Trips
               </a>
+              <a href="/account/travel-requests" onclick="event.preventDefault(); navigate('/account/travel-requests')" style="background: rgba(255,255,255,0.08); color: #E2E8F0; padding: 8px 16px; border-radius: 99px; font-size: 12.5px; font-weight: 600; text-decoration: none; white-space: nowrap; border: 1px solid rgba(255,255,255,0.15);">
+                📝 Travel Requests
+              </a>
               <a href="/account/visa" onclick="event.preventDefault(); navigate('/account/visa')" style="background: #00A651; color: #FFFFFF; padding: 8px 16px; border-radius: 99px; font-size: 12.5px; font-weight: 700; text-decoration: none; white-space: nowrap; border: 1px solid #00A651;">
                 🛂 Visa Applications
               </a>
@@ -14326,6 +14747,9 @@ async function renderAccountVisaPage(container, path) {
                 </a>
                 <a href="/account/my-trips" class="myjmt-nav-item" onclick="event.preventDefault(); navigate('/account/my-trips')">
                   <span>🧳</span> My Trips
+                </a>
+                <a href="/account/travel-requests" class="myjmt-nav-item" onclick="event.preventDefault(); navigate('/account/travel-requests')">
+                  <span>📝</span> Travel Requests
                 </a>
                 <a href="/account/visa" class="myjmt-nav-item active" aria-current="page" onclick="event.preventDefault();">
                   <span>🛂</span> Visa Applications
@@ -14901,10 +15325,13 @@ async function renderAccountDocumentsPage(container, path) {
               <a href="/account/my-trips" onclick="event.preventDefault(); navigate('/account/my-trips')" style="background: rgba(255,255,255,0.08); color: #E2E8F0; padding: 8px 16px; border-radius: 99px; font-size: 12.5px; font-weight: 600; text-decoration: none; white-space: nowrap; border: 1px solid rgba(255,255,255,0.15);">
                 🧳 My Trips
               </a>
+              <a href="/account/travel-requests" onclick="event.preventDefault(); navigate('/account/travel-requests')" style="background: rgba(255,255,255,0.08); color: #E2E8F0; padding: 8px 16px; border-radius: 99px; font-size: 12.5px; font-weight: 600; text-decoration: none; white-space: nowrap; border: 1px solid rgba(255,255,255,0.15);">
+                📝 Travel Requests
+              </a>
               <a href="/account/visa" onclick="event.preventDefault(); navigate('/account/visa')" style="background: rgba(255,255,255,0.08); color: #E2E8F0; padding: 8px 16px; border-radius: 99px; font-size: 12.5px; font-weight: 600; text-decoration: none; white-space: nowrap; border: 1px solid rgba(255,255,255,0.15);">
                 🛂 Visa Applications
               </a>
-              <a href="/account/documents" onclick="event.preventDefault(); navigate('/account/documents')" style="background: #00A651; color: #FFFFFF; padding: 8px 16px; border-radius: 99px; font-size: 12.5px; font-weight: 700; text-decoration: none; white-space: nowrap; border: 1px solid #00A651;">
+              <a href="/account/documents" style="background: #00A651; color: #FFFFFF; padding: 8px 16px; border-radius: 99px; font-size: 12.5px; font-weight: 700; text-decoration: none; white-space: nowrap; border: 1px solid #00A651;">
                 📁 Documents
               </a>
               <a href="/account/profile" onclick="event.preventDefault(); navigate('/account/profile')" style="background: rgba(255,255,255,0.08); color: #E2E8F0; padding: 8px 16px; border-radius: 99px; font-size: 12.5px; font-weight: 600; text-decoration: none; white-space: nowrap; border: 1px solid rgba(255,255,255,0.15);">
@@ -14937,6 +15364,9 @@ async function renderAccountDocumentsPage(container, path) {
                 </a>
                 <a href="/account/my-trips" class="myjmt-nav-item" onclick="event.preventDefault(); navigate('/account/my-trips')">
                   <span>🧳</span> My Trips
+                </a>
+                <a href="/account/travel-requests" class="myjmt-nav-item" onclick="event.preventDefault(); navigate('/account/travel-requests')">
+                  <span>📝</span> Travel Requests
                 </a>
                 <a href="/account/visa" class="myjmt-nav-item" onclick="event.preventDefault(); navigate('/account/visa')">
                   <span>🛂</span> Visa Applications
@@ -15530,6 +15960,681 @@ async function renderProfilePage(container) {
           <p style="color: #EF4444; font-size: 16px; font-weight: 700; margin-bottom: 16px;">Failed to load profile details.</p>
           <p style="color: #94A3B8; font-size: 14px; margin-bottom: 24px;">${escapeHTML(err.message)}</p>
           <button onclick="navigate('/account')" class="btn" style="background: #00A651 !important; color: #FFFFFF !important; border: 0; padding: 10px 24px; border-radius: 99px;">
+            Return to Dashboard
+          </button>
+        </div>
+      </div>
+    `;
+  }
+}
+
+// -------------------------------------------------------------
+// V5.5 CUSTOMER TRAVEL REQUESTS (HOTEL & FLIGHT INQUIRIES) PAGE
+// -------------------------------------------------------------
+
+let cachedTravelRequestsData = null;
+let currentTravelRequestFilter = 'ALL';
+
+async function renderTravelRequestsPage(container, path) {
+  if (!state.user) {
+    navigate('/login');
+    return;
+  }
+
+  updateSEO({
+    title: 'Travel Requests & Consultations | JMT Travels',
+    description: 'Track your customized hotel and flight consultation requests with JMT concierge.',
+    canonicalUrl: '/account/travel-requests',
+    noindex: true
+  });
+  announceToSR('Navigated to Travel Requests Customer Portal');
+
+  container.innerHTML = `
+    <div style="background: #07153B !important; min-height: 100vh; color: #FFFFFF !important; display: flex; align-items: center; justify-content: center; padding: 60px 20px;">
+      <p style="color: #94A3B8; font-size: 15px; font-weight: 600;">Loading your travel requests...</p>
+    </div>
+  `;
+
+  try {
+    const data = await apiCall('/api/account/travel-requests');
+    if (!data || !data.success) {
+      throw new Error(data?.error?.message || 'Failed to load travel requests.');
+    }
+
+    cachedTravelRequestsData = data.requests || [];
+    const u = state.user;
+    const initials = (u.name || 'CU').split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
+
+    // Check if target request is requested via URL path: /account/travel-requests/:id
+    const pathParts = (path || '').split('/').filter(Boolean);
+    const targetRequestId = pathParts.length >= 3 ? pathParts[2] : null;
+
+    function renderPortal() {
+      const allReqs = cachedTravelRequestsData || [];
+      const hotelCount = allReqs.filter(r => r.category === 'HOTEL').length;
+      const flightCount = allReqs.filter(r => r.category === 'FLIGHT').length;
+
+      let filtered = allReqs;
+      if (currentTravelRequestFilter === 'HOTELS') {
+        filtered = allReqs.filter(r => r.category === 'HOTEL');
+      } else if (currentTravelRequestFilter === 'FLIGHTS') {
+        filtered = allReqs.filter(r => r.category === 'FLIGHT');
+      }
+
+      container.innerHTML = `
+        <style>
+          .myjmt-portal {
+            display: flex;
+            gap: 28px;
+            align-items: flex-start;
+            width: 100%;
+            box-sizing: border-box;
+          }
+          .myjmt-sidebar {
+            width: 270px;
+            flex-shrink: 0;
+            background: #0B286C;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 16px;
+            padding: 24px;
+            box-sizing: border-box;
+          }
+          .myjmt-content {
+            flex: 1;
+            min-width: 0;
+            width: 100%;
+            box-sizing: border-box;
+          }
+          .myjmt-mobile-nav {
+            display: none;
+            margin-bottom: 24px;
+            width: 100%;
+            box-sizing: border-box;
+          }
+          @media (max-width: 1023px) {
+            .myjmt-portal {
+              flex-direction: column;
+              gap: 0;
+            }
+            .myjmt-sidebar {
+              display: none !important;
+            }
+            .myjmt-mobile-nav {
+              display: block !important;
+            }
+          }
+          @media (max-width: 480px) {
+            .myjmt-trips-shell {
+              padding: 20px 12px 60px !important;
+            }
+            .myjmt-trip-card {
+              padding: 16px 14px !important;
+            }
+          }
+          .myjmt-nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 11px 16px;
+            border-radius: 10px;
+            color: #CBD5E1;
+            text-decoration: none;
+            font-size: 13.5px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            margin-bottom: 4px;
+            box-sizing: border-box;
+          }
+          .myjmt-nav-item:hover:not(.disabled) {
+            background: rgba(255, 255, 255, 0.08);
+            color: #FFFFFF;
+          }
+          .myjmt-nav-item.active {
+            background: #00A651 !important;
+            color: #FFFFFF !important;
+            font-weight: 700;
+            box-shadow: 0 4px 14px rgba(0, 166, 81, 0.35);
+          }
+          .myjmt-nav-item.disabled {
+            opacity: 0.65;
+            cursor: default;
+          }
+          .myjmt-pill-badge {
+            background: rgba(255, 255, 255, 0.12);
+            color: #94A3B8;
+            font-size: 10.5px;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 99px;
+            margin-left: auto;
+          }
+          .filter-tab-btn {
+            background: rgba(255, 255, 255, 0.08);
+            color: #CBD5E1;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            padding: 8px 18px;
+            border-radius: 99px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+          }
+          .filter-tab-btn.active {
+            background: #00E676 !important;
+            color: #07153B !important;
+            border-color: #00E676 !important;
+            box-shadow: 0 4px 12px rgba(0, 230, 118, 0.3);
+          }
+        </style>
+
+        <div style="background: #07153B !important; min-height: 100vh; color: #FFFFFF !important;">
+          <div class="shell myjmt-trips-shell" style="padding: 32px 20px 60px; max-width: 1240px; margin: 0 auto; box-sizing: border-box;">
+
+            <!-- TOP STRIP -->
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 28px; border-bottom: 1px solid rgba(255, 255, 255, 0.12); padding-bottom: 16px; flex-wrap: wrap;">
+              <div style="display: flex; align-items: center; gap: 12px;">
+                <span style="font-size: 11px; font-weight: 800; letter-spacing: 0.1em; color: #00E676; background: rgba(0, 230, 118, 0.12); padding: 5px 12px; border-radius: 99px; border: 1px solid rgba(0, 230, 118, 0.25);">
+                  MY JMT PORTAL
+                </span>
+                <span style="color: #64748B; font-size: 13px;">•</span>
+                <span style="color: #E2E8F0; font-size: 14px; font-weight: 600;">Travel Requests & Consultations</span>
+              </div>
+
+              <div style="display: flex; align-items: center; gap: 14px;">
+                <a href="/account" onclick="event.preventDefault(); navigate('/account')" class="btn" style="background: rgba(255, 255, 255, 0.08); color: #FFFFFF !important; border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 99px; padding: 7px 16px; font-size: 13px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+                  <span>📊</span> Overview
+                </a>
+                <a href="/account/profile" onclick="event.preventDefault(); navigate('/account/profile')" class="btn" style="background: rgba(255, 255, 255, 0.08); color: #FFFFFF !important; border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 99px; padding: 7px 16px; font-size: 13px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+                  <span>👤</span> Profile
+                </a>
+                <button onclick="logoutUser()" class="btn" style="background: rgba(239, 68, 68, 0.15); color: #FCA5A5 !important; border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 99px; padding: 7px 16px; font-size: 13px; font-weight: 700; cursor: pointer;">
+                  Sign Out
+                </button>
+              </div>
+            </div>
+
+            <!-- MOBILE HORIZONTAL NAVIGATION (< 1024px) -->
+            <div class="myjmt-mobile-nav">
+              <div style="display: flex; gap: 8px; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 6px;">
+                <a href="/account" onclick="event.preventDefault(); navigate('/account')" style="background: rgba(255,255,255,0.08); color: #E2E8F0; padding: 8px 16px; border-radius: 99px; font-size: 12.5px; font-weight: 600; text-decoration: none; white-space: nowrap; border: 1px solid rgba(255,255,255,0.15);">
+                  📊 Overview
+                </a>
+                <a href="/account/my-trips" onclick="event.preventDefault(); navigate('/account/my-trips')" style="background: rgba(255,255,255,0.08); color: #E2E8F0; padding: 8px 16px; border-radius: 99px; font-size: 12.5px; font-weight: 600; text-decoration: none; white-space: nowrap; border: 1px solid rgba(255,255,255,0.15);">
+                  🧳 My Trips
+                </a>
+                <span style="background: #00A651; color: #FFFFFF; padding: 8px 16px; border-radius: 99px; font-size: 12.5px; font-weight: 700; white-space: nowrap; box-shadow: 0 4px 12px rgba(0,166,81,0.3);">
+                  📝 Travel Requests
+                </span>
+                <a href="/account/visa" onclick="event.preventDefault(); navigate('/account/visa')" style="background: rgba(255,255,255,0.08); color: #E2E8F0; padding: 8px 16px; border-radius: 99px; font-size: 12.5px; font-weight: 600; text-decoration: none; white-space: nowrap; border: 1px solid rgba(255,255,255,0.15);">
+                  🛂 Visa Applications
+                </a>
+                <a href="/account/documents" onclick="event.preventDefault(); navigate('/account/documents')" style="background: rgba(255,255,255,0.08); color: #E2E8F0; padding: 8px 16px; border-radius: 99px; font-size: 12.5px; font-weight: 600; text-decoration: none; white-space: nowrap; border: 1px solid rgba(255,255,255,0.15);">
+                  📁 Documents
+                </a>
+                <a href="/support" onclick="event.preventDefault(); navigate('/support')" style="background: rgba(255,255,255,0.08); color: #E2E8F0; padding: 8px 16px; border-radius: 99px; font-size: 12.5px; font-weight: 600; text-decoration: none; white-space: nowrap; border: 1px solid rgba(255,255,255,0.15);">
+                  💬 Support
+                </a>
+              </div>
+            </div>
+
+            <!-- PORTAL SHELL -->
+            <div class="myjmt-portal">
+
+              <!-- DESKTOP PERSISTENT SIDEBAR (>= 1024px) -->
+              <aside class="myjmt-sidebar" aria-label="Customer Account Navigation">
+                <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid rgba(255, 255, 255, 0.12);">
+                  <div style="width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, #00E676 0%, #00A651 100%); color: #07153B; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 17px; flex-shrink: 0; box-shadow: 0 4px 14px rgba(0,230,118,0.25);">
+                    ${escapeHTML(initials)}
+                  </div>
+                  <div style="min-width: 0; flex: 1;">
+                    <div style="font-weight: 800; font-size: 15px; color: #FFFFFF; line-height: 1.2; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                      ${escapeHTML(u.name)}
+                    </div>
+                    <div style="font-size: 11.5px; color: #94A3B8; margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                      ${escapeHTML(u.email)}
+                    </div>
+                    <span style="font-size: 10px; font-weight: 800; color: #00E676; background: rgba(0, 230, 118, 0.12); border: 1px solid rgba(0, 230, 118, 0.25); padding: 2px 8px; border-radius: 99px; display: inline-block;">
+                      ${escapeHTML(u.role || 'CUSTOMER')}
+                    </span>
+                  </div>
+                </div>
+
+                <nav style="display: flex; flex-direction: column;">
+                  <a href="/account" class="myjmt-nav-item" onclick="event.preventDefault(); navigate('/account')">
+                    <span>📊</span> Overview
+                  </a>
+                  <a href="/account/my-trips" class="myjmt-nav-item" onclick="event.preventDefault(); navigate('/account/my-trips')">
+                    <span>🧳</span> My Trips
+                  </a>
+                  <a href="/account/travel-requests" class="myjmt-nav-item active" aria-current="page" onclick="event.preventDefault();">
+                    <span>📝</span> Travel Requests
+                  </a>
+                  <a href="/account/visa" class="myjmt-nav-item" onclick="event.preventDefault(); navigate('/account/visa')">
+                    <span>🛂</span> Visa Applications
+                  </a>
+                  <div class="myjmt-nav-item disabled" title="Booking Manager coming in Phase V5.5">
+                    <span>📋</span> Bookings
+                    <span class="myjmt-pill-badge">Soon</span>
+                  </div>
+                  <a href="/account/documents" class="myjmt-nav-item" onclick="event.preventDefault(); navigate('/account/documents')">
+                    <span>📁</span> Documents
+                  </a>
+                  <div class="myjmt-nav-item disabled" title="Payment Management coming in future phase">
+                    <span>💳</span> Payments
+                    <span class="myjmt-pill-badge">Soon</span>
+                  </div>
+                  <div class="myjmt-nav-item disabled" title="Notifications Center coming in Phase V5.6">
+                    <span>🔔</span> Notifications
+                    <span class="myjmt-pill-badge">Soon</span>
+                  </div>
+                  <a href="/support" class="myjmt-nav-item" onclick="event.preventDefault(); navigate('/support')">
+                    <span>💬</span> Support
+                  </a>
+                  <a href="/account/profile" class="myjmt-nav-item" onclick="event.preventDefault(); navigate('/account/profile')">
+                    <span>👤</span> Profile
+                  </a>
+                </nav>
+
+                <div style="margin-top: 24px; padding-top: 20px; border-top: 1px solid rgba(255, 255, 255, 0.12);">
+                  <button onclick="logoutUser()" class="btn" style="width: 100%; box-sizing: border-box; background: rgba(239, 68, 68, 0.12); color: #FCA5A5 !important; border: 1px solid rgba(239, 68, 68, 0.25); border-radius: 10px; padding: 10px 14px; font-size: 13px; font-weight: 700; cursor: pointer; text-align: center;">
+                    Sign Out
+                  </button>
+                </div>
+              </aside>
+
+              <!-- MAIN CONTENT AREA -->
+              <main class="myjmt-content">
+
+                <!-- HERO BANNER -->
+                <div class="jmt-card" style="background: linear-gradient(135deg, #07153B 0%, #0B286C 100%) !important; border: 1px solid rgba(255, 255, 255, 0.15) !important; border-radius: 16px; padding: 32px; margin-bottom: 24px; box-sizing: border-box;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; gap: 20px; flex-wrap: wrap;">
+                    <div>
+                      <span style="font-size: 12px; font-weight: 800; color: #00E676; letter-spacing: 0.08em; text-transform: uppercase;">
+                        JMT Concierge Desk
+                      </span>
+                      <h1 style="font-size: 28px; font-weight: 800; color: #FFFFFF; margin: 6px 0 8px;">
+                        Travel Requests &amp; Consultations
+                      </h1>
+                      <p style="font-size: 14px; color: #CBD5E1; margin: 0; line-height: 1.6; max-width: 600px;">
+                        Track your customized hotel accommodation and flight ticketing requests. Our travel team verifies real availability and rates directly with partner suppliers.
+                      </p>
+                    </div>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                      <button onclick="openTravelEnquiryModal('hotel')" class="btn" style="background: #00E676 !important; color: #07153B !important; font-weight: 800; padding: 10px 20px; border-radius: 99px; border: 0; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 4px 14px rgba(0,230,118,0.3); font-size: 13px;">
+                        <span>🏨</span> Request Hotel
+                      </button>
+                      <button onclick="openTravelEnquiryModal('flight')" class="btn" style="background: rgba(255,255,255,0.12) !important; color: #FFFFFF !important; font-weight: 700; padding: 10px 20px; border-radius: 99px; border: 1px solid rgba(255,255,255,0.25); cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-size: 13px;">
+                        <span>✈️</span> Request Flight
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- FILTER TABS STRIP -->
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; gap: 14px; flex-wrap: wrap;">
+                  <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button type="button" class="filter-tab-btn ${currentTravelRequestFilter === 'ALL' ? 'active' : ''}" onclick="window.setTravelRequestFilter('ALL')">
+                      All Requests (${allReqs.length})
+                    </button>
+                    <button type="button" class="filter-tab-btn ${currentTravelRequestFilter === 'HOTELS' ? 'active' : ''}" onclick="window.setTravelRequestFilter('HOTELS')">
+                      Hotels (${hotelCount})
+                    </button>
+                    <button type="button" class="filter-tab-btn ${currentTravelRequestFilter === 'FLIGHTS' ? 'active' : ''}" onclick="window.setTravelRequestFilter('FLIGHTS')">
+                      Flights (${flightCount})
+                    </button>
+                  </div>
+                  <div style="font-size: 13px; color: #94A3B8;">
+                    Showing ${filtered.length} request${filtered.length === 1 ? '' : 's'}
+                  </div>
+                </div>
+
+                <!-- REQUESTS LIST -->
+                ${filtered.length === 0 ? `
+                  <div class="jmt-card" style="background: #0B286C !important; border: 1px solid rgba(255,255,255,0.15) !important; border-radius: 16px; padding: 48px 24px; text-align: center; box-sizing: border-box;">
+                    <div style="font-size: 42px; margin-bottom: 12px;">📝</div>
+                    <h3 style="font-size: 18px; font-weight: 800; color: #FFFFFF; margin: 0 0 8px;">No Travel Requests Found</h3>
+                    <p style="font-size: 14px; color: #94A3B8; max-width: 480px; margin: 0 auto 24px; line-height: 1.6;">
+                      ${currentTravelRequestFilter === 'ALL'
+                        ? "You haven't submitted any hotel or flight consultation requests yet. Start your journey with personal consultation."
+                        : `No ${currentTravelRequestFilter.toLowerCase()} requests found matching your filter.`}
+                    </p>
+                    <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+                      <button onclick="openTravelEnquiryModal('hotel')" class="btn" style="background: #00E676 !important; color: #07153B !important; font-weight: 800; padding: 10px 22px; border-radius: 99px; border: 0; cursor: pointer;">
+                        Request Hotel Consultation →
+                      </button>
+                      <button onclick="openTravelEnquiryModal('flight')" class="btn" style="background: rgba(255,255,255,0.12) !important; color: #FFF !important; font-weight: 700; padding: 10px 22px; border-radius: 99px; border: 1px solid rgba(255,255,255,0.25); cursor: pointer;">
+                        Request Flight Consultation →
+                      </button>
+                    </div>
+                  </div>
+                ` : `
+                  <div style="display: flex; flex-direction: column; gap: 18px;">
+                    ${filtered.map(req => {
+                      const isHot = req.category === 'HOTEL';
+                      const badgeMap = {
+                        'NEW': { label: 'Request Received', bg: 'rgba(6,182,212,0.18)', border: '#06B6D4', text: '#22D3EE' },
+                        'IN_REVIEW': { label: 'Under Review', bg: 'rgba(245,158,11,0.18)', border: '#F59E0B', text: '#FBBF24' },
+                        'CUSTOMER_ACTION_REQUIRED': { label: 'Action Required', bg: 'rgba(239,68,68,0.18)', border: '#EF4444', text: '#FCA5A5' },
+                        'QUOTED': { label: 'Quote Ready', bg: 'rgba(139,92,246,0.18)', border: '#8B5CF6', text: '#C4B5FD' },
+                        'CONFIRMED': { label: 'Confirmed', bg: 'rgba(16,185,129,0.18)', border: '#10B981', text: '#34D399' },
+                        'CANCELLED': { label: 'Cancelled', bg: 'rgba(107,114,128,0.18)', border: '#6B7280', text: '#9CA3AF' },
+                        'CLOSED': { label: 'Completed', bg: 'rgba(107,114,128,0.18)', border: '#6B7280', text: '#9CA3AF' }
+                      };
+                      const bStyle = badgeMap[req.status] || { label: req.status, bg: 'rgba(255,255,255,0.12)', border: '#FFF', text: '#FFF' };
+                      const canCancel = !['CANCELLED', 'CLOSED', 'RESOLVED'].includes(req.status);
+
+                      return `
+                        <div class="jmt-card myjmt-trip-card" style="background: #0B286C !important; border: 1px solid rgba(255, 255, 255, 0.15) !important; border-radius: 16px; padding: 24px; box-sizing: border-box; transition: transform 0.2s ease, box-shadow 0.2s ease;">
+                          <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; margin-bottom: 16px;">
+                            <div>
+                              <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 6px;">
+                                <span style="font-family: monospace; font-size: 13.5px; font-weight: 800; color: #00E676; letter-spacing: 1px;">
+                                  ${escapeHTML(req.reference)}
+                                </span>
+                                <span style="font-size: 11px; font-weight: 800; padding: 3px 10px; border-radius: 99px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #E2E8F0;">
+                                  ${isHot ? '🏨 Hotel Consultation' : '✈️ Flight Consultation'}
+                                </span>
+                              </div>
+                              <h3 style="font-size: 18px; font-weight: 800; color: #FFFFFF; margin: 0 0 6px;">
+                                ${escapeHTML(req.title)}
+                              </h3>
+                              <div style="font-size: 13px; color: #CBD5E1;">
+                                📍 ${escapeHTML(req.destination)}
+                              </div>
+                            </div>
+
+                            <span style="font-size: 12px; font-weight: 800; padding: 5px 14px; border-radius: 99px; background: ${bStyle.bg}; border: 1px solid ${bStyle.border}; color: ${bStyle.text}; white-space: nowrap;">
+                              ${escapeHTML(bStyle.label)}
+                            </span>
+                          </div>
+
+                          <!-- KEY DETAILS GRID -->
+                          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; background: rgba(7,21,59,0.5); border-radius: 12px; padding: 14px; margin-bottom: 18px; border: 1px solid rgba(255,255,255,0.08);">
+                            <div>
+                              <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: #94A3B8; margin-bottom: 3px;">
+                                ${isHot ? 'Check-in Date' : 'Departure Date'}
+                              </div>
+                              <div style="font-size: 13.5px; font-weight: 700; color: #FFFFFF;">
+                                ${escapeHTML(req.startDate ? String(req.startDate).slice(0, 10) : 'TBD')}
+                              </div>
+                            </div>
+                            <div>
+                              <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: #94A3B8; margin-bottom: 3px;">
+                                ${isHot ? 'Check-out Date' : (req.endDate ? 'Return Date' : 'Trip Type')}
+                              </div>
+                              <div style="font-size: 13.5px; font-weight: 700; color: #FFFFFF;">
+                                ${escapeHTML(req.endDate ? String(req.endDate).slice(0, 10) : (isHot ? 'TBD' : 'One Way'))}
+                              </div>
+                            </div>
+                            <div>
+                              <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: #94A3B8; margin-bottom: 3px;">
+                                ${isHot ? 'Rooms & Guests' : 'Passengers'}
+                              </div>
+                              <div style="font-size: 13.5px; font-weight: 700; color: #FFFFFF;">
+                                ${isHot
+                                  ? `${req.guestCount?.rooms || 1} Room(s), ${req.guestCount?.adults || 1} Adult(s)${req.guestCount?.children ? `, ${req.guestCount.children} Child` : ''}`
+                                  : `${req.passengerCount?.adults || 1} Adult(s)${req.passengerCount?.children ? `, ${req.passengerCount.children} Child` : ''}${req.passengerCount?.infants ? `, ${req.passengerCount.infants} Infant` : ''}`}
+                              </div>
+                            </div>
+                          </div>
+
+                          <!-- NEXT ACTION NOTICE -->
+                          <div style="display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 18px; font-size: 12.5px; color: #D6E0F4; flex-wrap: wrap;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                              <span style="color: #00E676;">⚡</span>
+                              <span><strong>Next step:</strong> ${escapeHTML(req.nextAction || 'Concierge review in progress')}</span>
+                            </div>
+                            <span style="font-size: 11.5px; color: #94A3B8;">
+                              Submitted: ${escapeHTML(req.createdAt ? String(req.createdAt).slice(0, 10) : '')}
+                            </span>
+                          </div>
+
+                          <!-- ACTIONS -->
+                          <div style="display: flex; gap: 10px; align-items: center; justify-content: flex-end; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 14px; flex-wrap: wrap;">
+                            <button type="button" onclick="window.openTravelRequestDetailModal('${escapeHTML(req.id)}')" class="btn" style="background: #00E676; color: #07153B !important; font-weight: 800; padding: 8px 18px; border-radius: 99px; border: 0; cursor: pointer; font-size: 13px;">
+                              View Details →
+                            </button>
+                            <a href="${escapeHTML(req.supportContact?.whatsappUrl || 'https://wa.me/96897608999')}" target="_blank" rel="noopener" class="btn" style="background: rgba(0, 166, 81, 0.2); color: #55D98A !important; border: 1px solid rgba(0,166,81,0.4); padding: 8px 16px; border-radius: 99px; font-size: 13px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+                              💬 WhatsApp JMT
+                            </a>
+                            ${canCancel ? `
+                              <button type="button" onclick="window.promptCancelTravelRequest('${escapeHTML(req.id)}', '${escapeHTML(req.reference)}')" class="btn" style="background: rgba(239, 68, 68, 0.12); color: #FCA5A5 !important; border: 1px solid rgba(239, 68, 68, 0.3); padding: 8px 16px; border-radius: 99px; font-size: 13px; font-weight: 700; cursor: pointer;">
+                                Cancel Request
+                              </button>
+                            ` : ''}
+                          </div>
+                        </div>
+                      `;
+                    }).join('')}
+                  </div>
+                `}
+
+              </main>
+
+            </div>
+
+          </div>
+        </div>
+      `;
+
+      // If a specific request was targeted in URL, open its modal automatically
+      if (targetRequestId) {
+        window.openTravelRequestDetailModal(targetRequestId);
+      }
+    }
+
+    window.setTravelRequestFilter = function(filter) {
+      currentTravelRequestFilter = filter;
+      renderPortal();
+    };
+
+    window.openTravelRequestDetailModal = function(requestId) {
+      const allReqs = cachedTravelRequestsData || [];
+      const req = allReqs.find(r => r.id === requestId || r.reference === requestId);
+      if (!req) return;
+
+      let modalContainer = document.getElementById('jmt-request-detail-overlay');
+      if (!modalContainer) {
+        modalContainer = document.createElement('div');
+        modalContainer.id = 'jmt-request-detail-overlay';
+        modalContainer.className = 'jmt-modal-overlay';
+        document.body.appendChild(modalContainer);
+      }
+
+      const isHot = req.category === 'HOTEL';
+      const details = req.details || {};
+      const canCancel = !['CANCELLED', 'CLOSED', 'RESOLVED'].includes(req.status);
+
+      modalContainer.innerHTML = `
+        <div class="jmt-modal-card" role="dialog" aria-modal="true" aria-labelledby="request-detail-modal-title" style="max-width: 640px; width: 100%; max-height: 90vh; overflow-y: auto; box-sizing: border-box;">
+          <div class="jmt-modal-header" style="background: linear-gradient(135deg, #07153B 0%, #0B286C 100%); padding: 22px 24px; border-bottom: 1px solid rgba(255,255,255,0.15);">
+            <div>
+              <div style="font-family: monospace; font-size: 13px; font-weight: 800; color: #00E676; letter-spacing: 1px; margin-bottom: 4px;">
+                ${escapeHTML(req.reference)} • ${isHot ? '🏨 Hotel Consultation' : '✈️ Flight Consultation'}
+              </div>
+              <h3 id="request-detail-modal-title" style="font-size: 20px; font-weight: 800; color: #FFFFFF; margin: 0;">
+                ${escapeHTML(req.title)}
+              </h3>
+            </div>
+            <button type="button" class="jmt-modal-close" onclick="closeTravelRequestDetailModal()" aria-label="Close Modal" style="color: #FFF; background: none; border: 0; font-size: 24px; cursor: pointer;">×</button>
+          </div>
+
+          <div class="jmt-modal-body" style="padding: 24px; background: #07153B; color: #FFFFFF;">
+
+            <!-- STATUS & ACTION BANNER -->
+            <div style="background: rgba(11, 40, 108, 0.7); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <span style="font-size: 12px; text-transform: uppercase; font-weight: 700; color: #94A3B8;">Current Status</span>
+                <span style="font-size: 12.5px; font-weight: 800; color: #00E676;">${escapeHTML(req.status)}</span>
+              </div>
+              <div style="font-size: 13.5px; color: #D6E0F4; line-height: 1.5;">
+                ⚡ <strong>Next Step:</strong> ${escapeHTML(req.nextAction)}
+              </div>
+            </div>
+
+            <!-- JMT STAFF NOTE IF ANY -->
+            ${req.staffResponse ? `
+              <div style="background: rgba(0, 230, 118, 0.1); border: 1px solid #00E676; border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+                <div style="font-size: 12px; text-transform: uppercase; font-weight: 800; color: #00E676; margin-bottom: 6px;">
+                  💬 Note from JMT Travel Consultant
+                </div>
+                <div style="font-size: 13.5px; color: #FFFFFF; line-height: 1.5; white-space: pre-wrap;">
+                  ${escapeHTML(req.staffResponse)}
+                </div>
+              </div>
+            ` : ''}
+
+            <!-- REQUEST DETAILS -->
+            <div style="margin-bottom: 24px;">
+              <h4 style="font-size: 14px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: #00E676; margin: 0 0 12px;">
+                Request Information
+              </h4>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 13px;">
+                <div>
+                  <span style="color: #94A3B8; display: block; font-size: 11.5px;">Destination:</span>
+                  <strong style="color: #FFF;">${escapeHTML(req.destination)}</strong>
+                </div>
+                ${!isHot ? `
+                  <div>
+                    <span style="color: #94A3B8; display: block; font-size: 11.5px;">Origin:</span>
+                    <strong style="color: #FFF;">${escapeHTML(req.origin || 'Muscat (MCT)')}</strong>
+                  </div>
+                ` : `
+                  <div>
+                    <span style="color: #94A3B8; display: block; font-size: 11.5px;">Preferred Hotel:</span>
+                    <strong style="color: #FFF;">${escapeHTML(details.preferredHotel || 'Best Available in Category')}</strong>
+                  </div>
+                `}
+                <div>
+                  <span style="color: #94A3B8; display: block; font-size: 11.5px;">${isHot ? 'Check-in Date:' : 'Departure Date:'}</span>
+                  <strong style="color: #FFF;">${escapeHTML(req.startDate ? String(req.startDate).slice(0, 10) : 'TBD')}</strong>
+                </div>
+                <div>
+                  <span style="color: #94A3B8; display: block; font-size: 11.5px;">${isHot ? 'Check-out Date:' : 'Return Date:'}</span>
+                  <strong style="color: #FFF;">${escapeHTML(req.endDate ? String(req.endDate).slice(0, 10) : (isHot ? 'TBD' : 'One Way'))}</strong>
+                </div>
+                <div>
+                  <span style="color: #94A3B8; display: block; font-size: 11.5px;">${isHot ? 'Guest Count:' : 'Passengers:'}</span>
+                  <strong style="color: #FFF;">
+                    ${isHot
+                      ? `${details.rooms || 1} room(s) • ${details.adults || 1} adult(s)${details.children ? `, ${details.children} child` : ''}`
+                      : `${details.adults || 1} adult(s)${details.children ? `, ${details.children} child` : ''}${details.infants ? `, ${details.infants} infant` : ''}`}
+                  </strong>
+                </div>
+                ${!isHot ? `
+                  <div>
+                    <span style="color: #94A3B8; display: block; font-size: 11.5px;">Cabin Class:</span>
+                    <strong style="color: #FFF;">${escapeHTML(details.preferredCabin || 'Economy')}</strong>
+                  </div>
+                ` : `
+                  <div>
+                    <span style="color: #94A3B8; display: block; font-size: 11.5px;">Room Preference:</span>
+                    <strong style="color: #FFF;">${escapeHTML(details.roomPreference || 'Standard')}</strong>
+                  </div>
+                `}
+              </div>
+
+              ${details.specialRequirements ? `
+                <div style="margin-top: 12px; font-size: 13px; background: rgba(255,255,255,0.04); border-radius: 8px; padding: 10px 12px;">
+                  <span style="color: #94A3B8; font-size: 11.5px; display: block; margin-bottom: 2px;">Special Requirements:</span>
+                  <span style="color: #E2E8F0;">${escapeHTML(details.specialRequirements)}</span>
+                </div>
+              ` : ''}
+            </div>
+
+            <!-- CUSTOMER-FACING STATUS TIMELINE (CURRENT REQUEST LIFECYCLE) -->
+            <div style="margin-bottom: 24px;">
+              <h4 style="font-size: 14px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: #00E676; margin: 0 0 4px;">
+                Current Request Lifecycle
+              </h4>
+              <p style="font-size: 11.5px; color: #94A3B8; margin: 0 0 14px;">
+                Status milestones reflect the current lifecycle state of your request.
+              </p>
+              <div style="display: flex; flex-direction: column; gap: 14px; border-left: 2px solid rgba(0, 230, 118, 0.4); padding-left: 16px; margin-left: 8px;">
+                ${(req.timeline || []).map(t => `
+                  <div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <span style="width: 8px; height: 8px; border-radius: 50%; background: #00E676; margin-left: -21px;"></span>
+                      <strong style="font-size: 13.5px; color: #FFF;">${escapeHTML(t.title)}</strong>
+                      <span style="font-size: 11px; color: #94A3B8;">${escapeHTML(t.timestamp ? String(t.timestamp).slice(0, 10) : '')}</span>
+                    </div>
+                    <div style="font-size: 12.5px; color: #D6E0F4; margin-top: 2px;">
+                      ${escapeHTML(t.description)}
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+
+            <div id="modal-cancel-feedback" style="display: none; margin-bottom: 14px; padding: 10px 14px; border-radius: 8px; font-size: 13px;"></div>
+
+            <!-- MODAL ACTION BUTTONS -->
+            <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.12); padding-top: 18px; flex-wrap: wrap; gap: 10px;">
+              <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                <a href="${escapeHTML(req.supportContact?.whatsappUrl || 'https://wa.me/96897608999')}" target="_blank" rel="noopener" class="btn" style="background: #00A651; color: #FFF !important; padding: 8px 18px; border-radius: 99px; font-size: 13px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+                  💬 WhatsApp Concierge
+                </a>
+                <button type="button" onclick="closeTravelRequestDetailModal()" class="btn" style="background: rgba(255,255,255,0.12); color: #FFF !important; padding: 8px 18px; border-radius: 99px; font-size: 13px; font-weight: 700; border: 1px solid rgba(255,255,255,0.2); cursor: pointer;">
+                  Close
+                </button>
+              </div>
+
+              ${canCancel ? `
+                <button type="button" onclick="window.promptCancelTravelRequest('${escapeHTML(req.id)}', '${escapeHTML(req.reference)}')" class="btn" style="background: rgba(239, 68, 68, 0.15); color: #FCA5A5 !important; border: 1px solid rgba(239, 68, 68, 0.3); padding: 8px 16px; border-radius: 99px; font-size: 13px; font-weight: 700; cursor: pointer;">
+                  Cancel Request
+                </button>
+              ` : ''}
+            </div>
+
+          </div>
+        </div>
+      `;
+
+      modalContainer.style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+    };
+
+    window.closeTravelRequestDetailModal = function() {
+      const modal = document.getElementById('jmt-request-detail-overlay');
+      if (modal) modal.style.display = 'none';
+      document.body.style.overflow = '';
+    };
+
+    window.promptCancelTravelRequest = async function(requestId, reference) {
+      if (!confirm(`Are you sure you want to cancel travel request ${reference}? Our concierge team will stop processing this inquiry.`)) {
+        return;
+      }
+
+      try {
+        const res = await apiCall(`/api/account/travel-requests/${requestId}/cancel`, 'PATCH');
+        if (!res || !res.success) {
+          throw new Error(res?.error?.message || 'Failed to cancel request.');
+        }
+
+        // Update cached item
+        if (cachedTravelRequestsData) {
+          const idx = cachedTravelRequestsData.findIndex(r => r.id === requestId || r.reference === requestId);
+          if (idx !== -1) {
+            cachedTravelRequestsData[idx] = res.request;
+          }
+        }
+
+        window.closeTravelRequestDetailModal();
+        renderPortal();
+      } catch (err) {
+        alert(`Could not cancel request: ${err.message}`);
+      }
+    };
+
+    renderPortal();
+
+  } catch (err) {
+    container.innerHTML = `
+      <div style="background: #07153B !important; min-height: 100vh; color: #FFFFFF !important;">
+        <div class="shell" style="padding: 60px 20px; text-align: center;">
+          <p style="color: #EF4444; font-size: 16px; font-weight: 700; margin-bottom: 16px;">Failed to load travel requests.</p>
+          <p style="color: #94A3B8; font-size: 14px; margin-bottom: 24px;">${escapeHTML(err.message)}</p>
+          <button onclick="navigate('/account')" class="btn" style="background: #00A651 !important; color: #FFFFFF !important; border: 0; padding: 10px 24px; border-radius: 99px; cursor: pointer;">
             Return to Dashboard
           </button>
         </div>

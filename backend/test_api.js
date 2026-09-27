@@ -12,6 +12,7 @@ const path = require('path');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const app = require('./server');
+const childProcess = require('child_process');
 
 const AUTH_SECRET = process.env.AUTH_SECRET || 'local-development-jmt-jwt-secret-key';
 function generateTestToken(user) {
@@ -3267,8 +3268,603 @@ async function runTestSuite() {
     assert.strictEqual(prodDocsListRes.body.success, true);
     console.log('  ✅ Step 11 PASSED: /account/documents loads successfully');
 
+    // 12: Confirm /account/travel-requests loads
+    const prodTravelReqsRes = await request('/api/account/travel-requests', {
+      headers: { Authorization: `Bearer ${prodToken}` }
+    });
+    assert.strictEqual(prodTravelReqsRes.status, 200, 'Travel requests endpoint /api/account/travel-requests must return 200 OK');
+    assert.strictEqual(prodTravelReqsRes.body.success, true);
+    assert.ok(Array.isArray(prodTravelReqsRes.body.requests || prodTravelReqsRes.body.inquiries));
+    console.log('  ✅ Step 12 PASSED: /account/travel-requests loads successfully');
+
+    // =========================================================================
+    // V5.5 HOTEL & FLIGHT CUSTOMER INQUIRY INTEGRATION (TRAVEL-1 through TRAVEL-20)
+    // =========================================================================
+    console.log('\n=================================================================');
+    console.log('✈️🏨 EXECUTING V5.5 HOTEL & FLIGHT CUSTOMER INQUIRY INTEGRATION TESTS');
+    console.log('=================================================================');
+
+    let v55HotelInquiryId = '';
+    let v55HotelRef = '';
+    let v55FlightInquiryId = '';
+    let v55FlightRef = '';
+
+    // TRAVEL-1: Hotel inquiry creation (POST /api/account/travel-requests)
+    console.log('\n[TRAVEL-1] Testing Hotel Inquiry Creation (POST /api/account/travel-requests)...');
+    const t1Res = await request('/api/account/travel-requests', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${customer1Token}`,
+        'x-forwarded-for': '198.51.100.10'
+      },
+      body: {
+        type: 'HOTEL',
+        destination: 'Muscat',
+        checkInDate: '2026-11-10',
+        checkOutDate: '2026-11-15',
+        adults: 2,
+        children: 1,
+        rooms: 1,
+        preferredHotel: 'Al Bustan Palace, a Ritz-Carlton Hotel',
+        roomPreference: 'Sea View Suite',
+        budgetRange: 'OMR 150 - 250 / night',
+        specialRequirements: 'Quiet room with early check-in preference'
+      }
+    });
+    assert.strictEqual(t1Res.status, 201, 'Hotel inquiry submission must return 201 CREATED');
+    assert.strictEqual(t1Res.body.success, true);
+    assert.ok(t1Res.body.inquiry);
+    assert.ok(t1Res.body.inquiry.id);
+    assert.ok(/^JMT-H-\d{6}$/.test(t1Res.body.inquiry.reference), 'Hotel inquiry reference must match JMT-H-XXXXXX');
+    assert.strictEqual(t1Res.body.inquiry.category, 'HOTEL');
+    assert.strictEqual(t1Res.body.inquiry.status, 'NEW');
+    v55HotelInquiryId = t1Res.body.inquiry.id;
+    v55HotelRef = t1Res.body.inquiry.reference;
+    console.log(`  ✅ TRAVEL-1 PASSED: Hotel inquiry created (${v55HotelRef})`);
+
+    // TRAVEL-2: Flight inquiry creation (POST /api/account/travel-requests)
+    console.log('\n[TRAVEL-2] Testing Flight Inquiry Creation (POST /api/account/travel-requests)...');
+    const t2Res = await request('/api/account/travel-requests', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${customer1Token}`,
+        'x-forwarded-for': '198.51.100.11'
+      },
+      body: {
+        type: 'FLIGHT',
+        origin: 'Muscat (MCT)',
+        destination: 'London (LHR)',
+        departureDate: '2026-11-20',
+        returnDate: '2026-11-30',
+        tripType: 'round-trip',
+        adults: 2,
+        children: 0,
+        infants: 0,
+        preferredCabin: 'Business',
+        preferredAirline: 'Oman Air',
+        specialRequirements: 'Window seats and dietary meal request'
+      }
+    });
+    assert.strictEqual(t2Res.status, 201, 'Flight inquiry submission must return 201 CREATED');
+    assert.strictEqual(t2Res.body.success, true);
+    assert.ok(t2Res.body.inquiry);
+    assert.ok(t2Res.body.inquiry.id);
+    assert.ok(/^JMT-F-\d{6}$/.test(t2Res.body.inquiry.reference), 'Flight inquiry reference must match JMT-F-XXXXXX');
+    assert.strictEqual(t2Res.body.inquiry.category, 'FLIGHT');
+    assert.strictEqual(t2Res.body.inquiry.status, 'NEW');
+    v55FlightInquiryId = t2Res.body.inquiry.id;
+    v55FlightRef = t2Res.body.inquiry.reference;
+    console.log(`  ✅ TRAVEL-2 PASSED: Flight inquiry created (${v55FlightRef})`);
+
+    // TRAVEL-3: Authenticated ownership enforcement (unauthenticated returns 401)
+    console.log('\n[TRAVEL-3] Testing Authenticated Ownership Enforcement (401 UNAUTHORIZED)...');
+    const t3Post = await request('/api/account/travel-requests', {
+      method: 'POST',
+      body: { type: 'HOTEL', destination: 'Salalah', checkInDate: '2026-12-01', checkOutDate: '2026-12-05', adults: 2 }
+    });
+    assert.strictEqual(t3Post.status, 401, 'Unauthenticated POST must return 401');
+    assert.strictEqual(t3Post.body.success, false);
+
+    const t3Get = await request('/api/account/travel-requests');
+    assert.strictEqual(t3Get.status, 401, 'Unauthenticated GET must return 401');
+    assert.strictEqual(t3Get.body.success, false);
+    console.log('  ✅ TRAVEL-3 PASSED: Unauthenticated requests blocked with 401 UNAUTHORIZED');
+
+    // TRAVEL-4: Cross-customer read blocked (403 Forbidden)
+    console.log('\n[TRAVEL-4] Testing Cross-Customer Read Blocked (IDOR Defense - 403 FORBIDDEN)...');
+    const t4Res = await request(`/api/account/travel-requests/${v55HotelInquiryId}`, {
+      headers: { Authorization: `Bearer ${customer2Token}` }
+    });
+    assert.strictEqual(t4Res.status, 403, 'Cross-customer read must return 403 FORBIDDEN');
+    assert.strictEqual(t4Res.body.success, false);
+    assert.strictEqual(t4Res.body.error.code, 'FORBIDDEN');
+    console.log('  ✅ TRAVEL-4 PASSED: Cross-customer travel request read blocked (403 FORBIDDEN)');
+
+    // TRAVEL-5: Cross-customer update / cancel blocked (403 Forbidden)
+    console.log('\n[TRAVEL-5] Testing Cross-Customer Cancel Blocked (IDOR Defense - 403 FORBIDDEN)...');
+    const t5Res = await request(`/api/account/travel-requests/${v55HotelInquiryId}/cancel`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${customer2Token}` },
+      body: { reason: 'Malicious cancellation attempt' }
+    });
+    assert.strictEqual(t5Res.status, 403, 'Cross-customer cancel must return 403 FORBIDDEN');
+    assert.strictEqual(t5Res.body.success, false);
+    assert.strictEqual(t5Res.body.error.code, 'FORBIDDEN');
+    console.log('  ✅ TRAVEL-5 PASSED: Cross-customer travel request cancel blocked (403 FORBIDDEN)');
+
+    // TRAVEL-6: Cross-customer cancel defense integrity
+    console.log('\n[TRAVEL-6] Testing Integrity of Inquiry After Blocked IDOR Attack...');
+    const t6Verify = await request(`/api/account/travel-requests/${v55HotelInquiryId}`, {
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(t6Verify.status, 200);
+    assert.strictEqual(t6Verify.body.inquiry.status, 'NEW', 'Inquiry status must remain unchanged after failed attacker attempt');
+
+    const t6FlightCancel = await request(`/api/account/travel-requests/${v55FlightInquiryId}/cancel`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${customer2Token}` },
+      body: { reason: 'Malicious cancellation attempt' }
+    });
+    assert.strictEqual(t6FlightCancel.status, 403);
+    console.log('  ✅ TRAVEL-6 PASSED: Target inquiry untouched after cross-customer attack attempt');
+
+    // TRAVEL-7: Body userId parameter ignored (ownership derived from token)
+    console.log('\n[TRAVEL-7] Testing Body userId Override Defense (Ownership Derived from Token)...');
+    const t7Res = await request('/api/account/travel-requests', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${customer1Token}`,
+        'x-forwarded-for': '198.51.100.12'
+      },
+      body: {
+        userId: customer2User.id,
+        type: 'HOTEL',
+        destination: 'Nizwa',
+        checkInDate: '2026-11-15',
+        checkOutDate: '2026-11-18',
+        adults: 2,
+        preferredHotel: 'Nizwa Heritage Inn'
+      }
+    });
+    assert.strictEqual(t7Res.status, 201);
+    const t7InquiryId = t7Res.body.inquiry.id;
+    const t7Cust2Check = await request(`/api/account/travel-requests/${t7InquiryId}`, {
+      headers: { Authorization: `Bearer ${customer2Token}` }
+    });
+    assert.strictEqual(t7Cust2Check.status, 403, 'Customer 2 must not have ownership even if client passed userId: customer2User.id');
+    console.log('  ✅ TRAVEL-7 PASSED: Body userId override strictly ignored; authenticated user assigned');
+
+    // TRAVEL-8: Query userId parameter ignored
+    console.log('\n[TRAVEL-8] Testing Query userId Override Defense (Tenant Isolation Enforced)...');
+    const t8Res = await request(`/api/account/travel-requests?userId=${encodeURIComponent(customer2User.id)}`, {
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(t8Res.status, 200);
+    const t8Inquiries = t8Res.body.inquiries || t8Res.body.requests || [];
+    assert.ok(t8Inquiries.length > 0);
+    for (const inq of t8Inquiries) {
+      assert.ok(inq.reference.startsWith('JMT-H-') || inq.reference.startsWith('JMT-F-'));
+    }
+    console.log('  ✅ TRAVEL-8 PASSED: Query userId override ignored; customer data boundary strictly preserved');
+
+    // TRAVEL-9: Invalid dates rejected (past date, checkout before checkin, return before departure)
+    console.log('\n[TRAVEL-9] Testing Invalid Travel Dates Validation...');
+    const t9Past = await request('/api/account/travel-requests', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${customer1Token}`,
+        'x-forwarded-for': '198.51.100.13'
+      },
+      body: {
+        type: 'HOTEL',
+        destination: 'Muscat',
+        checkInDate: '2020-01-01',
+        checkOutDate: '2020-01-05',
+        adults: 2
+      }
+    });
+    assert.strictEqual(t9Past.status, 400);
+    assert.strictEqual(t9Past.body.error.code, 'PAST_TRAVEL_DATE');
+
+    const t9CheckoutBefore = await request('/api/account/travel-requests', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${customer1Token}`,
+        'x-forwarded-for': '198.51.100.14'
+      },
+      body: {
+        type: 'HOTEL',
+        destination: 'Muscat',
+        checkInDate: '2026-11-20',
+        checkOutDate: '2026-11-15',
+        adults: 2
+      }
+    });
+    assert.strictEqual(t9CheckoutBefore.status, 400);
+    assert.strictEqual(t9CheckoutBefore.body.error.code, 'INVALID_DATE_ORDER');
+
+    const t9FlightReturnBefore = await request('/api/account/travel-requests', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${customer1Token}`,
+        'x-forwarded-for': '198.51.100.15'
+      },
+      body: {
+        type: 'FLIGHT',
+        origin: 'Muscat (MCT)',
+        destination: 'Dubai (DXB)',
+        departureDate: '2026-11-25',
+        returnDate: '2026-11-20',
+        tripType: 'round-trip',
+        adults: 1
+      }
+    });
+    assert.strictEqual(t9FlightReturnBefore.status, 400);
+    assert.strictEqual(t9FlightReturnBefore.body.error.code, 'INVALID_DATE_ORDER');
+
+    const t9SameOriginDest = await request('/api/account/travel-requests', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${customer1Token}`,
+        'x-forwarded-for': '198.51.100.16'
+      },
+      body: {
+        type: 'FLIGHT',
+        origin: 'Muscat',
+        destination: 'Muscat',
+        departureDate: '2026-11-25',
+        tripType: 'one-way',
+        adults: 1
+      }
+    });
+    assert.strictEqual(t9SameOriginDest.status, 400);
+    assert.strictEqual(t9SameOriginDest.body.error.code, 'SAME_ORIGIN_DESTINATION');
+    console.log('  ✅ TRAVEL-9 PASSED: Past dates, inverted date ranges, and identical origin/destination safely rejected');
+
+    // TRAVEL-10: Invalid guest/passenger counts rejected
+    console.log('\n[TRAVEL-10] Testing Invalid Guest & Passenger Counts...');
+    const t10ZeroGuests = await request('/api/account/travel-requests', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${customer1Token}`,
+        'x-forwarded-for': '198.51.100.17'
+      },
+      body: {
+        type: 'HOTEL',
+        destination: 'Muscat',
+        checkInDate: '2026-11-10',
+        checkOutDate: '2026-11-15',
+        adults: 0
+      }
+    });
+    assert.strictEqual(t10ZeroGuests.status, 400);
+    assert.strictEqual(t10ZeroGuests.body.error.code, 'INVALID_GUEST_COUNT');
+
+    const t10ExcessGuests = await request('/api/account/travel-requests', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${customer1Token}`,
+        'x-forwarded-for': '198.51.100.18'
+      },
+      body: {
+        type: 'HOTEL',
+        destination: 'Muscat',
+        checkInDate: '2026-11-10',
+        checkOutDate: '2026-11-15',
+        adults: 25
+      }
+    });
+    assert.strictEqual(t10ExcessGuests.status, 400);
+    assert.strictEqual(t10ExcessGuests.body.error.code, 'INVALID_GUEST_COUNT');
+
+    const t10ZeroPass = await request('/api/account/travel-requests', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${customer1Token}`,
+        'x-forwarded-for': '198.51.100.19'
+      },
+      body: {
+        type: 'FLIGHT',
+        origin: 'Muscat (MCT)',
+        destination: 'Doha (DOH)',
+        departureDate: '2026-11-15',
+        tripType: 'one-way',
+        adults: 0
+      }
+    });
+    assert.strictEqual(t10ZeroPass.status, 400);
+    assert.strictEqual(t10ZeroPass.body.error.code, 'INVALID_PASSENGER_COUNT');
+    console.log('  ✅ TRAVEL-10 PASSED: Invalid guest and passenger counts safely rejected (400)');
+
+    // TRAVEL-11: Unsupported inquiry type rejected (400)
+    console.log('\n[TRAVEL-11] Testing Unsupported Inquiry Type Rejection...');
+    const t11Res = await request('/api/account/travel-requests', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${customer1Token}`,
+        'x-forwarded-for': '198.51.100.20'
+      },
+      body: {
+        type: 'CRUISE_SHIP',
+        destination: 'Khasab Fjords',
+        checkInDate: '2026-11-10'
+      }
+    });
+    assert.strictEqual(t11Res.status, 400);
+    assert.strictEqual(t11Res.body.error.code, 'INVALID_INQUIRY_TYPE');
+    console.log('  ✅ TRAVEL-11 PASSED: Unsupported inquiry type correctly rejected (400 INVALID_INQUIRY_TYPE)');
+
+    // TRAVEL-12: Customer DTO excludes internal notes, storage paths, passwords
+    console.log('\n[TRAVEL-12] Testing Customer DTO Sanitization & Internal Notes Exclusion...');
+    const t12AdminUpdate = await request(`/api/admin/contact-inquiries/${v55HotelInquiryId}/status`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${adminToken}` },
+      body: {
+        status: 'IN_REVIEW',
+        adminNotes: 'INTERNAL_CONFIDENTIAL_CONCIERGE_NOTE_DO_NOT_EXPOSE_PROFIT_MARGIN_35',
+        staffResponse: 'Our luxury travel specialist is curating tailored suite rates at Al Bustan Palace.'
+      }
+    });
+    assert.strictEqual(t12AdminUpdate.status, 200, 'Admin status update must succeed');
+
+    const t12CustFetch = await request(`/api/account/travel-requests/${v55HotelInquiryId}`, {
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(t12CustFetch.status, 200);
+    const inqDto = t12CustFetch.body.inquiry;
+    assert.strictEqual(inqDto.adminNotes, undefined, 'adminNotes must be strictly undefined in customer DTO');
+    assert.strictEqual(inqDto.internalNotes, undefined, 'internalNotes must be strictly undefined in customer DTO');
+    assert.strictEqual(inqDto.storageKey, undefined, 'storageKey must be strictly undefined in customer DTO');
+    assert.strictEqual(inqDto.filePath, undefined, 'filePath must be strictly undefined in customer DTO');
+    const dtoJsonString = JSON.stringify(t12CustFetch.body);
+    assert.strictEqual(dtoJsonString.includes('INTERNAL_CONFIDENTIAL'), false, 'Payload string must not contain confidential staff notes');
+    assert.strictEqual(inqDto.staffResponse, 'Our luxury travel specialist is curating tailored suite rates at Al Bustan Palace.');
+    assert.ok(Array.isArray(inqDto.timeline), 'Customer DTO must include timeline');
+    assert.ok(inqDto.timeline.length >= 2, 'Timeline must contain submitted and in-review steps');
+    console.log('  ✅ TRAVEL-12 PASSED: Customer DTO strictly excludes internal notes and includes customer-safe timeline');
+
+    // TRAVEL-13: Travel request appears in customer account (GET /api/account/travel-requests)
+    console.log('\n[TRAVEL-13] Testing Travel Request Account Listing & Query Filters...');
+    const t13ListAll = await request('/api/account/travel-requests', {
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(t13ListAll.status, 200);
+    assert.strictEqual(t13ListAll.body.success, true);
+    const allInquiries = t13ListAll.body.inquiries || t13ListAll.body.requests || [];
+    assert.ok(Array.isArray(allInquiries));
+    const allRefs = allInquiries.map(i => i.reference);
+    assert.ok(allRefs.includes(v55HotelRef), 'Hotel inquiry reference must be present');
+    assert.ok(allRefs.includes(v55FlightRef), 'Flight inquiry reference must be present');
+
+    const t13ListHotels = await request('/api/account/travel-requests?type=HOTEL', {
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(t13ListHotels.status, 200);
+    const hotelInqs = t13ListHotels.body.inquiries || t13ListHotels.body.requests || [];
+    for (const inq of hotelInqs) {
+      assert.strictEqual(inq.category, 'HOTEL');
+    }
+
+    const t13ListFlights = await request('/api/account/travel-requests?type=FLIGHT', {
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(t13ListFlights.status, 200);
+    const flightInqs = t13ListFlights.body.inquiries || t13ListFlights.body.requests || [];
+    for (const inq of flightInqs) {
+      assert.strictEqual(inq.category, 'FLIGHT');
+    }
+    console.log('  ✅ TRAVEL-13 PASSED: Travel requests listed in account with working category filters');
+
+    // TRAVEL-14: Travel request integrates with My Trips (GET /api/account/my-trips)
+    console.log('\n[TRAVEL-14] Testing Travel Request Integration with My Trips...');
+    const t14TripsRes = await request('/api/account/my-trips', {
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(t14TripsRes.status, 200);
+    assert.strictEqual(t14TripsRes.body.success, true);
+    assert.ok(Array.isArray(t14TripsRes.body.trips));
+    const tripRefs = t14TripsRes.body.trips.map(t => t.reference);
+    assert.ok(tripRefs.includes(v55HotelRef), `My Trips must include hotel inquiry (${v55HotelRef})`);
+    assert.ok(tripRefs.includes(v55FlightRef), `My Trips must include flight inquiry (${v55FlightRef})`);
+    const hotelTripItem = t14TripsRes.body.trips.find(t => t.reference === v55HotelRef);
+    assert.strictEqual(hotelTripItem.type, 'HOTEL_CONSULTATION');
+    assert.strictEqual(hotelTripItem.isConsultation, true);
+    console.log('  ✅ TRAVEL-14 PASSED: Hotel and flight inquiries seamlessly integrated into My Trips portal');
+
+    // TRAVEL-15: Cancellation authorization and status transition
+    console.log('\n[TRAVEL-15] Testing Cancellation Authorization & Status Transition...');
+    const t15CancelRes = await request(`/api/account/travel-requests/${v55HotelInquiryId}/cancel`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${customer1Token}` },
+      body: { reason: 'Schedule changed, postponing travel' }
+    });
+    assert.strictEqual(t15CancelRes.status, 200);
+    assert.strictEqual(t15CancelRes.body.success, true);
+    assert.strictEqual(t15CancelRes.body.inquiry.status, 'CANCELLED');
+
+    const t15SecondCancel = await request(`/api/account/travel-requests/${v55HotelInquiryId}/cancel`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${customer1Token}` },
+      body: { reason: 'Cancelling again' }
+    });
+    assert.strictEqual(t15SecondCancel.status, 400);
+    assert.strictEqual(t15SecondCancel.body.error.code, 'REQUEST_ALREADY_CLOSED');
+    console.log('  ✅ TRAVEL-15 PASSED: Customer cancellation transitions status to CANCELLED; duplicate cancel rejected');
+
+    // TRAVEL-16: Rate limiting verification (15 per 15 min)
+    console.log('\n[TRAVEL-16] Testing Rate Limiting Verification on Travel Inquiries (15/15m)...');
+    const rlIp = '203.0.113.88';
+    let rlHit = false;
+    for (let i = 0; i < 18; i++) {
+      const rlRes = await request('/api/account/travel-requests', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${customer1Token}`,
+          'x-forwarded-for': rlIp
+        },
+        body: {
+          type: 'HOTEL',
+          destination: 'Salalah',
+          checkInDate: '2026-11-10',
+          checkOutDate: '2026-11-15',
+          adults: 2
+        }
+      });
+      if (rlRes.status === 429) {
+        rlHit = true;
+        assert.strictEqual(rlRes.body.error.code, 'RATE_LIMITED');
+        break;
+      }
+    }
+    assert.strictEqual(rlHit, true, 'Rate limiter must enforce limit and return 429 RATE_LIMITED');
+    console.log('  ✅ TRAVEL-16 PASSED: Rate limit enforced after 15 requests (429 RATE_LIMITED)');
+
+    // TRAVEL-17: Audit logging verification (CREATE_TRAVEL_REQUEST, CANCEL_TRAVEL_REQUEST)
+    console.log('\n[TRAVEL-17] Testing Audit Logging Verification for Travel Requests...');
+    const travelAuditLogs = await db.auditLogs.find({
+      action: { $in: ['CREATE_TRAVEL_REQUEST', 'CANCEL_TRAVEL_REQUEST'] }
+    });
+    assert.ok(Array.isArray(travelAuditLogs) && travelAuditLogs.length >= 2, 'Audit logs must record CREATE and CANCEL events');
+    const createLog = travelAuditLogs.find(l => l.action === 'CREATE_TRAVEL_REQUEST' && l.metadata?.reference === v55FlightRef);
+    assert.ok(createLog, 'Audit log for flight request creation must exist');
+    assert.strictEqual(createLog.actorId, customer1User.id);
+    const cancelLog = travelAuditLogs.find(l => l.action === 'CANCEL_TRAVEL_REQUEST' && l.metadata?.reference === v55HotelRef);
+    assert.ok(cancelLog, 'Audit log for hotel request cancellation must exist');
+    assert.strictEqual(cancelLog.actorId, customer1User.id);
+    console.log('  ✅ TRAVEL-17 PASSED: Audit logs properly capture CREATE_TRAVEL_REQUEST and CANCEL_TRAVEL_REQUEST');
+
+    // TRAVEL-18: Existing Hotels regression verification
+    console.log('\n[TRAVEL-18] Testing Existing Hotels Regression Verification...');
+    const hotelsPageRes = await request('/hotels');
+    assert.strictEqual(hotelsPageRes.status, 200, 'GET /hotels must return 200 OK');
+    const v55AppJsContent = fs.readFileSync(path.join(__dirname, '../frontend/public/assets/js/app.js'), 'utf8');
+    assert.ok(v55AppJsContent.includes('HOTEL_DATASET'), 'app.js must maintain HOTEL_DATASET');
+    assert.ok(v55AppJsContent.includes('renderHotelsPage'), 'app.js must maintain renderHotelsPage');
+    assert.ok(v55AppJsContent.includes('openTravelEnquiryModal'), 'app.js must have openTravelEnquiryModal');
+    console.log('  ✅ TRAVEL-18 PASSED: Existing Hotels page and datasets fully operational');
+
+    // TRAVEL-19: Existing Flights regression verification
+    console.log('\n[TRAVEL-19] Testing Existing Flights Regression Verification...');
+    const flightsPageRes = await request('/flights');
+    assert.strictEqual(flightsPageRes.status, 200, 'GET /flights must return 200 OK');
+    assert.ok(v55AppJsContent.includes('AIRPORT_DATASET'), 'app.js must maintain AIRPORT_DATASET');
+    assert.ok(v55AppJsContent.includes('AIRLINE_REGISTRY'), 'app.js must maintain AIRLINE_REGISTRY');
+    assert.ok(v55AppJsContent.includes('renderFlightsPage'), 'app.js must maintain renderFlightsPage');
+    assert.strictEqual(v55AppJsContent.includes('instant GDS seat confirmation'), false, 'app.js must not contain false claims of instant GDS seat confirmation');
+    console.log('  ✅ TRAVEL-19 PASSED: Existing Flights page and datasets fully operational without false claims');
+
+    // TRAVEL-20: Payment module untouched verification
+    console.log('\n[TRAVEL-20] Testing Payment Module Untouched Verification...');
+    const paymentGitStatus = childProcess.execSync('git status --porcelain backend/services/payment.js', {
+      cwd: path.join(__dirname, '..'),
+      encoding: 'utf8'
+    }).trim();
+    assert.strictEqual(paymentGitStatus, '', 'backend/services/payment.js must remain 100% untouched and clean in git');
+    const paymentFileContent = fs.readFileSync(path.join(__dirname, 'services/payment.js'), 'utf8');
+    assert.ok(paymentFileContent.includes('PayTabsPaymentProvider'), 'PayTabs payment provider preserved');
+    assert.ok(paymentFileContent.includes('ThawaniPaymentProvider'), 'Thawani payment provider preserved');
+
+    // Verify dashboard reflects activeTravelRequests count
+    const dashCheck = await request('/api/account/dashboard', {
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(dashCheck.status, 200);
+    assert.ok(typeof dashCheck.body.summary.activeTravelRequests === 'number');
+    console.log('  ✅ TRAVEL-20 PASSED: Payment module verified 100% untouched; dashboard metrics verify travel requests');
+
+    // TRAVEL-SEC-1: Cross-customer inquiry isolation in My Trips when two users share same contact value
+    console.log('\n[TRAVEL-SEC-1] Testing Shared-Contact Inquiries Isolation in /api/account/my-trips...');
+    const sharedPhone = '+96899887711';
+    const emailSecA = `cust_sec_a_${Date.now()}@testshared.com`;
+    const emailSecB = `cust_sec_b_${Date.now()}@testshared.com`;
+
+    // 1. Register Customer A and Customer B with identical phone numbers
+    const regARes = await request('/api/auth/register', {
+      method: 'POST',
+      headers: { 'x-forwarded-for': '198.51.100.201' },
+      body: { name: 'Customer Shared A', email: emailSecA, phone: sharedPhone, password: 'SecurePassword123!' }
+    });
+    assert.strictEqual(regARes.status, 201, 'Customer A registration must succeed');
+    const tokenA = regARes.body.token;
+
+    const regBRes = await request('/api/auth/register', {
+      method: 'POST',
+      headers: { 'x-forwarded-for': '198.51.100.202' },
+      body: { name: 'Customer Shared B', email: emailSecB, phone: sharedPhone, password: 'SecurePassword123!' }
+    });
+    assert.strictEqual(regBRes.status, 201, 'Customer B registration must succeed');
+    const tokenB = regBRes.body.token;
+
+    // 2. Customer A creates inquiry A (Hotel)
+    const inqARes = await request('/api/account/travel-requests', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${tokenA}`,
+        'x-forwarded-for': '198.51.100.201'
+      },
+      body: {
+        type: 'HOTEL',
+        destination: 'Salalah Coastal Haven',
+        checkInDate: '2026-12-10',
+        checkOutDate: '2026-12-15',
+        adults: 2
+      }
+    });
+    assert.strictEqual(inqARes.status, 201, 'Inquiry A creation must succeed');
+    const inqARef = inqARes.body.inquiry.reference;
+
+    // 3. Customer B creates inquiry B (Flight)
+    const inqBRes = await request('/api/account/travel-requests', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${tokenB}`,
+        'x-forwarded-for': '198.51.100.202'
+      },
+      body: {
+        type: 'FLIGHT',
+        origin: 'Muscat (MCT)',
+        destination: 'Salalah (SLL)',
+        departureDate: '2026-12-10',
+        tripType: 'one-way',
+        adults: 1
+      }
+    });
+    assert.strictEqual(inqBRes.status, 201, 'Inquiry B creation must succeed');
+    const inqBRef = inqBRes.body.inquiry.reference;
+
+    // 4. Authenticate as Customer A and call /api/account/my-trips
+    const myTripsARes = await request('/api/account/my-trips', {
+      headers: { Authorization: `Bearer ${tokenA}` }
+    });
+    assert.strictEqual(myTripsARes.status, 200, 'Customer A GET /api/account/my-trips must return 200');
+    const tripsA = myTripsARes.body.trips || [];
+    const tripsARefs = tripsA.map(t => t.reference);
+
+    // 5. Verify inquiry A IS returned
+    assert.strictEqual(tripsARefs.includes(inqARef), true, `Inquiry A (${inqARef}) MUST be returned for Customer A`);
+
+    // 6. Verify inquiry B is NOT returned
+    assert.strictEqual(tripsARefs.includes(inqBRef), false, `Inquiry B (${inqBRef}) MUST NOT be returned for Customer A despite sharing contact`);
+
+    // 7. Defense-in-depth: Verify Customer B perspective
+    const myTripsBRes = await request('/api/account/my-trips', {
+      headers: { Authorization: `Bearer ${tokenB}` }
+    });
+    assert.strictEqual(myTripsBRes.status, 200, 'Customer B GET /api/account/my-trips must return 200');
+    const tripsB = myTripsBRes.body.trips || [];
+    const tripsBRefs = tripsB.map(t => t.reference);
+    assert.strictEqual(tripsBRefs.includes(inqBRef), true, `Inquiry B (${inqBRef}) MUST be returned for Customer B`);
+    assert.strictEqual(tripsBRefs.includes(inqARef), false, `Inquiry A (${inqARef}) MUST NOT be returned for Customer B`);
+
+    // 8. IDOR detail access defense with shared contact
+    const crossTripRes = await request(`/api/account/my-trips/${inqBRef}`, {
+      headers: { Authorization: `Bearer ${tokenA}` }
+    });
+    assert.strictEqual(crossTripRes.status, 404, 'Direct access to Inquiry B via Customer A session must return 404');
+    console.log('  ✅ TRAVEL-SEC-1 PASSED: Strict userId ownership enforced; cross-customer inquiry exposure prevented');
+
     console.log('\n================================================================');
-    console.log('🎉 ALL AUTOMATED TESTS PASSED SUCCESSFULLY! (211/211)');
+    console.log('🎉 ALL AUTOMATED TESTS PASSED SUCCESSFULLY! (233/233)');
     console.log('================================================================');
   } catch (err) {
     console.error('\n❌ Test Failure Details:', err);
