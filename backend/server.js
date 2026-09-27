@@ -1300,7 +1300,7 @@ app.get('/api/account/dashboard', authenticate, async (req, res) => {
     const customerId = req.user.id;
 
     // Concurrently fetch customer's records with bounded queries and selective projection
-    const [bookingsRaw, visasRaw, ticketsRaw, inquiriesRaw] = await Promise.all([
+    const [bookingsRaw, visasRaw, ticketsRaw, inquiriesRaw, unreadNotifsCount] = await Promise.all([
       db.tourBookings.find(
         { userId: customerId },
         { id: 1, bookingNumber: 1, packageTitle: 1, amount: 1, currency: 1, status: 1, travelDate: 1, createdAt: 1 },
@@ -1320,7 +1320,8 @@ app.get('/api/account/dashboard', authenticate, async (req, res) => {
         { userId: customerId },
         { id: 1, reference: 1, type: 1, status: 1, details: 1, createdAt: 1 },
         { sort: { createdAt: -1 }, limit: 10, lean: true }
-      )
+      ),
+      db.notifications.count({ userId: customerId, read: false })
     ]);
 
     const bookings = Array.isArray(bookingsRaw) ? bookingsRaw : [];
@@ -1460,7 +1461,8 @@ app.get('/api/account/dashboard', authenticate, async (req, res) => {
         bookings: totalBookings,
         pendingActions,
         pendingTravelRequests: activeTravelRequests,
-        activeTravelRequests
+        activeTravelRequests,
+        unreadNotifications: typeof unreadNotifsCount === 'number' ? unreadNotifsCount : 0
       },
       upcomingActivity,
       recentActivity
@@ -2596,6 +2598,18 @@ app.post('/api/account/travel-requests', authenticate, submissionLimiter, async 
       destination: validatedDetails.destination
     });
 
+    // Dispatch customer notification (Failure Isolated)
+    const eventName = inquiryType === 'HOTEL_INQUIRY' ? 'HOTEL_INQUIRY_CREATED' : 'FLIGHT_INQUIRY_CREATED';
+    await notificationService.dispatchEvent(eventName, {
+      user: req.user,
+      reference,
+      destination: validatedDetails.destination,
+      entityType: 'CONTACT_INQUIRY',
+      entityId: newInquiry.id,
+      actionUrl: '/account/travel-requests',
+      idempotencyKey: `inquiry_created:${newInquiry.id}`
+    });
+
     const inqDto = formatCustomerTravelRequestDTO(newInquiry);
     res.status(201).json({
       success: true,
@@ -3346,16 +3360,18 @@ app.post('/api/payments/:id/refund', authenticate, authorize('STAFF', 'ADMIN', '
   }
 });
 
-// --- 6.5 IN-APP NOTIFICATIONS (TASK #6 ENHANCED) ---
+// --- 6.5 CUSTOMER NOTIFICATIONS & COMMUNICATION CENTER (V5.6) ---
 
-// LIST IN-APP NOTIFICATIONS (IDOR ISOLATED, PAGINATED)
-app.get('/api/notifications', authenticate, async (req, res) => {
+// 1. LIST IN-APP NOTIFICATIONS (IDOR ISOLATED, PAGINATED, CATEGORY & UNREAD FILTERED)
+app.get(['/api/account/notifications', '/api/notifications'], authenticate, async (req, res) => {
   try {
+    const unread = req.query.unread !== undefined ? req.query.unread : req.query.unreadOnly;
     const result = await notificationService.listInAppNotifications({
       userId: req.user.id,
       page: req.query.page,
       limit: req.query.limit,
-      unreadOnly: req.query.unread
+      unreadOnly: unread,
+      category: req.query.category
     });
     res.json({ success: true, ...result });
   } catch (err) {
@@ -3363,22 +3379,53 @@ app.get('/api/notifications', authenticate, async (req, res) => {
   }
 });
 
-// MARK INDIVIDUAL NOTIFICATION AS READ (IDOR ISOLATED)
-app.patch('/api/notifications/:id/read', authenticate, async (req, res) => {
+// 2. GET SINGLE IN-APP NOTIFICATION BY ID (IDOR ISOLATED)
+app.get(['/api/account/notifications/:id', '/api/notifications/:id'], authenticate, async (req, res) => {
   try {
-    const updated = await notificationService.markAsRead(req.params.id, req.user.id);
-    res.json({ success: true, notification: updated });
+    const notifId = String(req.params.id || '').trim();
+    if (!notifId) {
+      return res.status(400).json({ success: false, error: { code: 'INVALID_ID', message: 'Notification ID is required.' } });
+    }
+
+    const notif = await db.notifications.findById(notifId) || await db.notifications.findOne({ id: notifId });
+    if (!notif) {
+      return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Notification not found.' } });
+    }
+
+    if (notif.userId !== req.user.id) {
+      await logAudit(req, 'SUSPICIOUS_IDOR_NOTIFICATION_ACCESS_ATTEMPT', 'NOTIFICATION', notifId);
+      return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Access denied: You do not own this notification.' } });
+    }
+
+    res.json({
+      success: true,
+      notification: notificationService.formatCustomerNotificationDTO(notif)
+    });
   } catch (err) {
-    const isForbidden = err.message.includes('Permission Denied');
-    res.status(isForbidden ? 403 : 400).json({ success: false, error: { code: isForbidden ? 'FORBIDDEN' : 'VALIDATION_ERROR', message: err.message } });
+    res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: err.message } });
   }
 });
 
-// MARK ALL NOTIFICATIONS AS READ
-app.patch('/api/notifications/read-all', authenticate, async (req, res) => {
+// 3. MARK INDIVIDUAL NOTIFICATION AS READ (IDOR ISOLATED)
+app.patch(['/api/account/notifications/:id/read', '/api/notifications/:id/read'], authenticate, async (req, res) => {
+  try {
+    const updated = await notificationService.markAsRead(req.params.id, req.user.id);
+    const unreadCount = await db.notifications.count({ userId: req.user.id, read: false });
+    res.json({ success: true, notification: updated, unreadCount });
+  } catch (err) {
+    const isForbidden = err.message.includes('Permission Denied');
+    const isNotFound = err.message.includes('not found');
+    const statusCode = isForbidden ? 403 : (isNotFound ? 404 : 400);
+    const errorCode = isForbidden ? 'FORBIDDEN' : (isNotFound ? 'NOT_FOUND' : 'VALIDATION_ERROR');
+    res.status(statusCode).json({ success: false, error: { code: errorCode, message: err.message } });
+  }
+});
+
+// 4. MARK ALL NOTIFICATIONS AS READ (TENANT ISOLATED)
+app.patch(['/api/account/notifications/read-all', '/api/notifications/read-all'], authenticate, async (req, res) => {
   try {
     const result = await notificationService.markAllAsRead(req.user.id);
-    res.json({ success: true, message: 'All in-app notifications marked as read.', count: result.count });
+    res.json({ success: true, message: 'All in-app notifications marked as read.', count: result.count, updatedCount: result.count, unreadCount: 0 });
   } catch (err) {
     res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: err.message } });
   }
@@ -4103,6 +4150,20 @@ app.patch('/api/admin/contact-inquiries/:id/status', authenticate, authorize('ST
       status: updates.status,
       reference: inquiry.reference
     });
+
+    // Notify user if inquiry has an associated customer userId (Failure Isolated)
+    if (inquiry.userId && updates.status) {
+      const isHotel = inquiry.type === 'HOTEL_INQUIRY' || inquiry.type === 'hotel';
+      const eventName = isHotel ? 'HOTEL_INQUIRY_STATUS_UPDATED' : 'FLIGHT_INQUIRY_STATUS_UPDATED';
+      await notificationService.dispatchEvent(eventName, {
+        userId: inquiry.userId,
+        reference: inquiry.reference,
+        status: updates.status,
+        entityType: 'CONTACT_INQUIRY',
+        entityId: inquiry.id,
+        actionUrl: '/account/travel-requests'
+      });
+    }
 
     res.json({ success: true, inquiry: updated });
   } catch (err) {
