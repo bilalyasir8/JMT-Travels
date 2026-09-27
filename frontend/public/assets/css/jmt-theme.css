@@ -54,7 +54,26 @@
   --shadow-lg: 0 12px 32px -4px rgba(0, 0, 0, 0.40);
 
   --font-body: 'Plus Jakarta Sans', sans-serif;
+
+  /* Consolidated semantic aliases */
+  --jmt-green-dark: #00A651;
+  --jmt-ink: #FFFFFF;
+  --jmt-muted: #E2E8F0;
+  --jmt-card: #0B286C;
+  --jmt-shadow: 0 12px 36px rgba(0, 0, 0, 0.25);
+  --jmt-shadow-hover: 0 18px 45px rgba(0, 0, 0, 0.35);
+
+  /* Motion */
   --transition: all 0.25s ease-in-out;
+  --transition-fast: all 0.15s ease;
+  --transition-slow: all 0.35s ease;
+
+  /* Stacking scale */
+  --z-header: 100;
+  --z-dropdown: 200;
+  --z-drawer: 500;
+  --z-modal: 900;
+  --z-toast: 1000;
 }
 
 [dir="rtl"] {
@@ -96,8 +115,8 @@ html {
 
 body {
   font-family: var(--font-body);
-  background-color: #07153B !important;
-  color: #FFFFFF !important;
+  background-color: var(--jmt-bg);
+  color: var(--text);
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
 }
@@ -247,9 +266,9 @@ body {
 
 /* Page Views & SPA Router Container */
 #view-container {
-  min-height: 85vh;
-  background-color: #07153B !important;
-  color: #FFFFFF !important;
+  min-height: 100vh;
+  background-color: var(--jmt-bg);
+  color: var(--text);
 }
 
 /* Card System */
@@ -1187,39 +1206,12 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
    JMT TRAVELS — EMERGENCY UI POLISH / CONSISTENCY LAYER
    Frontend-only visual overrides. No business logic changes.
    ============================================================= */
-:root {
-  --jmt-green: #00E676;
-  --jmt-green-dark: #00A651;
-  --jmt-blue: #0B286C;
-  --jmt-navy: #07153B;
-  --jmt-ink: #FFFFFF;
-  --jmt-muted: #E2E8F0;
-  --jmt-bg: #07153B;
-  --jmt-border: rgba(255, 255, 255, 0.12);
-  --jmt-card: #0B286C;
-  --jmt-shadow: 0 12px 36px rgba(0,0,0,.25);
-  --jmt-shadow-hover: 0 18px 45px rgba(0,0,0,.35);
-}
-
-html { background: #07153B !important; }
-body {
-  background: #07153B !important;
-  color: #FFFFFF !important;
-}
-
-/* Shared page container */
-#view-container {
-  min-height: 100vh !important;
-  background: #07153B !important;
-  color: #FFFFFF !important;
-}
 #view-container > .shell {
-  max-width: 1320px !important;
-  padding-left: 28px !important;
-  padding-right: 28px !important;
+  max-width: 1320px;
+  padding-inline: 28px;
 }
 
-/* /* ==========================================================================
+/* ==========================================================================
    JMT TRAVELS — REFERENCE-ACCURATE WHITE HORIZONTAL HEADER (118PX)
    Layout: [ LEFT UTILITIES ] —— [ CENTER NAVIGATION ] —— [ RIGHT BRAND ]
    ========================================================================== */
@@ -1227,7 +1219,7 @@ body {
 .jmt-main-header {
   position: sticky;
   top: 0;
-  z-index: 1000;
+  z-index: var(--z-header);
   background: #FFFFFF !important;
   border-bottom: 1px solid rgba(15, 23, 42, 0.08) !important;
   box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.04), 0 2px 6px -1px rgba(15, 23, 42, 0.02) !important;
@@ -6337,15 +6329,6 @@ a[href^="mailto:"]:hover,
    ============================================================= */
 
 /* Page Background & Global Text */
-body {
-  background-color: var(--jmt-bg, #F3F8FC) !important;
-  color: var(--jmt-navy, #082B52);
-}
-
-#view-container {
-  background-color: var(--jmt-bg, #F3F8FC);
-}
-
 /* Legacy Header Neutralization */
 .site-header,
 header.site-header {
