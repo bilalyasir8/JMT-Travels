@@ -2439,6 +2439,10 @@ app.post('/api/documents/:id/replace', authenticate, uploadLimiter, memoryUpload
       return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Document not found.' } });
     }
 
+    if (docRecord.status === 'REPLACED') {
+      return res.status(400).json({ success: false, error: { code: 'DOCUMENT_ALREADY_REPLACED', message: 'This document has already been replaced and cannot be replaced again.' } });
+    }
+
     const appRecord = await db.visaApplications.findById(docRecord.applicationId) || await db.visaApplications.findOne({ applicationNumber: docRecord.applicationId });
     const isStaff = ['STAFF', 'ADMIN', 'SUPER_ADMIN'].includes(req.user.role);
     const isOwner = docRecord.uploadedBy === req.user.id || (appRecord && appRecord.userId === req.user.id);
@@ -2459,7 +2463,8 @@ app.post('/api/documents/:id/replace', authenticate, uploadLimiter, memoryUpload
     await logAudit(req, `Replaced document: ${newDoc.documentType}`, 'VISA_DOCUMENT', newDoc.id);
     res.json({ success: true, document: sanitizeDocument(newDoc), message: 'Document replaced successfully.' });
   } catch (err) {
-    res.status(400).json({ success: false, error: { code: 'REPLACE_ERROR', message: err.message } });
+    const status = err.statusCode || (err.code === 'CONCURRENT_REPLACEMENT' ? 409 : (err.code === 'NOT_FOUND' ? 404 : (err.code === 'FORBIDDEN' ? 403 : 400)));
+    res.status(status).json({ success: false, error: { code: err.code || 'REPLACE_ERROR', message: err.message } });
   }
 });
 

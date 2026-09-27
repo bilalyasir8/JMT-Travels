@@ -2945,8 +2945,143 @@ async function runTestSuite() {
     concurrentFetches.forEach(res => assert.strictEqual(res.status, 200));
     console.log('  ✅ VISA-9 PASSED: Existing workflow and concurrent data access verified cleanly');
 
+    // -------------------------------------------------------------------------
+    // V5.4 FINDINGS REMEDIATION REGRESSION TESTS (REM-1 through REM-7)
+    // -------------------------------------------------------------------------
+
+    // REM-1: AES-256 Claim Absent from Customer UI
+    console.log('\n[REM-1] Testing AES-256 Claims Absent from Customer UI...');
+    const appJsPath = path.join(__dirname, '../frontend/public/assets/js/app.js');
+    const remAppJsContent = fs.readFileSync(appJsPath, 'utf8');
+    assert.strictEqual(remAppJsContent.includes('Secured with AES-256 encrypted storage'), false, 'Found misleading AES-256 storage claim in app.js');
+    assert.strictEqual(remAppJsContent.includes('256-Bit Encrypted Storage'), false, 'Found misleading 256-bit encrypted storage badge in app.js');
+    assert.strictEqual(remAppJsContent.includes('AES-256'), false, 'Found AES-256 claim in customer-facing frontend');
+    console.log('  ✅ REM-1 PASSED: False AES-256 claims strictly absent from frontend UI');
+
+    // REM-2, REM-3, REM-4: Failed replacement rollback (no dangling DB doc, valid old doc preserved, physical file cleaned)
+    console.log('\n[REM-2..4] Testing Replacement Rollback on Database Failure...');
+    const visaService = require('./services/visa');
+    const testRollbackDoc = await db.visaDocuments.create({
+      documentId: `doc_test_rollback_${Date.now()}`,
+      applicationId: v54Cust1Visa.id,
+      documentType: 'PASSPORT_COPY',
+      storageKey: `doc_dummy_rollback_${Date.now()}.pdf`,
+      originalFilename: 'rollback_test.pdf',
+      displayFilename: 'rollback_test.pdf',
+      mimeType: 'application/pdf',
+      fileSize: 120,
+      uploadedBy: customer1User.id,
+      status: 'UPLOADED'
+    });
+
+    const dummyFilePath = path.join(__dirname, 'data/private-uploads', testRollbackDoc.storageKey);
+    if (!fs.existsSync(path.dirname(dummyFilePath))) fs.mkdirSync(path.dirname(dummyFilePath), { recursive: true });
+    fs.writeFileSync(dummyFilePath, '%PDF-1.4\nrollback dummy\n%%EOF');
+
+    const origAppUpdate = db.visaApplications.update;
+    db.visaApplications.update = async () => { throw new Error('SIMULATED_DB_ERROR_ON_APP_UPDATE'); };
+
+    let rollbackCaught = false;
+    try {
+      const newPdfBuffer = Buffer.from('%PDF-1.4\nrollback attempt payload\n%%EOF');
+      await visaService.replaceDocument(testRollbackDoc.id, newPdfBuffer, 'new_file.pdf', 'application/pdf', customer1User);
+    } catch (err) {
+      rollbackCaught = true;
+      assert.ok(err.message.includes('SIMULATED_DB_ERROR_ON_APP_UPDATE'));
+    } finally {
+      db.visaApplications.update = origAppUpdate;
+    }
+    assert.strictEqual(rollbackCaught, true, 'replaceDocument must throw when DB update fails');
+
+    // REM-2: No dangling DB document record created
+    const danglingDocs = await db.visaDocuments.find({ replacesDocumentId: testRollbackDoc.id });
+    assert.strictEqual(danglingDocs.length, 0, 'No dangling DB document should exist after failed replacement');
+    console.log('  ✅ REM-2 PASSED: Failed replacement does not leave dangling DB document');
+
+    // REM-3: Valid old document is preserved and still UPLOADED
+    const preservedOldDoc = await db.visaDocuments.findById(testRollbackDoc.id);
+    assert.ok(preservedOldDoc, 'Old document must still exist');
+    assert.strictEqual(preservedOldDoc.status, 'UPLOADED', 'Old document status must remain UPLOADED');
+    assert.strictEqual(preservedOldDoc.replacedByDocumentId || null, null, 'Old document must not have replacedByDocumentId');
+    console.log('  ✅ REM-3 PASSED: Failed replacement preserves valid old document in active state');
+
+    // REM-4: Cleaned newly stored physical file
+    const storageFiles = fs.readdirSync(path.join(__dirname, 'data/private-uploads'));
+    const orphanFiles = storageFiles.filter(f => f.includes('new_file'));
+    assert.strictEqual(orphanFiles.length, 0, 'Newly stored physical file must be unlinked on failure');
+    console.log('  ✅ REM-4 PASSED: Failed replacement unlinks and cleans physical file from storage');
+
+    await db.visaDocuments.delete(testRollbackDoc.id);
+    if (fs.existsSync(dummyFilePath)) fs.unlinkSync(dummyFilePath);
+
+    // REM-5: Already-REPLACED document cannot be replaced again
+    console.log('\n[REM-5] Testing Already-REPLACED Document Cannot Be Replaced Again...');
+    const secondReplaceRes = await uploadMultipart(
+      `/api/documents/${cust1Doc.id}/replace`,
+      customer1Token,
+      {},
+      updatedPdfBuffer,
+      'second_attempt.pdf',
+      'application/pdf'
+    );
+    assert.strictEqual(secondReplaceRes.status, 400);
+    assert.strictEqual(secondReplaceRes.body.error.code, 'DOCUMENT_ALREADY_REPLACED');
+    console.log('  ✅ REM-5 PASSED: Already-REPLACED document cannot be replaced again (400 DOCUMENT_ALREADY_REPLACED)');
+
+    // REM-6: Concurrent replacement cannot produce two successful replacements
+    console.log('\n[REM-6] Testing Concurrent Replacement Protection (No Double Replacement)...');
+    const testConcurrentDoc = await db.visaDocuments.create({
+      documentId: `doc_test_concurrent_${Date.now()}`,
+      applicationId: v54Cust1Visa.id,
+      documentType: 'PASSPORT_COPY',
+      storageKey: `doc_concurrent_${Date.now()}.pdf`,
+      originalFilename: 'concurrent_target.pdf',
+      displayFilename: 'concurrent_target.pdf',
+      mimeType: 'application/pdf',
+      fileSize: 150,
+      uploadedBy: customer1User.id,
+      status: 'UPLOADED'
+    });
+    const concurrentDummyPath = path.join(__dirname, 'data/private-uploads', testConcurrentDoc.storageKey);
+    fs.writeFileSync(concurrentDummyPath, '%PDF-1.4\nconcurrent target\n%%EOF');
+
+    const concPdf1 = Buffer.from('%PDF-1.4\nconcurrent replacement 1\n%%EOF');
+    const concPdf2 = Buffer.from('%PDF-1.4\nconcurrent replacement 2\n%%EOF');
+
+    const [cRes1, cRes2] = await Promise.all([
+      uploadMultipart(`/api/documents/${testConcurrentDoc.id}/replace`, customer1Token, {}, concPdf1, 'concurrent_1.pdf', 'application/pdf'),
+      uploadMultipart(`/api/documents/${testConcurrentDoc.id}/replace`, customer1Token, {}, concPdf2, 'concurrent_2.pdf', 'application/pdf')
+    ]);
+
+    const statuses = [cRes1.status, cRes2.status];
+    const successes = statuses.filter(s => s === 200);
+    const failures = statuses.filter(s => s === 409 || s === 400);
+
+    assert.strictEqual(successes.length, 1, 'Exactly one concurrent replacement request must succeed');
+    assert.strictEqual(failures.length, 1, 'The competing concurrent replacement request must safely fail (409/400)');
+
+    const replacementsInDb = await db.visaDocuments.find({ replacesDocumentId: testConcurrentDoc.id });
+    assert.strictEqual(replacementsInDb.length, 1, 'Only one replacement document must exist in database');
+
+    await db.visaDocuments.delete(testConcurrentDoc.id);
+    if (fs.existsSync(concurrentDummyPath)) fs.unlinkSync(concurrentDummyPath);
+    if (replacementsInDb[0]) {
+      await db.visaDocuments.delete(replacementsInDb[0].id);
+      const repFile = path.join(__dirname, 'data/private-uploads', replacementsInDb[0].storageKey);
+      if (fs.existsSync(repFile)) fs.unlinkSync(repFile);
+    }
+    console.log('  ✅ REM-6 PASSED: Concurrent replacement protection enforced (exactly 1 success, competing request safely blocked)');
+
+    // REM-7: Upload rate limit documentation matches actual 30/15m configuration
+    console.log('\n[REM-7] Testing Upload Rate Limit Documentation Matches Server Configuration (30/15m)...');
+    const reportPath = path.join(__dirname, '../docs/V5.4_VISA_DOCUMENT_VAULT_REPORT.md');
+    const reportContent = fs.readFileSync(reportPath, 'utf8');
+    assert.ok(reportContent.includes('30 uploads per 15 minutes'), 'Report must state 30 uploads per 15 minutes');
+    assert.strictEqual(reportContent.includes('100 uploads per 15 minutes'), false, 'Report must NOT state 100 uploads per 15 minutes');
+    console.log('  ✅ REM-7 PASSED: Upload rate limit documentation accurately matches 30/15m server configuration');
+
     console.log('\n================================================================');
-    console.log('🎉 ALL AUTOMATED TESTS PASSED SUCCESSFULLY! (197/197)');
+    console.log('🎉 ALL AUTOMATED TESTS PASSED SUCCESSFULLY! (204/204)');
     console.log('================================================================');
   } catch (err) {
     console.error('\n❌ Test Failure Details:', err);

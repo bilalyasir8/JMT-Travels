@@ -13889,7 +13889,7 @@ window.openUploadDocumentModal = async function(defaultAppId = null) {
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
           <div>
             <h2 id="modal-upload-title" style="font-size: 20px; font-weight: 800; color: #FFFFFF; margin: 0 0 4px;">Upload Travel Document</h2>
-            <p style="font-size: 13px; color: #94A3B8; margin: 0;">Secured with AES-256 encrypted storage</p>
+            <p style="font-size: 13px; color: #94A3B8; margin: 0;">Documents are transmitted securely and accessible only to authorized JMT users.</p>
           </div>
           <button onclick="closeUploadDocumentModal()" aria-label="Close upload modal" style="background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.15); color: #FFFFFF; width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; cursor: pointer;">✕</button>
         </div>
@@ -14973,13 +14973,13 @@ async function renderAccountDocumentsPage(container, path) {
 
             <!-- MAIN CONTENT AREA -->
             <main class="myjmt-content">
-              <!-- HERO BANNER WITH ENCRYPTION BADGE -->
+              <!-- HERO BANNER WITH ACCESS-CONTROLLED STORAGE BADGE -->
               <div class="jmt-card" style="background: linear-gradient(135deg, #07153B 0%, #0B286C 100%) !important; border: 1px solid rgba(255, 255, 255, 0.15) !important; border-radius: 16px; padding: 30px; margin-bottom: 24px; box-sizing: border-box;">
                 <div style="display: flex; justify-content: space-between; align-items: center; gap: 20px; flex-wrap: wrap;">
                   <div>
                     <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
                       <span style="font-size: 11px; font-weight: 800; color: #00E676; letter-spacing: 0.08em; text-transform: uppercase; background: rgba(0,230,118,0.12); border: 1px solid rgba(0,230,118,0.25); padding: 4px 10px; border-radius: 99px;">
-                        🛡️ 256-Bit Encrypted Storage
+                        🛡️ Secure &amp; Access-Controlled Storage
                       </span>
                     </div>
                     <h1 style="font-size: 28px; font-weight: 800; color: #FFFFFF; margin: 6px 0 8px;">

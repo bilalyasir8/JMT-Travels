@@ -26,6 +26,10 @@ const LEGAL_TRANSITIONS = {
 };
 
 class VisaService {
+  constructor() {
+    this.activeReplacements = new Set();
+  }
+
   /**
    * Generates a unique durable application reference (e.g. JMT-V-1234567)
    */
@@ -207,11 +211,12 @@ class VisaService {
     }
 
     // Save to private storage via StorageService (validates signature & magic bytes)
-    let stored;
+    let stored = null;
+    let docRecord = null;
     try {
       stored = await storageService.upload(fileBuffer, originalName, mimeType);
 
-      const docRecord = await db.visaDocuments.create({
+      docRecord = await db.visaDocuments.create({
         documentId: `doc_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`,
         applicationId: appRecord.id,
         documentType: documentType || 'PASSPORT_COPY',
@@ -250,6 +255,10 @@ class VisaService {
 
       return docRecord;
     } catch (err) {
+      // Compensating Rollback: remove DB record if created
+      if (docRecord && docRecord.id) {
+        try { await db.visaDocuments.delete(docRecord.id); } catch (_) {}
+      }
       // Orphan File Prevention: remove stored file if DB record creation or update fails
       if (stored && stored.storageKey) {
         try { await storageService.delete(stored.storageKey); } catch (_) {}
@@ -260,24 +269,54 @@ class VisaService {
 
   /**
    * Safe Document Replacement (Section 13A)
-   * Validates new file first -> persists new doc -> safely retires old doc.
-   * If replacement fails at any point, old document remains 100% intact.
+   * Validates ownership & status -> in-flight lock -> persists new file -> creates new DB doc
+   * -> updates application references -> marks old doc REPLACED.
+   * If any step fails, compensating rollback cleans up new file, deletes new DB doc,
+   * restores application references, and ensures old document remains valid.
    */
   async replaceDocument(existingDocumentId, fileBuffer, originalName, mimeType, actorUser) {
     const oldDoc = await db.visaDocuments.findById(existingDocumentId) || await db.visaDocuments.findOne({ documentId: existingDocumentId });
-    if (!oldDoc) throw new Error('Document not found.');
+    if (!oldDoc) {
+      const err = new Error('Document not found.');
+      err.code = 'NOT_FOUND';
+      err.statusCode = 404;
+      throw err;
+    }
+
+    if (oldDoc.status === 'REPLACED') {
+      const err = new Error('Document has already been replaced and cannot be replaced again.');
+      err.code = 'DOCUMENT_ALREADY_REPLACED';
+      err.statusCode = 400;
+      throw err;
+    }
 
     const appRecord = await db.visaApplications.findById(oldDoc.applicationId) || await db.visaApplications.findOne({ applicationNumber: oldDoc.applicationId });
     const isStaff = ['STAFF', 'ADMIN', 'SUPER_ADMIN'].includes(actorUser.role);
     if (!isStaff && oldDoc.uploadedBy !== actorUser.id && (!appRecord || appRecord.userId !== actorUser.id)) {
-      throw new Error('Permission Denied: You do not own this document.');
+      const err = new Error('Permission Denied: You do not own this document.');
+      err.code = 'FORBIDDEN';
+      err.statusCode = 403;
+      throw err;
     }
 
-    let newStored;
+    const lockKey = String(oldDoc.id || oldDoc.documentId);
+    if (this.activeReplacements.has(lockKey)) {
+      const err = new Error('Document replacement is already in progress. Please wait.');
+      err.code = 'CONCURRENT_REPLACEMENT';
+      err.statusCode = 409;
+      throw err;
+    }
+    this.activeReplacements.add(lockKey);
+
+    let newStored = null;
+    let newDocRecord = null;
+    let originalAppDocs = null;
+    let appDocsModified = false;
+
     try {
       newStored = await storageService.upload(fileBuffer, originalName, mimeType);
 
-      const newDocRecord = await db.visaDocuments.create({
+      newDocRecord = await db.visaDocuments.create({
         documentId: `doc_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`,
         applicationId: oldDoc.applicationId,
         documentType: oldDoc.documentType,
@@ -292,9 +331,20 @@ class VisaService {
       });
 
       if (appRecord) {
-        const docs = (appRecord.documents || []).filter(dId => dId !== oldDoc.id && dId !== oldDoc.documentId);
+        originalAppDocs = Array.isArray(appRecord.documents) ? [...appRecord.documents] : [];
+        const docs = originalAppDocs.filter(dId => dId !== oldDoc.id && dId !== oldDoc.documentId);
         docs.push(newDocRecord.id);
         await db.visaApplications.update(appRecord.id, { documents: docs });
+        appDocsModified = true;
+      }
+
+      // Re-verify authoritative state before marking REPLACED
+      const freshOldDoc = await db.visaDocuments.findById(oldDoc.id) || await db.visaDocuments.findOne({ documentId: oldDoc.documentId });
+      if (freshOldDoc && freshOldDoc.status === 'REPLACED') {
+        const conflictErr = new Error('Document was already replaced by another request.');
+        conflictErr.code = 'DOCUMENT_ALREADY_REPLACED';
+        conflictErr.statusCode = 400;
+        throw conflictErr;
       }
 
       await db.visaDocuments.update(oldDoc.id, {
@@ -304,10 +354,50 @@ class VisaService {
 
       return newDocRecord;
     } catch (err) {
-      if (newStored && newStored.storageKey) {
-        try { await storageService.delete(newStored.storageKey); } catch (_) {}
+      // Compensating Rollback:
+      // 1. Revert visa application document references if modified
+      if (appDocsModified && appRecord && originalAppDocs) {
+        try {
+          await db.visaApplications.update(appRecord.id, { documents: originalAppDocs });
+        } catch (appErr) {
+          console.error('[Rollback Error] Failed to restore application documents:', appErr.message);
+        }
       }
+
+      // 2. Remove newly created DB document record
+      if (newDocRecord && newDocRecord.id) {
+        try {
+          await db.visaDocuments.delete(newDocRecord.id);
+        } catch (dbErr) {
+          console.error('[Rollback Error] Failed to delete replacement document DB record:', dbErr.message);
+        }
+      }
+
+      // 3. Remove physical file from private storage
+      if (newStored && newStored.storageKey) {
+        try {
+          await storageService.delete(newStored.storageKey);
+        } catch (fsErr) {
+          console.error('[Rollback Error] Failed to delete physical storage file:', fsErr.message);
+        }
+      }
+
+      // 4. Ensure old document retains original valid status
+      if (oldDoc && oldDoc.id) {
+        try {
+          const currentOld = await db.visaDocuments.findById(oldDoc.id);
+          if (currentOld && currentOld.status === 'REPLACED' && (!newDocRecord || currentOld.replacedByDocumentId === newDocRecord.id)) {
+            await db.visaDocuments.update(oldDoc.id, {
+              status: oldDoc.status || 'UPLOADED',
+              replacedByDocumentId: oldDoc.replacedByDocumentId || null
+            });
+          }
+        } catch (_) {}
+      }
+
       throw err;
+    } finally {
+      this.activeReplacements.delete(lockKey);
     }
   }
 
