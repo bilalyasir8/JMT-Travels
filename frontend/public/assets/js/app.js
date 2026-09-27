@@ -784,6 +784,49 @@ window.toggleMobileMenu = function() {
   }
 };
 
+// Header Search Utility Handler
+window.handleHeaderSearch = function() {
+  const searchInput = document.getElementById('search-dest-input');
+  const searchShell = document.querySelector('.hero-search-shell') || document.querySelector('.jmt-home-search-card');
+  if (searchInput && searchShell) {
+    searchShell.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    setTimeout(() => searchInput.focus(), 350);
+  } else {
+    navigate('/');
+    setTimeout(() => {
+      const destInput = document.getElementById('search-dest-input');
+      const destShell = document.querySelector('.hero-search-shell') || document.querySelector('.jmt-home-search-card');
+      if (destInput && destShell) {
+        destShell.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        destInput.focus();
+      }
+    }, 300);
+  }
+};
+
+// Sticky Header Compact on Scroll (Section 9: 130-145px top -> 80-95px scrolled)
+window.addEventListener('scroll', () => {
+  const header = document.getElementById('jmt-main-header') || document.querySelector('.jmt-main-header');
+  if (!header) return;
+  if (window.scrollY > 40) {
+    header.classList.add('header-scrolled');
+  } else {
+    header.classList.remove('header-scrolled');
+  }
+}, { passive: true });
+
+// Keyboard Accessibility: Close mobile drawer on Escape (Section 14)
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    const drawer = document.getElementById('mobile-nav-drawer');
+    const btn = document.querySelector('.mobile-menu-btn');
+    if (drawer && drawer.style.display !== 'none' && drawer.style.display !== '') {
+      window.toggleMobileMenu();
+      btn?.focus();
+    }
+  }
+});
+
 function updateNavActiveState(path) {
   const navLinks = document.querySelectorAll('.nav-links a, .mobile-nav-links a, .nav-link-item');
   if (!navLinks.length) return;
@@ -840,17 +883,17 @@ async function renderRoute() {
     if (state.user) {
       const unreadCount = state.unreadNotifications || 0;
       const unreadBadge = unreadCount > 0
-        ? `<span class="jmt-header-unread-badge" style="position:absolute; top:-4px; right:-4px; background:#00E676; color:#07153B; font-size:10px; font-weight:800; border-radius:99px; min-width:16px; height:16px; display:inline-flex; align-items:center; justify-content:center; padding:0 3px; box-shadow:0 2px 5px rgba(0,0,0,0.3);">${unreadCount}</span>`
-        : `<span class="jmt-header-unread-badge" style="display:none; position:absolute; top:-4px; right:-4px; background:#00E676; color:#07153B; font-size:10px; font-weight:800; border-radius:99px; min-width:16px; height:16px; align-items:center; justify-content:center; padding:0 3px;">0</span>`;
+        ? `<span class="jmt-header-unread-badge" style="position:absolute; top:-4px; right:-4px; background:#00A859; color:#FFFFFF; font-size:10px; font-weight:800; border-radius:99px; min-width:16px; height:16px; display:inline-flex; align-items:center; justify-content:center; padding:0 3px; box-shadow:0 2px 5px rgba(0,0,0,0.2);">${unreadCount}</span>`
+        : `<span class="jmt-header-unread-badge" style="display:none; position:absolute; top:-4px; right:-4px; background:#00A859; color:#FFFFFF; font-size:10px; font-weight:800; border-radius:99px; min-width:16px; height:16px; align-items:center; justify-content:center; padding:0 3px;">0</span>`;
 
-      const notifBellBtn = `<a href="/account/notifications" onclick="event.preventDefault(); navigate('/account/notifications')" class="btn btn-outline" style="background:rgba(255,255,255,0.12) !important; color:#FFFFFF !important; border:1px solid rgba(255,255,255,0.3) !important; border-radius:12px; padding:7px 11px; position:relative; display:inline-flex; align-items:center; justify-content:center; text-decoration:none;" title="Notifications">🔔${unreadBadge}</a>`;
+      const notifBellBtn = `<a href="/account/notifications" onclick="event.preventDefault(); navigate('/account/notifications')" class="btn-notif-header" title="Notifications" aria-label="Notifications (${unreadCount} unread)">🔔${unreadBadge}</a>`;
 
-      const userHtml = `${notifBellBtn} <a href="/account" onclick="event.preventDefault(); navigate('/account')" class="btn btn-outline" style="background:rgba(255,255,255,0.12) !important; color:#FFFFFF !important; border:1px solid rgba(255,255,255,0.3) !important; border-radius:12px;">My Account (${escapeHTML(state.user.name.split(' ')[0])})</a> <button onclick="logoutUser()" class="btn btn-sm" style="background:#EF4444 !important; color:#FFFFFF !important; border-radius:12px;">Sign Out</button>`;
+      const userHtml = `${notifBellBtn} <a href="/account" onclick="event.preventDefault(); navigate('/account')" class="btn-account-header">Account (${escapeHTML(state.user.name.split(' ')[0])})</a> <button onclick="logoutUser()" class="btn-signout-header">Sign Out</button>`;
       authNav.innerHTML = userHtml;
       if (mobileAuthNav) mobileAuthNav.innerHTML = userHtml;
     } else {
-      authNav.innerHTML = `<a href="/login" onclick="event.preventDefault(); navigate('/login')" class="nav-signin-link" style="color:#FFFFFF !important; font-weight:700; font-size:14px; text-decoration:none; margin-right:4px;">Sign In</a> <a href="/register" onclick="event.preventDefault(); navigate('/register')" class="btn-create-account" style="background: linear-gradient(135deg, #07153B 0%, #0B286C 100%); color:#FFFFFF !important; padding:10px 22px; border-radius:99px; font-weight:700; font-size:13px; text-decoration:none; display:inline-flex; align-items:center; gap:6px; box-shadow: 0 4px 14px rgba(7, 21, 59, 0.35); white-space:nowrap;">Create Account →</a>`;
-      if (mobileAuthNav) mobileAuthNav.innerHTML = `<a href="/login" onclick="event.preventDefault(); toggleMobileMenu(); navigate('/login')" class="btn mobile-auth-signin" style="flex:1; text-align:center; background:rgba(255,255,255,0.12) !important; border:1px solid rgba(255,255,255,0.3) !important; color:#FFFFFF !important; border-radius:12px; font-weight:700; padding:12px 16px; text-decoration:none;">Sign In</a> <a href="/register" onclick="event.preventDefault(); toggleMobileMenu(); navigate('/register')" class="btn mobile-auth-register" style="flex:1; text-align:center; background:linear-gradient(135deg, #00E676 0%, #00C853 100%) !important; color:#07153B !important; font-weight:800; border-radius:12px; padding:12px 16px; text-decoration:none; box-shadow:0 4px 16px rgba(0,230,118,0.35); border:0;">Register</a>`;
+      authNav.innerHTML = `<a href="/login" id="nav-signin-link" onclick="event.preventDefault(); navigate('/login')" class="nav-signin-link">Sign In</a> <a href="/register" onclick="event.preventDefault(); navigate('/register')" class="btn-create-account">Create Account →</a>`;
+      if (mobileAuthNav) mobileAuthNav.innerHTML = `<a href="/login" onclick="event.preventDefault(); toggleMobileMenu(); navigate('/login')" class="btn mobile-auth-signin">Sign In</a> <a href="/register" onclick="event.preventDefault(); toggleMobileMenu(); navigate('/register')" class="btn mobile-auth-register">Create Account</a>`;
     }
   }
 
