@@ -69,18 +69,18 @@
     <div class="jmt-header-brand-tier">
       <div class="shell jmt-brand-tier-shell">
 
-        <!-- Institutional Hallmark (Left) -->
-        <div class="jmt-header-hallmark" aria-hidden="true">
-          <span class="jmt-hallmark-emblem">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="10"/>
-              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
-              <path d="M2 12h20"/>
+        <!-- JMT Travel Identity (Left) -->
+        <div class="jmt-header-tagline" aria-hidden="true">
+          <span class="jmt-tagline-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="2" y1="12" x2="22" y2="12"></line>
+              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
             </svg>
           </span>
-          <div class="jmt-hallmark-text">
-            <span class="jmt-hallmark-country">Sultanate of Oman</span>
-            <span class="jmt-hallmark-sub">Official Travel &amp; Tourism Concierge</span>
+          <div class="jmt-tagline-text">
+            <span class="jmt-tagline-primary">OMAN &bull; GCC &bull; WORLDWIDE</span>
+            <span class="jmt-tagline-secondary">Travel &bull; Visa &bull; Tourism</span>
           </div>
         </div>
 
@@ -165,13 +165,48 @@
       <!-- MOBILE NAVIGATION DRAWER -->
       <div id="mobile-nav-drawer" class="mobile-nav-drawer" style="display:none;">
         <ul class="mobile-nav-links">
-          <li><a href="/" onclick="event.preventDefault(); toggleMobileMenu(); navigate('/')" class="nav-link-item" data-nav="home">🏠 Home</a></li>
-          <li><a href="/visa" onclick="event.preventDefault(); toggleMobileMenu(); navigate('/visa')" class="nav-link-item" data-nav="visa">🛂 Visa</a></li>
-          <li><a href="/tourism" onclick="event.preventDefault(); toggleMobileMenu(); navigate('/tourism')" class="nav-link-item" data-nav="tourism">🐪 Tourism</a></li>
-          <li><a href="/hotels" onclick="event.preventDefault(); toggleMobileMenu(); navigate('/hotels')" class="nav-link-item" data-nav="hotels">🏨 Hotels</a></li>
-          <li><a href="/flights" onclick="event.preventDefault(); toggleMobileMenu(); navigate('/flights')" class="nav-link-item" data-nav="flights">✈️ Flights</a></li>
-          <li><a href="/about" onclick="event.preventDefault(); toggleMobileMenu(); navigate('/about')" class="nav-link-item" data-nav="about">ℹ️ About</a></li>
-          <li><a href="/contact" onclick="event.preventDefault(); toggleMobileMenu(); navigate('/contact')" class="nav-link-item" data-nav="contact">📞 Contact</a></li>
+          <li>
+            <a href="/" onclick="event.preventDefault(); toggleMobileMenu(); navigate('/')" class="nav-link-item" data-nav="home">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+              <span>Home</span>
+            </a>
+          </li>
+          <li>
+            <a href="/visa" onclick="event.preventDefault(); toggleMobileMenu(); navigate('/visa')" class="nav-link-item" data-nav="visa">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"></rect><circle cx="9" cy="10" r="2"></circle><line x1="15" y1="8" x2="17" y2="8"></line><line x1="15" y1="12" x2="17" y2="12"></line><line x1="7" y1="16" x2="17" y2="16"></line></svg>
+              <span>Visa</span>
+            </a>
+          </li>
+          <li>
+            <a href="/tourism" onclick="event.preventDefault(); toggleMobileMenu(); navigate('/tourism')" class="nav-link-item" data-nav="tourism">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon></svg>
+              <span>Tourism</span>
+            </a>
+          </li>
+          <li>
+            <a href="/hotels" onclick="event.preventDefault(); toggleMobileMenu(); navigate('/hotels')" class="nav-link-item" data-nav="hotels">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21h18"></path><path d="M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"></path><path d="M9 7h1"></path><path d="M9 11h1"></path><path d="M9 15h1"></path><path d="M14 7h1"></path><path d="M14 11h1"></path><path d="M14 15h1"></path></svg>
+              <span>Hotels</span>
+            </a>
+          </li>
+          <li>
+            <a href="/flights" onclick="event.preventDefault(); toggleMobileMenu(); navigate('/flights')" class="nav-link-item" data-nav="flights">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.8 19.2L16 11l3.5-3.5C21 6 21.5 4 21 3.5c-.5-.5-2.5 0-4 1.5L13.5 8.5 5.3 6.7c-.8-.2-1.6.3-1.8 1.1l-.1.5 5.5 3.5-3.5 3.5-2.5-.5-1.5 1 2.5 2 2 2.5 1-1.5-.5-2.5 3.5-3.5 3.5 5.5.5-.1c.8-.2 1.3-1 1.1-1.8z"></path></svg>
+              <span>Flights</span>
+            </a>
+          </li>
+          <li>
+            <a href="/about" onclick="event.preventDefault(); toggleMobileMenu(); navigate('/about')" class="nav-link-item" data-nav="about">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+              <span>About</span>
+            </a>
+          </li>
+          <li>
+            <a href="/contact" onclick="event.preventDefault(); toggleMobileMenu(); navigate('/contact')" class="nav-link-item" data-nav="contact">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+              <span>Contact</span>
+            </a>
+          </li>
         </ul>
         <div class="mobile-nav-footer">
           <div id="mobile-nav-auth" class="mobile-auth-wrap">
@@ -179,14 +214,17 @@
             <a href="/register" onclick="event.preventDefault(); toggleMobileMenu(); navigate('/register')" class="btn mobile-auth-register">Create Account</a>
           </div>
           <div class="mobile-util-row">
-            <button onclick="handleHeaderSearch(); toggleMobileMenu();" class="mobile-util-btn">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg> Search
+            <button onclick="handleHeaderSearch(); toggleMobileMenu();" class="mobile-util-btn" aria-label="Search">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              <span>Search</span>
             </button>
-            <button onclick="toggleLanguage()" class="mobile-util-btn">
-              🌐 EN / العربية
+            <button onclick="toggleLanguage()" class="mobile-util-btn" aria-label="Switch Language (English / Arabic)">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+              <span>EN / العربية</span>
             </button>
-            <button id="mobile-theme-toggle-btn" class="mobile-util-btn theme-toggle-btn" onclick="toggleTheme()">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.389 5.389 0 0 1-4.4 2.26 5.403 5.403 0 0 1-5.4-5.4c0-1.81.89-3.42 2.26-4.4C12.92 3.04 12.46 3 12 3z"/></svg> Theme
+            <button id="mobile-theme-toggle-btn" class="mobile-util-btn theme-toggle-btn" onclick="toggleTheme()" aria-label="Toggle Dark / Light Theme">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.389 5.389 0 0 1-4.4 2.26 5.403 5.403 0 0 1-5.4-5.4c0-1.81.89-3.42 2.26-4.4C12.92 3.04 12.46 3 12 3z"/></svg>
+              <span>Theme</span>
             </button>
           </div>
         </div>
