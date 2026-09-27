@@ -3,6 +3,10 @@ const mongoose = require('mongoose');
 const SupportTicketSchema = new mongoose.Schema({
   id: { type: String, unique: true, required: true, index: true },
   ticketId: { type: String, unique: true, required: true, index: true },
+  ticketNumber: { type: String, unique: true, sparse: true, index: true },
+  conversationId: { type: String, index: true },
+  userName: { type: String, trim: true },
+  userEmail: { type: String, trim: true, lowercase: true },
   userId: { type: String, index: true, ref: 'User' },
   subject: { type: String, required: true, trim: true },
   category: { type: String, default: 'General' },
@@ -17,7 +21,9 @@ const SupportTicketSchema = new mongoose.Schema({
   messages: [{
     sender: String,
     senderId: String,
+    senderName: String,
     message: String,
+    text: String,
     timestamp: { type: Date, default: Date.now }
   }]
 }, {
