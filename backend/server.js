@@ -4025,6 +4025,53 @@ app.get('/api/admin/refunds', authenticate, authorize('STAFF', 'ADMIN', 'SUPER_A
   }
 });
 
+// CUSTOMER SUPPORT TICKET REPLY (STRICT OWNERSHIP)
+app.post('/api/support/tickets/:id/reply', authenticate, submissionLimiter, async (req, res) => {
+  try {
+    const message = String(req.body?.message || '').trim();
+    if (!message) {
+      return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Reply message is required.' } });
+    }
+
+    const ticket = await db.supportTickets.findById(req.params.id) ||
+      await db.supportTickets.findOne({ ticketId: req.params.id }) ||
+      await db.supportTickets.findOne({ ticketNumber: req.params.id });
+
+    if (!ticket) {
+      return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Support ticket not found.' } });
+    }
+
+    const isStaff = ['STAFF', 'ADMIN', 'SUPER_ADMIN'].includes(req.user.role);
+    if (!isStaff && ticket.userId !== req.user.id) {
+      await logAudit(req, 'SUSPICIOUS_IDOR_SUPPORT_REPLY_ATTEMPT', 'SUPPORT_TICKET', req.params.id);
+      return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Access denied: You do not own this support ticket.' } });
+    }
+
+    const reply = {
+      sender: isStaff ? 'STAFF' : 'CUSTOMER',
+      senderId: req.user.id,
+      senderName: req.user.name,
+      message,
+      text: message,
+      timestamp: new Date().toISOString()
+    };
+
+    const messages = Array.isArray(ticket.messages) ? [...ticket.messages, reply] : [reply];
+    const updatedTicket = await db.supportTickets.update(ticket.id, {
+      messages,
+      status: isStaff ? 'IN_PROGRESS' : 'OPEN'
+    });
+
+    if (!isStaff && ticket.userId) {
+      await logAudit(req, 'CUSTOMER_SUPPORT_REPLY', 'SUPPORT_TICKET', ticket.id);
+    }
+
+    res.json({ success: true, ticket: updatedTicket, reply });
+  } catch (err) {
+    res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: err.message } });
+  }
+});
+
 // 10.8 SUPPORT TICKETS & CONTACT INQUIRIES OPERATIONS API
 app.get('/api/admin/support/tickets', authenticate, authorize('STAFF', 'ADMIN', 'SUPER_ADMIN'), async (req, res) => {
   try {
