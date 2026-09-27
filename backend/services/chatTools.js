@@ -236,7 +236,10 @@ class ChatToolsService {
     }
 
     const ticketNumber = `JMT-T-${Math.floor(100000 + Math.random() * 900000)}`;
+    const ticketId = `TCK-${Date.now().toString().slice(-6)}-${Math.floor(100 + Math.random() * 900)}`;
+    const ticketMessage = (message || '').trim();
     const ticket = await db.supportTickets.create({
+      ticketId,
       ticketNumber,
       userId: authenticatedUser.id,
       userName: authenticatedUser.name,
@@ -244,8 +247,16 @@ class ChatToolsService {
       conversationId: conversationId || null,
       subject: (subject || 'Chatbot Inquiry').trim(),
       category: category || 'GENERAL',
+      priority: 'MEDIUM',
       status: 'OPEN',
-      message: (message || '').trim()
+      messages: [{
+        sender: 'CUSTOMER',
+        senderId: authenticatedUser.id,
+        senderName: authenticatedUser.name,
+        message: ticketMessage,
+        text: ticketMessage,
+        timestamp: new Date().toISOString()
+      }]
     });
 
     // Audit Logging
