@@ -9,9 +9,19 @@ const state = {
   token: localStorage.getItem('jmt_token') || '',
   lang: localStorage.getItem('jmt_lang') || 'en',
   cart: null,
-  activeConversationId: localStorage.getItem('jmt_chat_conv') || null
+  activeConversationId: localStorage.getItem('jmt_chat_conv') || null,
+  unreadNotifications: 0
 };
 window.state = state;
+
+window.updateHeaderNotificationBadge = function(count) {
+  state.unreadNotifications = typeof count === 'number' ? Math.max(0, count) : 0;
+  const badges = document.querySelectorAll('.jmt-header-unread-badge');
+  badges.forEach(b => {
+    b.textContent = state.unreadNotifications;
+    b.style.display = state.unreadNotifications > 0 ? 'inline-flex' : 'none';
+  });
+};
 
 // Theme State Manager & Persistent Mode Toggle
 window.toggleTheme = function() {
@@ -774,6 +784,49 @@ window.toggleMobileMenu = function() {
   }
 };
 
+// Header Search Utility Handler
+window.handleHeaderSearch = function() {
+  const searchInput = document.getElementById('search-dest-input');
+  const searchShell = document.querySelector('.hero-search-shell') || document.querySelector('.jmt-home-search-card');
+  if (searchInput && searchShell) {
+    searchShell.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    setTimeout(() => searchInput.focus(), 350);
+  } else {
+    navigate('/');
+    setTimeout(() => {
+      const destInput = document.getElementById('search-dest-input');
+      const destShell = document.querySelector('.hero-search-shell') || document.querySelector('.jmt-home-search-card');
+      if (destInput && destShell) {
+        destShell.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        destInput.focus();
+      }
+    }, 300);
+  }
+};
+
+// Sticky Header Compact on Scroll (Section 9: 130-145px top -> 80-95px scrolled)
+window.addEventListener('scroll', () => {
+  const header = document.getElementById('jmt-main-header') || document.querySelector('.jmt-main-header');
+  if (!header) return;
+  if (window.scrollY > 40) {
+    header.classList.add('header-scrolled');
+  } else {
+    header.classList.remove('header-scrolled');
+  }
+}, { passive: true });
+
+// Keyboard Accessibility: Close mobile drawer on Escape (Section 14)
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    const drawer = document.getElementById('mobile-nav-drawer');
+    const btn = document.querySelector('.mobile-menu-btn');
+    if (drawer && drawer.style.display !== 'none' && drawer.style.display !== '') {
+      window.toggleMobileMenu();
+      btn?.focus();
+    }
+  }
+});
+
 function updateNavActiveState(path) {
   const navLinks = document.querySelectorAll('.nav-links a, .mobile-nav-links a, .nav-link-item');
   if (!navLinks.length) return;
@@ -828,12 +881,19 @@ async function renderRoute() {
   const mobileAuthNav = document.getElementById('mobile-nav-auth');
   if (authNav) {
     if (state.user) {
-      const userHtml = `<a href="/account" onclick="event.preventDefault(); navigate('/account')" class="btn btn-outline" style="background:rgba(255,255,255,0.12) !important; color:#FFFFFF !important; border:1px solid rgba(255,255,255,0.3) !important; border-radius:12px;">My Account (${escapeHTML(state.user.name.split(' ')[0])})</a> <button onclick="logoutUser()" class="btn btn-sm" style="background:#EF4444 !important; color:#FFFFFF !important; border-radius:12px;">Sign Out</button>`;
+      const unreadCount = state.unreadNotifications || 0;
+      const unreadBadge = unreadCount > 0
+        ? `<span class="jmt-header-unread-badge" style="position:absolute; top:-4px; right:-4px; background:#00A859; color:#FFFFFF; font-size:10px; font-weight:800; border-radius:99px; min-width:16px; height:16px; display:inline-flex; align-items:center; justify-content:center; padding:0 3px; box-shadow:0 2px 5px rgba(0,0,0,0.2);">${unreadCount}</span>`
+        : `<span class="jmt-header-unread-badge" style="display:none; position:absolute; top:-4px; right:-4px; background:#00A859; color:#FFFFFF; font-size:10px; font-weight:800; border-radius:99px; min-width:16px; height:16px; align-items:center; justify-content:center; padding:0 3px;">0</span>`;
+
+      const notifBellBtn = `<a href="/account/notifications" onclick="event.preventDefault(); navigate('/account/notifications')" class="btn-notif-header" title="Notifications" aria-label="Notifications (${unreadCount} unread)">🔔${unreadBadge}</a>`;
+
+      const userHtml = `${notifBellBtn} <a href="/account" onclick="event.preventDefault(); navigate('/account')" class="btn-account-header">Account (${escapeHTML(state.user.name.split(' ')[0])})</a> <button onclick="logoutUser()" class="btn-signout-header">Sign Out</button>`;
       authNav.innerHTML = userHtml;
       if (mobileAuthNav) mobileAuthNav.innerHTML = userHtml;
     } else {
-      authNav.innerHTML = `<a href="/login" onclick="event.preventDefault(); navigate('/login')" class="nav-signin-link" style="color:#FFFFFF !important; font-weight:700; font-size:14px; text-decoration:none; margin-right:4px;">Sign In</a> <a href="/register" onclick="event.preventDefault(); navigate('/register')" class="btn-create-account" style="background: linear-gradient(135deg, #07153B 0%, #0B286C 100%); color:#FFFFFF !important; padding:10px 22px; border-radius:99px; font-weight:700; font-size:13px; text-decoration:none; display:inline-flex; align-items:center; gap:6px; box-shadow: 0 4px 14px rgba(7, 21, 59, 0.35); white-space:nowrap;">Create Account →</a>`;
-      if (mobileAuthNav) mobileAuthNav.innerHTML = `<a href="/login" onclick="event.preventDefault(); toggleMobileMenu(); navigate('/login')" class="btn mobile-auth-signin" style="flex:1; text-align:center; background:rgba(255,255,255,0.12) !important; border:1px solid rgba(255,255,255,0.3) !important; color:#FFFFFF !important; border-radius:12px; font-weight:700; padding:12px 16px; text-decoration:none;">Sign In</a> <a href="/register" onclick="event.preventDefault(); toggleMobileMenu(); navigate('/register')" class="btn mobile-auth-register" style="flex:1; text-align:center; background:linear-gradient(135deg, #00E676 0%, #00C853 100%) !important; color:#07153B !important; font-weight:800; border-radius:12px; padding:12px 16px; text-decoration:none; box-shadow:0 4px 16px rgba(0,230,118,0.35); border:0;">Register</a>`;
+      authNav.innerHTML = `<a href="/login" id="nav-signin-link" onclick="event.preventDefault(); navigate('/login')" class="nav-signin-link">Sign In</a> <a href="/register" onclick="event.preventDefault(); navigate('/register')" class="btn-create-account">Create Account →</a>`;
+      if (mobileAuthNav) mobileAuthNav.innerHTML = `<a href="/login" onclick="event.preventDefault(); toggleMobileMenu(); navigate('/login')" class="btn mobile-auth-signin">Sign In</a> <a href="/register" onclick="event.preventDefault(); toggleMobileMenu(); navigate('/register')" class="btn mobile-auth-register">Create Account</a>`;
     }
   }
 
@@ -880,6 +940,8 @@ async function renderRoute() {
     renderAccountVisaPage(container, path);
   } else if (path === '/account/documents' || path.startsWith('/account/documents/')) {
     renderAccountDocumentsPage(container, path);
+  } else if (path === '/account/notifications' || path.startsWith('/account/notifications')) {
+    renderNotificationsPage(container, path);
   } else if (path === '/account') {
     renderAccountPage(container);
 
@@ -12784,7 +12846,10 @@ async function renderAccountPage(container) {
     }
 
     const u = data.user || state.user;
-    const summary = data.summary || { upcomingTrips: 0, activeVisas: 0, bookings: 0, pendingActions: 0 };
+    const summary = data.summary || { upcomingTrips: 0, activeVisas: 0, bookings: 0, pendingActions: 0, unreadNotifications: 0 };
+    if (typeof summary.unreadNotifications === 'number') {
+      window.updateHeaderNotificationBadge(summary.unreadNotifications);
+    }
     const upcoming = Array.isArray(data.upcomingActivity) ? data.upcomingActivity : [];
     const recent = Array.isArray(data.recentActivity) ? data.recentActivity : [];
     const initials = (u.name || 'CU').split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
@@ -12906,10 +12971,10 @@ async function renderAccountPage(container) {
 
             <div style="display: flex; align-items: center; gap: 14px;">
               <!-- Notifications Indicator Entry Point -->
-              <div title="Notifications (Coming Soon)" style="background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 50%; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; position: relative; cursor: pointer;">
+              <a href="/account/notifications" onclick="event.preventDefault(); navigate('/account/notifications')" title="Notifications Center" style="background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 50%; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; position: relative; cursor: pointer; text-decoration: none;">
                 <span style="font-size: 16px;" aria-hidden="true">🔔</span>
-                <span style="position: absolute; top: 7px; right: 7px; width: 7px; height: 7px; background: #00E676; border-radius: 50%;"></span>
-              </div>
+                ${summary.unreadNotifications > 0 ? `<span style="position: absolute; top: -3px; right: -3px; background: #00E676; color: #07153B; font-size: 10px; font-weight: 800; border-radius: 99px; min-width: 16px; height: 16px; display: inline-flex; align-items: center; justify-content: center; padding: 0 4px; box-shadow: 0 2px 6px rgba(0,0,0,0.4);">${summary.unreadNotifications}</span>` : ''}
+              </a>
 
               <!-- Profile Quick Button -->
               <a href="/account/profile" onclick="event.preventDefault(); navigate('/account/profile')" class="btn" style="background: rgba(255, 255, 255, 0.08); color: #FFFFFF !important; border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 99px; padding: 7px 16px; font-size: 13px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
@@ -12959,6 +13024,9 @@ async function renderAccountPage(container) {
               </a>
               <a href="/account/documents" onclick="event.preventDefault(); navigate('/account/documents')" style="background: rgba(255,255,255,0.08); color: #E2E8F0; padding: 8px 16px; border-radius: 99px; font-size: 12.5px; font-weight: 600; text-decoration: none; white-space: nowrap; border: 1px solid rgba(255,255,255,0.15);">
                 📁 Documents
+              </a>
+              <a href="/account/notifications" onclick="event.preventDefault(); navigate('/account/notifications')" style="background: rgba(255,255,255,0.08); color: #E2E8F0; padding: 8px 16px; border-radius: 99px; font-size: 12.5px; font-weight: 600; text-decoration: none; white-space: nowrap; border: 1px solid rgba(255,255,255,0.15); display: inline-flex; align-items: center; gap: 6px;">
+                🔔 Notifications ${summary.unreadNotifications > 0 ? `<span style="background: #00E676; color: #07153B; border-radius: 99px; font-size: 10px; font-weight: 800; padding: 1px 6px;">${summary.unreadNotifications}</span>` : ''}
               </a>
               <a href="/support" onclick="event.preventDefault(); navigate('/support')" style="background: rgba(255,255,255,0.08); color: #E2E8F0; padding: 8px 16px; border-radius: 99px; font-size: 12.5px; font-weight: 600; text-decoration: none; white-space: nowrap; border: 1px solid rgba(255,255,255,0.15);">
                 💬 Support
@@ -13014,10 +13082,10 @@ async function renderAccountPage(container) {
                   <span>💳</span> Payments
                   <span class="myjmt-pill-badge">Soon</span>
                 </div>
-                <div class="myjmt-nav-item disabled" title="Notifications Center coming in Phase V5.6">
+                <a href="/account/notifications" class="myjmt-nav-item" onclick="event.preventDefault(); navigate('/account/notifications')">
                   <span>🔔</span> Notifications
-                  <span class="myjmt-pill-badge">Soon</span>
-                </div>
+                  ${summary.unreadNotifications > 0 ? `<span class="myjmt-pill-badge" style="background: #00E676; color: #07153B; font-weight: 800;">${summary.unreadNotifications}</span>` : ''}
+                </a>
                 <a href="/support" class="myjmt-nav-item" onclick="event.preventDefault(); navigate('/support')">
                   <span>💬</span> Support
                 </a>
@@ -13134,12 +13202,35 @@ async function renderAccountPage(container) {
                     </a>
                   </div>
                 </div>
+
+                <!-- 6. NOTIFICATIONS -->
+                <div class="jmt-card" style="background: #0B286C !important; border: 1px solid rgba(255, 255, 255, 0.15) !important; border-top: 4px solid #F59E0B !important; border-radius: 14px; padding: 20px; box-sizing: border-box;">
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-size: 12.5px; font-weight: 700; color: #CBD5E1; text-transform: uppercase;">Notifications</span>
+                    <span style="font-size: 20px;">🔔</span>
+                  </div>
+                  <div style="font-size: 34px; font-weight: 800; color: ${summary.unreadNotifications > 0 ? '#FBBF24' : '#E2E8F0'}; margin: 8px 0 4px;">
+                    ${summary.unreadNotifications || 0}
+                  </div>
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px; flex-wrap: wrap; gap: 4px;">
+                    <span style="font-size: 12px; color: #94A3B8;">${summary.unreadNotifications > 0 ? 'Unread Messages' : 'All Caught Up'}</span>
+                    <a href="/account/notifications" onclick="event.preventDefault(); navigate('/account/notifications')" style="color: #FBBF24; font-size: 11.5px; font-weight: 700; text-decoration: none;">
+                      View Center →
+                    </a>
+                  </div>
+                </div>
               </div>
 
               <!-- QUICK ACTIONS GRID -->
               <div style="margin-bottom: 28px;">
                 <h2 style="font-size: 18px; font-weight: 800; color: #FFFFFF; margin-bottom: 16px;">Quick Actions</h2>
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px;">
+                  <div class="myjmt-quick-action" onclick="navigate('/account/notifications')">
+                    <span style="font-size: 26px;">🔔</span>
+                    <span style="font-size: 14px; font-weight: 700;">Notifications</span>
+                    <span style="font-size: 11.5px; color: #94A3B8;">Communication Center</span>
+                  </div>
+
                   <div class="myjmt-quick-action" onclick="navigate('/visa')">
                     <span style="font-size: 26px;">🛂</span>
                     <span style="font-size: 14px; font-weight: 700;">Apply for Visa</span>
@@ -14123,6 +14214,9 @@ async function renderMyTripsPage(container, path) {
               <a href="/account/documents" onclick="event.preventDefault(); navigate('/account/documents')" style="background: rgba(255,255,255,0.08); color: #E2E8F0; padding: 8px 16px; border-radius: 99px; font-size: 12.5px; font-weight: 600; text-decoration: none; white-space: nowrap; border: 1px solid rgba(255,255,255,0.15);">
                 📁 Documents
               </a>
+              <a href="/account/notifications" onclick="event.preventDefault(); navigate('/account/notifications')" style="background: rgba(255,255,255,0.08); color: #E2E8F0; padding: 8px 16px; border-radius: 99px; font-size: 12.5px; font-weight: 600; text-decoration: none; white-space: nowrap; border: 1px solid rgba(255,255,255,0.15); display: inline-flex; align-items: center; gap: 6px;">
+                🔔 Notifications
+              </a>
               <a href="/support" onclick="event.preventDefault(); navigate('/support')" style="background: rgba(255,255,255,0.08); color: #E2E8F0; padding: 8px 16px; border-radius: 99px; font-size: 12.5px; font-weight: 600; text-decoration: none; white-space: nowrap; border: 1px solid rgba(255,255,255,0.15);">
                 💬 Support
               </a>
@@ -14177,10 +14271,9 @@ async function renderMyTripsPage(container, path) {
                   <span>💳</span> Payments
                   <span class="myjmt-pill-badge">Soon</span>
                 </div>
-                <div class="myjmt-nav-item disabled" title="Notifications Center coming in Phase V5.6">
+                <a href="/account/notifications" class="myjmt-nav-item" onclick="event.preventDefault(); navigate('/account/notifications')">
                   <span>🔔</span> Notifications
-                  <span class="myjmt-pill-badge">Soon</span>
-                </div>
+                </a>
                 <a href="/support" class="myjmt-nav-item" onclick="event.preventDefault(); navigate('/support')">
                   <span>💬</span> Support
                 </a>
@@ -14896,6 +14989,9 @@ async function renderAccountVisaPage(container, path) {
               <a href="/account/documents" onclick="event.preventDefault(); navigate('/account/documents')" style="background: rgba(255,255,255,0.08); color: #E2E8F0; padding: 8px 16px; border-radius: 99px; font-size: 12.5px; font-weight: 600; text-decoration: none; white-space: nowrap; border: 1px solid rgba(255,255,255,0.15);">
                 📁 Documents
               </a>
+              <a href="/account/notifications" onclick="event.preventDefault(); navigate('/account/notifications')" style="background: rgba(255,255,255,0.08); color: #E2E8F0; padding: 8px 16px; border-radius: 99px; font-size: 12.5px; font-weight: 600; text-decoration: none; white-space: nowrap; border: 1px solid rgba(255,255,255,0.15); display: inline-flex; align-items: center; gap: 6px;">
+                🔔 Notifications
+              </a>
               <a href="/account/profile" onclick="event.preventDefault(); navigate('/account/profile')" style="background: rgba(255,255,255,0.08); color: #E2E8F0; padding: 8px 16px; border-radius: 99px; font-size: 12.5px; font-weight: 600; text-decoration: none; white-space: nowrap; border: 1px solid rgba(255,255,255,0.15);">
                 👤 Profile
               </a>
@@ -14944,10 +15040,9 @@ async function renderAccountVisaPage(container, path) {
                   <span>💳</span> Payments
                   <span class="myjmt-pill-badge">Soon</span>
                 </div>
-                <div class="myjmt-nav-item disabled" title="Notifications Center coming in Phase V5.6">
+                <a href="/account/notifications" class="myjmt-nav-item" onclick="event.preventDefault(); navigate('/account/notifications')">
                   <span>🔔</span> Notifications
-                  <span class="myjmt-pill-badge">Soon</span>
-                </div>
+                </a>
                 <a href="/support" class="myjmt-nav-item" onclick="event.preventDefault(); navigate('/support')">
                   <span>💬</span> Support
                 </a>
@@ -15516,6 +15611,9 @@ async function renderAccountDocumentsPage(container, path) {
               <a href="/account/profile" onclick="event.preventDefault(); navigate('/account/profile')" style="background: rgba(255,255,255,0.08); color: #E2E8F0; padding: 8px 16px; border-radius: 99px; font-size: 12.5px; font-weight: 600; text-decoration: none; white-space: nowrap; border: 1px solid rgba(255,255,255,0.15);">
                 👤 Profile
               </a>
+              <a href="/account/notifications" onclick="event.preventDefault(); navigate('/account/notifications')" style="background: rgba(255,255,255,0.08); color: #E2E8F0; padding: 8px 16px; border-radius: 99px; font-size: 12.5px; font-weight: 600; text-decoration: none; white-space: nowrap; border: 1px solid rgba(255,255,255,0.15); display: inline-flex; align-items: center; gap: 6px;">
+                🔔 Notifications
+              </a>
               <a href="/support" onclick="event.preventDefault(); navigate('/support')" style="background: rgba(255,255,255,0.08); color: #E2E8F0; padding: 8px 16px; border-radius: 99px; font-size: 12.5px; font-weight: 600; text-decoration: none; white-space: nowrap; border: 1px solid rgba(255,255,255,0.15);">
                 💬 Support
               </a>
@@ -15561,10 +15659,9 @@ async function renderAccountDocumentsPage(container, path) {
                   <span>💳</span> Payments
                   <span class="myjmt-pill-badge">Soon</span>
                 </div>
-                <div class="myjmt-nav-item disabled" title="Notifications Center coming in Phase V5.6">
+                <a href="/account/notifications" class="myjmt-nav-item" onclick="event.preventDefault(); navigate('/account/notifications')">
                   <span>🔔</span> Notifications
-                  <span class="myjmt-pill-badge">Soon</span>
-                </div>
+                </a>
                 <a href="/support" class="myjmt-nav-item" onclick="event.preventDefault(); navigate('/support')">
                   <span>💬</span> Support
                 </a>
@@ -16350,6 +16447,9 @@ async function renderTravelRequestsPage(container, path) {
                 <a href="/account/documents" onclick="event.preventDefault(); navigate('/account/documents')" style="background: rgba(255,255,255,0.08); color: #E2E8F0; padding: 8px 16px; border-radius: 99px; font-size: 12.5px; font-weight: 600; text-decoration: none; white-space: nowrap; border: 1px solid rgba(255,255,255,0.15);">
                   📁 Documents
                 </a>
+                <a href="/account/notifications" onclick="event.preventDefault(); navigate('/account/notifications')" style="background: rgba(255,255,255,0.08); color: #E2E8F0; padding: 8px 16px; border-radius: 99px; font-size: 12.5px; font-weight: 600; text-decoration: none; white-space: nowrap; border: 1px solid rgba(255,255,255,0.15); display: inline-flex; align-items: center; gap: 6px;">
+                  🔔 Notifications
+                </a>
                 <a href="/support" onclick="event.preventDefault(); navigate('/support')" style="background: rgba(255,255,255,0.08); color: #E2E8F0; padding: 8px 16px; border-radius: 99px; font-size: 12.5px; font-weight: 600; text-decoration: none; white-space: nowrap; border: 1px solid rgba(255,255,255,0.15);">
                   💬 Support
                 </a>
@@ -16402,10 +16502,9 @@ async function renderTravelRequestsPage(container, path) {
                     <span>💳</span> Payments
                     <span class="myjmt-pill-badge">Soon</span>
                   </div>
-                  <div class="myjmt-nav-item disabled" title="Notifications Center coming in Phase V5.6">
+                  <a href="/account/notifications" class="myjmt-nav-item" onclick="event.preventDefault(); navigate('/account/notifications')">
                     <span>🔔</span> Notifications
-                    <span class="myjmt-pill-badge">Soon</span>
-                  </div>
+                  </a>
                   <a href="/support" class="myjmt-nav-item" onclick="event.preventDefault(); navigate('/support')">
                     <span>💬</span> Support
                   </a>
@@ -16812,6 +16911,616 @@ async function renderTravelRequestsPage(container, path) {
       <div style="background: #07153B !important; min-height: 100vh; color: #FFFFFF !important;">
         <div class="shell" style="padding: 60px 20px; text-align: center;">
           <p style="color: #EF4444; font-size: 16px; font-weight: 700; margin-bottom: 16px;">Failed to load travel requests.</p>
+          <p style="color: #94A3B8; font-size: 14px; margin-bottom: 24px;">${escapeHTML(err.message)}</p>
+          <button onclick="navigate('/account')" class="btn" style="background: #00A651 !important; color: #FFFFFF !important; border: 0; padding: 10px 24px; border-radius: 99px; cursor: pointer;">
+            Return to Dashboard
+          </button>
+        </div>
+      </div>
+    `;
+  }
+}
+
+// -------------------------------------------------------------
+// V5.6 CUSTOMER NOTIFICATIONS & COMMUNICATION CENTER
+// -------------------------------------------------------------
+
+let cachedNotificationsData = null;
+let currentNotifReadFilter = 'ALL';
+let currentNotifCategoryFilter = 'ALL';
+
+async function renderNotificationsPage(container, path) {
+  if (!state.user) {
+    navigate('/login');
+    return;
+  }
+
+  updateSEO({
+    title: 'Notifications & Communications | JMT Travels',
+    description: 'Track real-time travel updates, visa processing milestones, hotel and flight consultations, and concierge notices.',
+    canonicalUrl: '/account/notifications',
+    noindex: true
+  });
+  announceToSR('Navigated to Notifications & Communication Center');
+
+  container.innerHTML = `
+    <div style="background: #07153B !important; min-height: 100vh; color: #FFFFFF !important; display: flex; align-items: center; justify-content: center; padding: 60px 20px;">
+      <p style="color: #94A3B8; font-size: 15px; font-weight: 600;">Loading notifications...</p>
+    </div>
+  `;
+
+  try {
+    const data = await apiCall('/api/account/notifications?limit=50');
+    if (!data || !data.success) {
+      throw new Error(data?.error?.message || 'Failed to load customer notifications.');
+    }
+
+    cachedNotificationsData = Array.isArray(data.notifications) ? data.notifications : [];
+    const initialUnread = typeof data.unreadCount === 'number' ? data.unreadCount : cachedNotificationsData.filter(n => !n.read).length;
+    window.updateHeaderNotificationBadge(initialUnread);
+
+    const u = state.user;
+    const initials = (u.name || 'CU').split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
+
+    const notifCategoryMeta = {
+      VISA: { icon: '🛂', label: 'Visa', bg: 'rgba(59, 130, 246, 0.15)', color: '#60A5FA', border: 'rgba(59, 130, 246, 0.3)' },
+      TOUR: { icon: '🧳', label: 'Tours', bg: 'rgba(16, 185, 129, 0.15)', color: '#34D399', border: 'rgba(16, 185, 129, 0.3)' },
+      HOTEL: { icon: '🏨', label: 'Hotels', bg: 'rgba(245, 158, 11, 0.15)', color: '#FBBF24', border: 'rgba(245, 158, 11, 0.3)' },
+      FLIGHT: { icon: '✈️', label: 'Flights', bg: 'rgba(139, 92, 246, 0.15)', color: '#A78BFA', border: 'rgba(139, 92, 246, 0.3)' },
+      SUPPORT: { icon: '💬', label: 'Support', bg: 'rgba(6, 182, 212, 0.15)', color: '#22D3EE', border: 'rgba(6, 182, 212, 0.3)' },
+      PAYMENT: { icon: '💳', label: 'Payments', bg: 'rgba(236, 72, 153, 0.15)', color: '#F472B6', border: 'rgba(236, 72, 153, 0.3)' },
+      ACCOUNT: { icon: '👤', label: 'Account', bg: 'rgba(99, 102, 241, 0.15)', color: '#818CF8', border: 'rgba(99, 102, 241, 0.3)' },
+      SYSTEM: { icon: '🔔', label: 'System', bg: 'rgba(148, 163, 184, 0.15)', color: '#CBD5E1', border: 'rgba(148, 163, 184, 0.3)' }
+    };
+
+    function formatNotifDate(dStr) {
+      if (!dStr) return '';
+      try {
+        const d = new Date(dStr);
+        if (isNaN(d.getTime())) return String(dStr);
+        const now = new Date();
+        const diffSec = Math.floor((now - d) / 1000);
+        if (diffSec < 60) return 'Just now';
+        if (diffSec < 3600) return `${Math.floor(diffSec / 60)}m ago`;
+        if (diffSec < 86400) return `${Math.floor(diffSec / 3600)}h ago`;
+        if (diffSec < 604800) return `${Math.floor(diffSec / 86400)}d ago`;
+        return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+      } catch {
+        return String(dStr);
+      }
+    }
+
+    function renderPortal() {
+      const allNotifs = cachedNotificationsData || [];
+      const totalCount = allNotifs.length;
+      const unreadTotal = allNotifs.filter(n => !n.read).length;
+
+      // Category counts for pills
+      const counts = {
+        VISA: allNotifs.filter(n => (n.category || '').toUpperCase() === 'VISA').length,
+        TOUR: allNotifs.filter(n => (n.category || '').toUpperCase() === 'TOUR').length,
+        HOTEL: allNotifs.filter(n => (n.category || '').toUpperCase() === 'HOTEL').length,
+        FLIGHT: allNotifs.filter(n => (n.category || '').toUpperCase() === 'FLIGHT').length,
+        SUPPORT: allNotifs.filter(n => (n.category || '').toUpperCase() === 'SUPPORT').length,
+        PAYMENT: allNotifs.filter(n => (n.category || '').toUpperCase() === 'PAYMENT').length,
+        ACCOUNT: allNotifs.filter(n => (n.category || '').toUpperCase() === 'ACCOUNT').length
+      };
+
+      // Filter by Read / Unread tab
+      let filtered = allNotifs;
+      if (currentNotifReadFilter === 'UNREAD') {
+        filtered = filtered.filter(n => !n.read);
+      }
+
+      // Filter by Category
+      if (currentNotifCategoryFilter !== 'ALL') {
+        filtered = filtered.filter(n => (n.category || 'SYSTEM').toUpperCase() === currentNotifCategoryFilter);
+      }
+
+      container.innerHTML = `
+        <style>
+          .myjmt-portal {
+            display: flex;
+            gap: 28px;
+            align-items: flex-start;
+            width: 100%;
+            box-sizing: border-box;
+          }
+          .myjmt-sidebar {
+            width: 270px;
+            flex-shrink: 0;
+            background: #0B286C;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 16px;
+            padding: 24px;
+            box-sizing: border-box;
+          }
+          .myjmt-content {
+            flex: 1;
+            min-width: 0;
+            width: 100%;
+            box-sizing: border-box;
+          }
+          .myjmt-mobile-nav {
+            display: none;
+            margin-bottom: 24px;
+            width: 100%;
+            box-sizing: border-box;
+          }
+          @media (max-width: 1023px) {
+            .myjmt-portal {
+              flex-direction: column;
+              gap: 0;
+            }
+            .myjmt-sidebar {
+              display: none !important;
+            }
+            .myjmt-mobile-nav {
+              display: block !important;
+            }
+          }
+          .myjmt-nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 11px 16px;
+            border-radius: 10px;
+            color: #CBD5E1;
+            text-decoration: none;
+            font-size: 13.5px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            margin-bottom: 4px;
+            box-sizing: border-box;
+          }
+          .myjmt-nav-item:hover:not(.disabled) {
+            background: rgba(255, 255, 255, 0.08);
+            color: #FFFFFF;
+          }
+          .myjmt-nav-item.active {
+            background: #00A651 !important;
+            color: #FFFFFF !important;
+            font-weight: 700;
+            box-shadow: 0 4px 14px rgba(0, 166, 81, 0.35);
+          }
+          .myjmt-nav-item.disabled {
+            opacity: 0.65;
+            cursor: default;
+          }
+          .myjmt-pill-badge {
+            background: rgba(255, 255, 255, 0.12);
+            color: #94A3B8;
+            font-size: 10.5px;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 99px;
+            margin-left: auto;
+          }
+          .filter-tab-btn {
+            background: rgba(255, 255, 255, 0.08);
+            color: #CBD5E1;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            padding: 8px 18px;
+            border-radius: 99px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+          }
+          .filter-tab-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            color: #FFFFFF;
+          }
+          .filter-tab-btn.active {
+            background: #00E676 !important;
+            color: #07153B !important;
+            border-color: #00E676 !important;
+            box-shadow: 0 4px 12px rgba(0, 230, 118, 0.3);
+          }
+          .notif-card {
+            background: #0B286C;
+            border-radius: 14px;
+            padding: 20px 22px;
+            margin-bottom: 14px;
+            box-sizing: border-box;
+            width: 100%;
+            transition: all 0.2s ease;
+          }
+          .notif-card.unread {
+            border: 1px solid rgba(0, 230, 118, 0.35);
+            border-left: 5px solid #00E676;
+            background: linear-gradient(135deg, rgba(11, 40, 108, 0.95) 0%, rgba(7, 21, 59, 0.9) 100%);
+            box-shadow: 0 4px 18px rgba(0, 230, 118, 0.08);
+          }
+          .notif-card.read {
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-left: 5px solid rgba(255, 255, 255, 0.2);
+            opacity: 0.85;
+          }
+          .notif-card:hover {
+            transform: translateY(-1px);
+            border-color: rgba(0, 230, 118, 0.5);
+          }
+        </style>
+
+        <div style="background: #07153B !important; min-height: 100vh; color: #FFFFFF !important;">
+          <div class="shell" style="padding: 32px 20px 60px; max-width: 1240px; margin: 0 auto; box-sizing: border-box;">
+
+            <!-- TOP STRIP -->
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 28px; border-bottom: 1px solid rgba(255, 255, 255, 0.12); padding-bottom: 16px; flex-wrap: wrap;">
+              <div style="display: flex; align-items: center; gap: 12px;">
+                <span style="font-size: 11px; font-weight: 800; letter-spacing: 0.1em; color: #00E676; background: rgba(0, 230, 118, 0.12); padding: 5px 12px; border-radius: 99px; border: 1px solid rgba(0, 230, 118, 0.25);">
+                  MY JMT PORTAL
+                </span>
+                <span style="color: #64748B; font-size: 13px;">•</span>
+                <span style="color: #E2E8F0; font-size: 14px; font-weight: 600;">Notifications &amp; Communications</span>
+              </div>
+
+              <div style="display: flex; align-items: center; gap: 14px;">
+                <a href="/account" onclick="event.preventDefault(); navigate('/account')" class="btn" style="background: rgba(255, 255, 255, 0.08); color: #FFFFFF !important; border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 99px; padding: 7px 16px; font-size: 13px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+                  <span>📊</span> Overview
+                </a>
+                <a href="/account/profile" onclick="event.preventDefault(); navigate('/account/profile')" class="btn" style="background: rgba(255, 255, 255, 0.08); color: #FFFFFF !important; border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 99px; padding: 7px 16px; font-size: 13px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+                  <span>👤</span> Profile
+                </a>
+                <button onclick="logoutUser()" class="btn" style="background: rgba(239, 68, 68, 0.15); color: #FCA5A5 !important; border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 99px; padding: 7px 16px; font-size: 13px; font-weight: 700; cursor: pointer;">
+                  Sign Out
+                </button>
+              </div>
+            </div>
+
+            <!-- MOBILE HORIZONTAL NAVIGATION (< 1024px) -->
+            <div class="myjmt-mobile-nav">
+              <div style="display: flex; gap: 8px; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 6px;">
+                <a href="/account" onclick="event.preventDefault(); navigate('/account')" style="background: rgba(255,255,255,0.08); color: #E2E8F0; padding: 8px 16px; border-radius: 99px; font-size: 12.5px; font-weight: 600; text-decoration: none; white-space: nowrap; border: 1px solid rgba(255,255,255,0.15);">
+                  📊 Overview
+                </a>
+                <a href="/account/my-trips" onclick="event.preventDefault(); navigate('/account/my-trips')" style="background: rgba(255,255,255,0.08); color: #E2E8F0; padding: 8px 16px; border-radius: 99px; font-size: 12.5px; font-weight: 600; text-decoration: none; white-space: nowrap; border: 1px solid rgba(255,255,255,0.15);">
+                  🧳 My Trips
+                </a>
+                <a href="/account/travel-requests" onclick="event.preventDefault(); navigate('/account/travel-requests')" style="background: rgba(255,255,255,0.08); color: #E2E8F0; padding: 8px 16px; border-radius: 99px; font-size: 12.5px; font-weight: 600; text-decoration: none; white-space: nowrap; border: 1px solid rgba(255,255,255,0.15);">
+                  📝 Travel Requests
+                </a>
+                <a href="/account/visa" onclick="event.preventDefault(); navigate('/account/visa')" style="background: rgba(255,255,255,0.08); color: #E2E8F0; padding: 8px 16px; border-radius: 99px; font-size: 12.5px; font-weight: 600; text-decoration: none; white-space: nowrap; border: 1px solid rgba(255,255,255,0.15);">
+                  🛂 Visa Applications
+                </a>
+                <a href="/account/documents" onclick="event.preventDefault(); navigate('/account/documents')" style="background: rgba(255,255,255,0.08); color: #E2E8F0; padding: 8px 16px; border-radius: 99px; font-size: 12.5px; font-weight: 600; text-decoration: none; white-space: nowrap; border: 1px solid rgba(255,255,255,0.15);">
+                  📁 Documents
+                </a>
+                <span style="background: #00A651; color: #FFFFFF; padding: 8px 16px; border-radius: 99px; font-size: 12.5px; font-weight: 700; white-space: nowrap; box-shadow: 0 4px 12px rgba(0,166,81,0.3);">
+                  🔔 Notifications ${unreadTotal > 0 ? `(${unreadTotal})` : ''}
+                </span>
+                <a href="/support" onclick="event.preventDefault(); navigate('/support')" style="background: rgba(255,255,255,0.08); color: #E2E8F0; padding: 8px 16px; border-radius: 99px; font-size: 12.5px; font-weight: 600; text-decoration: none; white-space: nowrap; border: 1px solid rgba(255,255,255,0.15);">
+                  💬 Support
+                </a>
+              </div>
+            </div>
+
+            <!-- PORTAL SHELL -->
+            <div class="myjmt-portal">
+
+              <!-- DESKTOP PERSISTENT SIDEBAR (>= 1024px) -->
+              <aside class="myjmt-sidebar" aria-label="Customer Account Navigation">
+                <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid rgba(255, 255, 255, 0.12);">
+                  <div style="width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, #00E676 0%, #00A651 100%); color: #07153B; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 17px; flex-shrink: 0; box-shadow: 0 4px 14px rgba(0,230,118,0.25);">
+                    ${escapeHTML(initials)}
+                  </div>
+                  <div style="min-width: 0; flex: 1;">
+                    <div style="font-weight: 800; font-size: 15px; color: #FFFFFF; line-height: 1.2; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                      ${escapeHTML(u.name)}
+                    </div>
+                    <div style="font-size: 11.5px; color: #94A3B8; margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                      ${escapeHTML(u.email)}
+                    </div>
+                    <span style="font-size: 10px; font-weight: 800; color: #00E676; background: rgba(0, 230, 118, 0.12); border: 1px solid rgba(0, 230, 118, 0.25); padding: 2px 8px; border-radius: 99px; display: inline-block;">
+                      ${escapeHTML(u.role || 'CUSTOMER')}
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Sidebar Nav Items -->
+                <nav style="display: flex; flex-direction: column;">
+                  <a href="/account" class="myjmt-nav-item" onclick="event.preventDefault(); navigate('/account')">
+                    <span>📊</span> Overview
+                  </a>
+                  <a href="/account/my-trips" class="myjmt-nav-item" onclick="event.preventDefault(); navigate('/account/my-trips')">
+                    <span>🧳</span> My Trips
+                  </a>
+                  <a href="/account/travel-requests" class="myjmt-nav-item" onclick="event.preventDefault(); navigate('/account/travel-requests')">
+                    <span>📝</span> Travel Requests
+                  </a>
+                  <a href="/account/visa" class="myjmt-nav-item" onclick="event.preventDefault(); navigate('/account/visa')">
+                    <span>🛂</span> Visa Applications
+                  </a>
+                  <div class="myjmt-nav-item disabled" title="Booking Manager coming in Phase V5.5">
+                    <span>📋</span> Bookings
+                    <span class="myjmt-pill-badge">Soon</span>
+                  </div>
+                  <a href="/account/documents" class="myjmt-nav-item" onclick="event.preventDefault(); navigate('/account/documents')">
+                    <span>📁</span> Documents
+                  </a>
+                  <div class="myjmt-nav-item disabled" title="Payment Management coming in future phase">
+                    <span>💳</span> Payments
+                    <span class="myjmt-pill-badge">Soon</span>
+                  </div>
+                  <a href="/account/notifications" class="myjmt-nav-item active" aria-current="page" onclick="event.preventDefault();">
+                    <span>🔔</span> Notifications
+                    ${unreadTotal > 0 ? `<span class="myjmt-pill-badge" style="background:#00E676; color:#07153B; font-weight:800;">${unreadTotal}</span>` : ''}
+                  </a>
+                  <a href="/support" class="myjmt-nav-item" onclick="event.preventDefault(); navigate('/support')">
+                    <span>💬</span> Support
+                  </a>
+                  <a href="/account/profile" class="myjmt-nav-item" onclick="event.preventDefault(); navigate('/account/profile')">
+                    <span>👤</span> Profile
+                  </a>
+                </nav>
+
+                <div style="margin-top: 24px; padding-top: 20px; border-top: 1px solid rgba(255, 255, 255, 0.12);">
+                  <button onclick="logoutUser()" class="btn" style="width: 100%; box-sizing: border-box; background: rgba(239, 68, 68, 0.12); color: #FCA5A5 !important; border: 1px solid rgba(239, 68, 68, 0.25); border-radius: 10px; padding: 10px 14px; font-size: 13px; font-weight: 700; cursor: pointer; text-align: center;">
+                    Sign Out
+                  </button>
+                </div>
+              </aside>
+
+              <!-- MAIN CONTENT AREA -->
+              <main class="myjmt-content">
+
+                <!-- HERO CARD -->
+                <div class="jmt-card" style="background: linear-gradient(135deg, #07153B 0%, #0B286C 100%) !important; border: 1px solid rgba(255, 255, 255, 0.15) !important; border-radius: 16px; padding: 30px; margin-bottom: 24px; box-sizing: border-box;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; gap: 20px; flex-wrap: wrap;">
+                    <div>
+                      <span style="font-size: 12px; font-weight: 800; color: #00E676; letter-spacing: 0.08em; text-transform: uppercase;">
+                        JMT Activity Hub
+                      </span>
+                      <h1 style="font-size: 28px; font-weight: 800; color: #FFFFFF; margin: 6px 0 8px;">
+                        Notifications &amp; Communication Center
+                      </h1>
+                      <p style="font-size: 14px; color: #CBD5E1; margin: 0; line-height: 1.6; max-width: 620px;">
+                        Track real-time travel updates, visa milestones, flight &amp; hotel consultation responses, and concierge messages in one place.
+                      </p>
+                    </div>
+                    <div>
+                      <button type="button" onclick="window.handleMarkAllNotificationsRead()" class="btn" ${unreadTotal === 0 ? 'disabled' : ''} style="background: ${unreadTotal > 0 ? '#00A651' : 'rgba(255,255,255,0.08)'} !important; color: ${unreadTotal > 0 ? '#FFFFFF' : '#64748B'} !important; font-weight: 700; padding: 10px 22px; border-radius: 99px; border: ${unreadTotal > 0 ? '0' : '1px solid rgba(255,255,255,0.15)'}; cursor: ${unreadTotal > 0 ? 'pointer' : 'default'}; display: inline-flex; align-items: center; gap: 8px; box-shadow: ${unreadTotal > 0 ? '0 4px 14px rgba(0,166,81,0.3)' : 'none'}; font-size: 13px; transition: all 0.2s ease;">
+                        <span>✓</span> Mark All as Read
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- FILTER CONTROLS -->
+                <div style="margin-bottom: 20px; display: flex; flex-direction: column; gap: 14px;">
+                  <!-- Read / Unread Tabs -->
+                  <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;">
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                      <button type="button" class="filter-tab-btn ${currentNotifReadFilter === 'ALL' ? 'active' : ''}" onclick="window.setNotificationReadFilter('ALL')">
+                        All Notifications (${totalCount})
+                      </button>
+                      <button type="button" class="filter-tab-btn ${currentNotifReadFilter === 'UNREAD' ? 'active' : ''}" onclick="window.setNotificationReadFilter('UNREAD')">
+                        Unread Only (${unreadTotal})
+                      </button>
+                    </div>
+                    <div style="font-size: 13px; color: #94A3B8;">
+                      Showing ${filtered.length} notification${filtered.length === 1 ? '' : 's'}
+                    </div>
+                  </div>
+
+                  <!-- Category Filter Pills -->
+                  <div style="display: flex; gap: 8px; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 4px; flex-wrap: wrap;">
+                    <button type="button" class="filter-tab-btn ${currentNotifCategoryFilter === 'ALL' ? 'active' : ''}" onclick="window.setNotificationCategoryFilter('ALL')" style="font-size: 12px; padding: 6px 14px;">
+                      All Categories
+                    </button>
+                    <button type="button" class="filter-tab-btn ${currentNotifCategoryFilter === 'VISA' ? 'active' : ''}" onclick="window.setNotificationCategoryFilter('VISA')" style="font-size: 12px; padding: 6px 14px;">
+                      🛂 Visa (${counts.VISA})
+                    </button>
+                    <button type="button" class="filter-tab-btn ${currentNotifCategoryFilter === 'TOUR' ? 'active' : ''}" onclick="window.setNotificationCategoryFilter('TOUR')" style="font-size: 12px; padding: 6px 14px;">
+                      🧳 Tours (${counts.TOUR})
+                    </button>
+                    <button type="button" class="filter-tab-btn ${currentNotifCategoryFilter === 'HOTEL' ? 'active' : ''}" onclick="window.setNotificationCategoryFilter('HOTEL')" style="font-size: 12px; padding: 6px 14px;">
+                      🏨 Hotels (${counts.HOTEL})
+                    </button>
+                    <button type="button" class="filter-tab-btn ${currentNotifCategoryFilter === 'FLIGHT' ? 'active' : ''}" onclick="window.setNotificationCategoryFilter('FLIGHT')" style="font-size: 12px; padding: 6px 14px;">
+                      ✈️ Flights (${counts.FLIGHT})
+                    </button>
+                    <button type="button" class="filter-tab-btn ${currentNotifCategoryFilter === 'SUPPORT' ? 'active' : ''}" onclick="window.setNotificationCategoryFilter('SUPPORT')" style="font-size: 12px; padding: 6px 14px;">
+                      💬 Support (${counts.SUPPORT})
+                    </button>
+                    <button type="button" class="filter-tab-btn ${currentNotifCategoryFilter === 'PAYMENT' ? 'active' : ''}" onclick="window.setNotificationCategoryFilter('PAYMENT')" style="font-size: 12px; padding: 6px 14px;">
+                      💳 Payments (${counts.PAYMENT})
+                    </button>
+                    <button type="button" class="filter-tab-btn ${currentNotifCategoryFilter === 'ACCOUNT' ? 'active' : ''}" onclick="window.setNotificationCategoryFilter('ACCOUNT')" style="font-size: 12px; padding: 6px 14px;">
+                      👤 Account (${counts.ACCOUNT})
+                    </button>
+                  </div>
+                </div>
+
+                <!-- NOTIFICATIONS LIST -->
+                ${filtered.length === 0 ? `
+                  <div style="background: #0B286C; border: 1px dashed rgba(255, 255, 255, 0.2); border-radius: 16px; padding: 50px 24px; text-align: center; margin-top: 10px;">
+                    <div style="font-size: 44px; margin-bottom: 12px;">🎉</div>
+                    <div style="font-size: 18px; font-weight: 800; color: #FFFFFF; margin-bottom: 6px;">You're all caught up!</div>
+                    <div style="font-size: 13.5px; color: #94A3B8; max-width: 420px; margin: 0 auto 16px; line-height: 1.5;">
+                      No ${currentNotifReadFilter === 'UNREAD' ? 'unread ' : ''}notifications found in this category. You will receive real-time notices here as your travel arrangements progress.
+                    </div>
+                    ${(currentNotifReadFilter !== 'ALL' || currentNotifCategoryFilter !== 'ALL') ? `
+                      <button type="button" onclick="window.setNotificationReadFilter('ALL'); window.setNotificationCategoryFilter('ALL');" class="btn" style="background: rgba(255,255,255,0.12); color: #FFFFFF; border: 1px solid rgba(255,255,255,0.25); border-radius: 99px; padding: 8px 20px; font-size: 12.5px; font-weight: 700; cursor: pointer;">
+                        Reset Filters
+                      </button>
+                    ` : ''}
+                  </div>
+                ` : `
+                  <div style="display: flex; flex-direction: column; gap: 12px;">
+                    ${filtered.map(n => {
+                      const catKey = (n.category || 'SYSTEM').toUpperCase();
+                      const meta = notifCategoryMeta[catKey] || notifCategoryMeta.SYSTEM;
+                      const isUnread = !n.read;
+                      const isHighPriority = n.priority === 'HIGH' || n.priority === 'URGENT';
+
+                      return `
+                        <div class="notif-card ${isUnread ? 'unread' : 'read'}" id="notif-card-${escapeHTML(n.id)}">
+                          <!-- CARD TOP META -->
+                          <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 10px; flex-wrap: wrap;">
+                            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                              <span style="background: ${meta.bg}; color: ${meta.color}; border: 1px solid ${meta.border}; padding: 3px 10px; border-radius: 99px; font-size: 11px; font-weight: 800; letter-spacing: 0.5px; display: inline-flex; align-items: center; gap: 4px;">
+                                <span>${meta.icon}</span> ${escapeHTML(meta.label)}
+                              </span>
+
+                              ${isHighPriority ? `
+                                <span style="background: rgba(239, 68, 68, 0.18); color: #FCA5A5; border: 1px solid rgba(239, 68, 68, 0.35); padding: 3px 10px; border-radius: 99px; font-size: 10.5px; font-weight: 800; display: inline-flex; align-items: center; gap: 4px;">
+                                  ⚠️ High Priority
+                                </span>
+                              ` : ''}
+
+                              ${n.reference ? `
+                                <span style="font-family: monospace; font-size: 11.5px; color: #CBD5E1; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); padding: 2px 8px; border-radius: 6px;">
+                                  ${escapeHTML(n.reference)}
+                                </span>
+                              ` : ''}
+
+                              ${isUnread ? `
+                                <span style="background: #00E676; color: #07153B; padding: 2px 8px; border-radius: 99px; font-size: 10px; font-weight: 800; letter-spacing: 0.5px;">
+                                  NEW
+                                </span>
+                              ` : ''}
+                            </div>
+
+                            <div style="font-size: 12px; color: #94A3B8; white-space: nowrap;">
+                              ${formatNotifDate(n.createdAt)}
+                            </div>
+                          </div>
+
+                          <!-- CARD TITLE & MESSAGE -->
+                          <div style="margin-bottom: 14px;">
+                            <h2 style="font-size: 15.5px; font-weight: 700; color: #FFFFFF; margin: 0 0 6px 0; line-height: 1.4;">
+                              ${escapeHTML(n.title)}
+                            </h2>
+                            <p style="font-size: 13.5px; color: #CBD5E1; margin: 0; line-height: 1.6;">
+                              ${escapeHTML(n.message)}
+                            </p>
+                          </div>
+
+                          <!-- CARD ACTIONS FOOTER -->
+                          <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 12px;">
+                            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                              ${n.actionUrl ? `
+                                <button type="button" onclick="window.handleNotificationAction('${escapeHTML(n.id)}', '${escapeHTML(n.actionUrl)}')" class="btn" style="background: #00A651 !important; color: #FFFFFF !important; font-weight: 700; padding: 7px 18px; border-radius: 99px; border: 0; font-size: 12.5px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 3px 10px rgba(0,166,81,0.25);">
+                                  View Details →
+                                </button>
+                              ` : ''}
+
+                              ${isUnread ? `
+                                <button type="button" onclick="window.handleMarkSingleRead('${escapeHTML(n.id)}')" class="btn" style="background: rgba(255,255,255,0.08) !important; color: #CBD5E1 !important; border: 1px solid rgba(255,255,255,0.2) !important; padding: 7px 16px; border-radius: 99px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s ease;">
+                                  ✓ Mark as read
+                                </button>
+                              ` : ''}
+                            </div>
+
+                            <div style="font-size: 12px; color: #64748B;">
+                              ${isUnread ? 'Unread notification' : '✓ Read'}
+                            </div>
+                          </div>
+                        </div>
+                      `;
+                    }).join('')}
+                  </div>
+                `}
+
+              </main>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // Global Filter Handlers
+    window.setNotificationReadFilter = function(filter) {
+      currentNotifReadFilter = filter;
+      renderPortal();
+    };
+
+    window.setNotificationCategoryFilter = function(cat) {
+      currentNotifCategoryFilter = cat;
+      renderPortal();
+    };
+
+    // Mark Single Notification as Read
+    window.handleMarkSingleRead = async function(notifId) {
+      try {
+        const res = await apiCall(`/api/account/notifications/${notifId}/read`, 'PATCH');
+        if (!res || !res.success) {
+          throw new Error(res?.error?.message || 'Failed to mark notification as read.');
+        }
+
+        if (cachedNotificationsData) {
+          const idx = cachedNotificationsData.findIndex(n => n.id === notifId);
+          if (idx !== -1) {
+            cachedNotificationsData[idx].read = true;
+            cachedNotificationsData[idx].isRead = true;
+            cachedNotificationsData[idx].readAt = new Date();
+          }
+        }
+
+        const remainingUnread = cachedNotificationsData.filter(n => !n.read).length;
+        window.updateHeaderNotificationBadge(remainingUnread);
+        renderPortal();
+      } catch (err) {
+        alert(`Error updating notification: ${err.message}`);
+      }
+    };
+
+    // Mark All Notifications as Read
+    window.handleMarkAllNotificationsRead = async function() {
+      try {
+        const res = await apiCall('/api/account/notifications/read-all', 'PATCH');
+        if (!res || !res.success) {
+          throw new Error(res?.error?.message || 'Failed to mark all as read.');
+        }
+
+        if (cachedNotificationsData) {
+          const now = new Date();
+          cachedNotificationsData.forEach(n => {
+            n.read = true;
+            n.isRead = true;
+            n.readAt = now;
+          });
+        }
+
+        window.updateHeaderNotificationBadge(0);
+        renderPortal();
+      } catch (err) {
+        alert(`Error marking all notifications as read: ${err.message}`);
+      }
+    };
+
+    // Click Notification Action (Mark read & Navigate)
+    window.handleNotificationAction = async function(notifId, actionUrl) {
+      if (cachedNotificationsData) {
+        const notif = cachedNotificationsData.find(n => n.id === notifId);
+        if (notif && !notif.read) {
+          try {
+            await apiCall(`/api/account/notifications/${notifId}/read`, 'PATCH');
+            notif.read = true;
+            notif.isRead = true;
+            notif.readAt = new Date();
+            const remaining = cachedNotificationsData.filter(n => !n.read).length;
+            window.updateHeaderNotificationBadge(remaining);
+          } catch {
+            // Non-blocking navigation even if mark-read network hiccups
+          }
+        }
+      }
+      navigate(actionUrl);
+    };
+
+    renderPortal();
+
+  } catch (err) {
+    container.innerHTML = `
+      <div style="background: #07153B !important; min-height: 100vh; color: #FFFFFF !important;">
+        <div class="shell" style="padding: 60px 20px; text-align: center;">
+          <p style="color: #EF4444; font-size: 16px; font-weight: 700; margin-bottom: 16px;">Failed to load notifications.</p>
           <p style="color: #94A3B8; font-size: 14px; margin-bottom: 24px;">${escapeHTML(err.message)}</p>
           <button onclick="navigate('/account')" class="btn" style="background: #00A651 !important; color: #FFFFFF !important; border: 0; padding: 10px 24px; border-radius: 99px; cursor: pointer;">
             Return to Dashboard

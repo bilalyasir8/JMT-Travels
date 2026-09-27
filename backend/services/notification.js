@@ -198,11 +198,11 @@ class NotificationService {
       const recipientName = user?.name || payload.fullName || 'Valued Customer';
 
       // 1. IDEMPOTENCY CHECK: Prevent duplicate notification dispatches
-      const eventKey = payload.idempotencyKey || `${eventName}:${reference || userId || recipientEmail || Date.now()}`;
-      if (payload.idempotencyKey) {
+      const eventKey = payload.idempotencyKey || (reference && userId ? `${eventName}:${userId}:${reference}:${status || ''}` : `${eventName}:${reference || userId || recipientEmail || Date.now()}`);
+      if (payload.idempotencyKey || (payload.reference && payload.userId)) {
         const existingNotif = await db.notifications.findOne({ idempotencyKey: eventKey });
         if (existingNotif) {
-          return { success: true, isDuplicate: true, message: 'Notification already dispatched.' };
+          return { success: true, isDuplicate: true, message: 'Notification already dispatched.', notification: existingNotif };
         }
       }
 
@@ -211,86 +211,201 @@ class NotificationService {
         USER_REGISTERED: {
           title: 'Welcome to JMT TRAVELS',
           message: 'Your account has been created successfully. Welcome to JMT Travel & Tourism.',
+          category: 'ACCOUNT',
+          priority: 'NORMAL',
           buttonText: 'Explore Travel Services',
-          buttonUrl: 'https://jmttravels.com/login.html'
+          buttonUrl: 'https://jmttravels.com/login.html',
+          actionUrl: '/account'
         },
         EMAIL_VERIFICATION: {
           title: 'Verify Your Email Address',
           message: `Please verify your email address to unlock full travel features. Your verification code:`,
+          category: 'ACCOUNT',
+          priority: 'NORMAL',
           detailKey: 'Verification Code',
-          detailValue: token || 'N/A'
+          detailValue: token || 'N/A',
+          actionUrl: '/account/profile'
         },
         PASSWORD_RESET: {
           title: 'Password Reset Request',
           message: 'A password reset was requested for your account. Please use the following code to reset your password:',
+          category: 'ACCOUNT',
+          priority: 'HIGH',
           detailKey: 'Reset Code',
           detailValue: token || 'N/A'
         },
         VISA_SUBMITTED: {
           title: 'Visa Application Received',
           message: `Your visa application (${reference || 'JMT-V'}) has been submitted. Our visa processing desk is reviewing your documents.`,
+          category: 'VISA',
+          priority: 'NORMAL',
           buttonText: 'Track Visa Status',
-          buttonUrl: `https://jmttravels.com/track.html?ref=${reference || ''}`
+          buttonUrl: `https://jmttravels.com/track.html?ref=${reference || ''}`,
+          actionUrl: '/account/visa'
+        },
+        VISA_APPLICATION_SUBMITTED: {
+          title: 'Visa Application Received',
+          message: `Your visa application (${reference || 'JMT-V'}) has been submitted. Our visa processing desk is reviewing your documents.`,
+          category: 'VISA',
+          priority: 'NORMAL',
+          buttonText: 'Track Visa Status',
+          buttonUrl: `https://jmttravels.com/track.html?ref=${reference || ''}`,
+          actionUrl: '/account/visa'
         },
         VISA_STATUS_CHANGED: {
           title: 'Visa Application Updated',
           message: `Your visa application (${reference}) status is now: ${status || 'UNDER_REVIEW'}.`,
+          category: 'VISA',
+          priority: 'NORMAL',
           detailKey: 'New Status',
-          detailValue: status || 'UNDER_REVIEW'
+          detailValue: status || 'UNDER_REVIEW',
+          actionUrl: '/account/visa'
         },
         ADDITIONAL_DOCUMENTS_REQUIRED: {
           title: 'Additional Visa Documents Required',
           message: `Our visa desk requires an additional document for application (${reference}).`,
+          category: 'VISA',
+          priority: 'HIGH',
           detailKey: 'Requested Document',
-          detailValue: documentType || 'Identity Document'
+          detailValue: documentType || 'Identity Document',
+          actionUrl: '/account/documents'
+        },
+        DOCUMENT_ACCEPTED: {
+          title: 'Visa Document Accepted',
+          message: `Your uploaded document for visa application (${reference || 'JMT-V'}) has been approved.`,
+          category: 'VISA',
+          priority: 'NORMAL',
+          actionUrl: '/account/documents'
+        },
+        DOCUMENT_REJECTED: {
+          title: 'Visa Document Requires Re-upload',
+          message: `An uploaded document for visa application (${reference || 'JMT-V'}) was rejected. Please re-upload an updated copy.`,
+          category: 'VISA',
+          priority: 'HIGH',
+          actionUrl: '/account/documents'
         },
         VISA_APPROVED: {
           title: 'Visa Application Approved!',
           message: `Great news! Your visa application (${reference}) has been APPROVED. You may now download your visa document.`,
+          category: 'VISA',
+          priority: 'HIGH',
           buttonText: 'Download Visa',
-          buttonUrl: `https://jmttravels.com/track.html?ref=${reference || ''}`
+          buttonUrl: `https://jmttravels.com/track.html?ref=${reference || ''}`,
+          actionUrl: '/account/visa'
         },
         VISA_REJECTED: {
           title: 'Visa Application Update',
-          message: `Your visa application (${reference}) was not approved. Reason: ${reason || 'Document requirements incomplete.'}`
+          message: `Your visa application (${reference}) was not approved. Reason: ${reason || 'Document requirements incomplete.'}`,
+          category: 'VISA',
+          priority: 'HIGH',
+          actionUrl: '/account/visa'
         },
         TOUR_BOOKING_CREATED: {
           title: 'Tour Booking Received',
-          message: `Your tour booking request (${reference}) for ${title || 'your holiday trip'} has been received. Total amount: ${amount || 0} ${currency || 'OMR'}.`
+          message: `Your tour booking request (${reference}) for ${title || 'your holiday trip'} has been received. Total amount: ${amount || 0} ${currency || 'OMR'}.`,
+          category: 'TOUR',
+          priority: 'NORMAL',
+          actionUrl: '/account/my-trips'
         },
         TOUR_BOOKING_CONFIRMED: {
           title: 'Tour Booking Confirmed!',
-          message: `Your tour booking (${reference}) for ${title || 'your holiday trip'} is CONFIRMED! We wish you a wonderful journey.`
+          message: `Your tour booking (${reference}) for ${title || 'your holiday trip'} is CONFIRMED! We wish you a wonderful journey.`,
+          category: 'TOUR',
+          priority: 'HIGH',
+          actionUrl: '/account/my-trips'
         },
         TOUR_BOOKING_STATUS_CHANGED: {
           title: 'Tour Booking Status Changed',
-          message: `Your booking (${reference}) status has been updated to: ${status || 'PROCESSING'}.`
+          message: `Your booking (${reference}) status has been updated to: ${status || 'PROCESSING'}.`,
+          category: 'TOUR',
+          priority: 'NORMAL',
+          actionUrl: '/account/my-trips'
+        },
+        HOTEL_INQUIRY_CREATED: {
+          title: 'Hotel Consultation Request Received',
+          message: `Your hotel consultation request (${reference}) for ${payload.destination || 'your destination'} has been received. Our concierge team is preparing your proposal.`,
+          category: 'HOTEL',
+          priority: 'NORMAL',
+          actionUrl: '/account/travel-requests'
+        },
+        HOTEL_INQUIRY_STATUS_UPDATED: {
+          title: 'Hotel Inquiry Updated',
+          message: `Your hotel inquiry (${reference}) status has been updated to: ${status || 'IN_REVIEW'}.`,
+          category: 'HOTEL',
+          priority: 'NORMAL',
+          actionUrl: '/account/travel-requests'
+        },
+        FLIGHT_INQUIRY_CREATED: {
+          title: 'Flight Consultation Request Received',
+          message: `Your flight consultation request (${reference}) for ${payload.destination || 'your destination'} has been received. Our flight specialists are curating options.`,
+          category: 'FLIGHT',
+          priority: 'NORMAL',
+          actionUrl: '/account/travel-requests'
+        },
+        FLIGHT_INQUIRY_STATUS_UPDATED: {
+          title: 'Flight Inquiry Updated',
+          message: `Your flight inquiry (${reference}) status has been updated to: ${status || 'IN_REVIEW'}.`,
+          category: 'FLIGHT',
+          priority: 'NORMAL',
+          actionUrl: '/account/travel-requests'
         },
         PAYMENT_SUCCESSFUL: {
           title: 'Payment Receipt Confirmed',
-          message: `Payment of ${amount || 0} ${currency || 'OMR'} for reference ${reference} was completed successfully.`
+          message: `Payment of ${amount || 0} ${currency || 'OMR'} for reference ${reference} was completed successfully.`,
+          category: 'PAYMENT',
+          priority: 'NORMAL',
+          actionUrl: '/account/my-trips'
         },
         PAYMENT_FAILED: {
           title: 'Payment Unsuccessful',
-          message: `Payment attempt for reference ${reference} failed. Reason: ${reason || 'Transaction declined.'}`
+          message: `Payment attempt for reference ${reference} failed. Reason: ${reason || 'Transaction declined.'}`,
+          category: 'PAYMENT',
+          priority: 'HIGH',
+          actionUrl: '/account/my-trips'
         },
         REFUND_REQUESTED: {
           title: 'Refund Request Created',
-          message: `A refund request of ${amount || 0} ${currency || 'OMR'} has been logged for reference ${reference}.`
+          message: `A refund request of ${amount || 0} ${currency || 'OMR'} has been logged for reference ${reference}.`,
+          category: 'PAYMENT',
+          priority: 'NORMAL',
+          actionUrl: '/account/my-trips'
+        },
+        SUPPORT_TICKET_CREATED: {
+          title: 'Support Ticket Logged',
+          message: `Your support ticket (${reference || 'Support'}) has been logged with JMT concierge.`,
+          category: 'SUPPORT',
+          priority: 'NORMAL',
+          actionUrl: '/account'
+        },
+        SUPPORT_TICKET_REPLY: {
+          title: 'Support Ticket Reply',
+          message: `JMT Support has replied to your ticket (${reference || 'Support'}).`,
+          category: 'SUPPORT',
+          priority: 'NORMAL',
+          actionUrl: '/account'
         },
         SUPPORT_TICKET_UPDATED: {
           title: 'Support Ticket Response',
-          message: `JMT Support has responded to your ticket (${reference || 'Support'}).`
+          message: `JMT Support has responded to your ticket (${reference || 'Support'}).`,
+          category: 'SUPPORT',
+          priority: 'NORMAL',
+          actionUrl: '/account'
         },
         CONTACT_INQUIRY_RECEIVED: {
           title: 'Inquiry Received',
-          message: 'Thank you for reaching out to JMT Travels. Our travel desk will respond within 24 hours.'
+          message: 'Thank you for reaching out to JMT Travels. Our travel desk will respond within 24 hours.',
+          category: 'SYSTEM',
+          priority: 'NORMAL',
+          actionUrl: '/account'
         }
       };
 
       const templateConfig = catalogue[eventName] || {
         title: eventName.replace(/_/g, ' '),
-        message: `Notification update for reference ${reference || 'JMT'}.`
+        message: `Notification update for reference ${reference || 'JMT'}.`,
+        category: 'SYSTEM',
+        priority: 'NORMAL',
+        actionUrl: '/account'
       };
 
       // Render Email Content
@@ -308,8 +423,12 @@ class NotificationService {
           userId,
           channel: 'IN_APP',
           type: eventName,
-          title: templateConfig.title,
-          message: templateConfig.message,
+          category: payload.category || templateConfig.category || 'SYSTEM',
+          priority: payload.priority || templateConfig.priority || 'NORMAL',
+          title: payload.title || templateConfig.title,
+          message: payload.message || templateConfig.message,
+          reference: reference || payload.reference || null,
+          actionUrl: payload.actionUrl || templateConfig.actionUrl || null,
           entityType: payload.entityType || null,
           entityId: payload.entityId || reference || null,
           status: 'DELIVERED',
@@ -357,12 +476,29 @@ class NotificationService {
   }
 
   /**
+   * Helper: Format Sanitized Customer Notification DTO
+   */
+  formatCustomerNotificationDTO(n) {
+    return formatCustomerNotificationDTO(n);
+  }
+
+  /**
    * List In-App Notifications for Authenticated User (IDOR Isolated)
    */
-  async listInAppNotifications({ userId, page = 1, limit = 20, unreadOnly = false }) {
+  async listInAppNotifications({ userId, page = 1, limit = 20, unreadOnly = false, category = null }) {
     if (!userId) throw new Error('User ID is required to list notifications.');
 
     let userNotifs = await db.notifications.find({ userId });
+
+    // Category filter if specified
+    if (category && String(category).trim().toUpperCase() !== 'ALL') {
+      const catUpper = String(category).trim().toUpperCase();
+      userNotifs = userNotifs.filter(n => (n.category || 'SYSTEM').toUpperCase() === catUpper);
+    }
+
+    const unreadCount = userNotifs.filter(n => !n.read).length;
+
+    // Unread filter if requested
     if (String(unreadOnly) === 'true') {
       userNotifs = userNotifs.filter(n => n.read === false);
     }
@@ -372,11 +508,10 @@ class NotificationService {
     const pageNum = Math.max(1, parseInt(page, 10) || 1);
     const limitNum = Math.min(50, Math.max(1, parseInt(limit, 10) || 20));
     const total = userNotifs.length;
-    const unreadCount = userNotifs.filter(n => !n.read).length;
     const paginated = userNotifs.slice((pageNum - 1) * limitNum, pageNum * limitNum);
 
     return {
-      notifications: paginated,
+      notifications: paginated.map(formatCustomerNotificationDTO),
       unreadCount,
       pagination: {
         page: pageNum,
@@ -391,6 +526,9 @@ class NotificationService {
    * Mark In-App Notification as Read (IDOR Isolated)
    */
   async markAsRead(notificationId, userId) {
+    if (!notificationId) throw new Error('Notification ID is required.');
+    if (!userId) throw new Error('User ID is required.');
+
     const notif = await db.notifications.findById(notificationId) || await db.notifications.findOne({ id: notificationId });
     if (!notif) throw new Error('Notification not found.');
 
@@ -403,7 +541,7 @@ class NotificationService {
       readAt: new Date()
     });
 
-    return updated;
+    return formatCustomerNotificationDTO(updated);
   }
 
   /**
@@ -418,8 +556,29 @@ class NotificationService {
       await db.notifications.update(n.id, { read: true, readAt: now });
     }
 
-    return { success: true, count: userNotifs.length };
+    return { success: true, count: userNotifs.length, updatedCount: userNotifs.length, unreadCount: 0 };
   }
+}
+
+function formatCustomerNotificationDTO(n) {
+  if (!n) return null;
+  const isRead = typeof n.read === 'boolean' ? n.read : !!n.isRead;
+  return {
+    id: n.id || (n._id ? n._id.toString() : ''),
+    type: n.type || 'SYSTEM_NOTIFICATION',
+    category: n.category || 'SYSTEM',
+    title: n.title || '',
+    message: n.message || '',
+    reference: n.reference || (n.entityId ? String(n.entityId) : null),
+    entityType: n.entityType || null,
+    entityId: n.entityId || null,
+    actionUrl: n.actionUrl || null,
+    priority: n.priority || 'NORMAL',
+    isRead: isRead,
+    read: isRead,
+    createdAt: n.createdAt || null,
+    readAt: n.readAt || null
+  };
 }
 
 module.exports = new NotificationService();

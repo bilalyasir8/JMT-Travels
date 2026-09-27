@@ -10,8 +10,21 @@ const NotificationSchema = new mongoose.Schema({
     index: true
   },
   type: { type: String, required: true, index: true }, // e.g. VISA_STATUS_CHANGED, BOOKING_CONFIRMED
+  category: {
+    type: String,
+    enum: ['VISA', 'TOUR', 'HOTEL', 'FLIGHT', 'SUPPORT', 'PAYMENT', 'ACCOUNT', 'SYSTEM'],
+    default: 'SYSTEM',
+    index: true
+  },
+  priority: {
+    type: String,
+    enum: ['LOW', 'NORMAL', 'HIGH', 'URGENT'],
+    default: 'NORMAL'
+  },
   title: { type: String, required: true },
   message: { type: String, required: true },
+  reference: { type: String, index: true },
+  actionUrl: { type: String },
   templateId: String,
   metadata: mongoose.Schema.Types.Mixed,
   entityType: String,
@@ -32,9 +45,16 @@ const NotificationSchema = new mongoose.Schema({
   scheduledAt: Date,
   deliveredAt: Date
 }, {
-  timestamps: true
+  timestamps: true,
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true }
+});
+
+NotificationSchema.virtual('isRead').get(function() {
+  return !!this.read;
 });
 
 NotificationSchema.index({ userId: 1, read: 1, createdAt: -1 });
+NotificationSchema.index({ userId: 1, category: 1, createdAt: -1 });
 
 module.exports = mongoose.models.Notification || mongoose.model('Notification', NotificationSchema);

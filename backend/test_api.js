@@ -3863,8 +3863,518 @@ async function runTestSuite() {
     assert.strictEqual(crossTripRes.status, 404, 'Direct access to Inquiry B via Customer A session must return 404');
     console.log('  ✅ TRAVEL-SEC-1 PASSED: Strict userId ownership enforced; cross-customer inquiry exposure prevented');
 
+    // ================================================================
+    // 🔔 EXECUTING V5.6 NOTIFICATIONS & COMMUNICATION CENTER TEST SUITE
+    // ================================================================
+
+    console.log('\n[NOTIF SETUP] Preparing Seed Notifications for Customer 1 and Customer 2...');
+    const notifSeedTime = Date.now();
+    const notifA1Id = `notif_c1_a_${notifSeedTime}`;
+    const notifA2Id = `notif_c1_b_${notifSeedTime}`;
+    const notifB1Id = `notif_c2_a_${notifSeedTime}`;
+    const notifB2Id = `notif_c2_b_${notifSeedTime}`;
+
+    await db.notifications.create({
+      id: notifA1Id,
+      userId: customer1User.id,
+      channel: 'IN_APP',
+      type: 'VISA_STATUS_CHANGED',
+      category: 'VISA',
+      priority: 'HIGH',
+      title: 'Visa Application In Review',
+      message: 'Your visa application (JMT-V-TEST-101) is currently under review by our immigration desk.',
+      reference: 'JMT-V-TEST-101',
+      actionUrl: '/account/visa',
+      status: 'DELIVERED',
+      read: false,
+      provider: 'INTERNAL',
+      providerMessageId: 'internal_msg_101',
+      failureReason: null,
+      retryCount: 0
+    });
+
+    await db.notifications.create({
+      id: notifA2Id,
+      userId: customer1User.id,
+      channel: 'IN_APP',
+      type: 'HOTEL_INQUIRY_CREATED',
+      category: 'HOTEL',
+      priority: 'NORMAL',
+      title: 'Hotel Request Logged',
+      message: 'Your hotel inquiry for Shangri-La Muscat has been received.',
+      reference: 'JMT-H-TEST-102',
+      actionUrl: '/account/travel-requests',
+      status: 'DELIVERED',
+      read: false,
+      provider: 'INTERNAL',
+      providerMessageId: 'internal_msg_102',
+      failureReason: null,
+      retryCount: 0
+    });
+
+    await db.notifications.create({
+      id: notifB1Id,
+      userId: customer2User.id,
+      channel: 'IN_APP',
+      type: 'FLIGHT_INQUIRY_CREATED',
+      category: 'FLIGHT',
+      priority: 'URGENT',
+      title: 'Flight Request Received',
+      message: 'Customer 2 exclusive flight consultation is being processed.',
+      reference: 'JMT-F-TEST-201',
+      actionUrl: '/account/travel-requests',
+      status: 'DELIVERED',
+      read: false,
+      provider: 'INTERNAL',
+      providerMessageId: 'internal_msg_201',
+      failureReason: null,
+      retryCount: 0
+    });
+
+    await db.notifications.create({
+      id: notifB2Id,
+      userId: customer2User.id,
+      channel: 'IN_APP',
+      type: 'VISA_APPLICATION_SUBMITTED',
+      category: 'VISA',
+      priority: 'NORMAL',
+      title: 'Customer 2 Visa Received',
+      message: 'Customer 2 visa submission completed.',
+      reference: 'JMT-V-TEST-202',
+      actionUrl: '/account/visa',
+      status: 'DELIVERED',
+      read: false,
+      provider: 'INTERNAL',
+      providerMessageId: 'internal_msg_202',
+      failureReason: null,
+      retryCount: 0
+    });
+
+    // NOTIF-1: Authenticated customer can list own notifications
+    console.log('\n[NOTIF-1] Testing Authenticated Customer Notification Listing...');
+    const notif1Res = await request('/api/account/notifications', {
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(notif1Res.status, 200);
+    assert.strictEqual(notif1Res.body.success, true);
+    assert.ok(Array.isArray(notif1Res.body.notifications));
+    assert.ok(typeof notif1Res.body.unreadCount === 'number');
+    assert.ok(notif1Res.body.pagination && typeof notif1Res.body.pagination.page === 'number');
+    const c1NotifIds = notif1Res.body.notifications.map(n => n.id);
+    assert.ok(c1NotifIds.includes(notifA1Id), 'Customer 1 must see own notification A1');
+    assert.ok(c1NotifIds.includes(notifA2Id), 'Customer 1 must see own notification A2');
+    console.log('  ✅ NOTIF-1 PASSED: Authenticated customer lists own notifications with unread count and pagination');
+
+    // NOTIF-2: Unauthenticated notification list rejected
+    console.log('\n[NOTIF-2] Testing Unauthenticated Notification Listing (401 Rejection)...');
+    const notif2Res = await request('/api/account/notifications');
+    assert.strictEqual(notif2Res.status, 401);
+    assert.strictEqual(notif2Res.body.error.code, 'UNAUTHORIZED');
+    console.log('  ✅ NOTIF-2 PASSED: Unauthenticated request rejected with 401 UNAUTHORIZED');
+
+    // NOTIF-3: Customer A cannot list Customer B notifications (Tenant Boundary / IDOR)
+    console.log('\n[NOTIF-3] Testing Cross-Customer Notification Isolation (Customer A cannot see Customer B notifications)...');
+    const c1NotifStr = JSON.stringify(notif1Res.body);
+    assert.strictEqual(c1NotifStr.includes(notifB1Id), false, 'Customer 1 must not see Customer 2 notification ID');
+    assert.strictEqual(c1NotifStr.includes('JMT-F-TEST-201'), false, 'Customer 1 must not see Customer 2 reference');
+
+    const notif3ResCust2 = await request('/api/account/notifications', {
+      headers: { Authorization: `Bearer ${customer2Token}` }
+    });
+    assert.strictEqual(notif3ResCust2.status, 200);
+    const c2NotifStr = JSON.stringify(notif3ResCust2.body);
+    assert.ok(c2NotifStr.includes(notifB1Id), 'Customer 2 must see own notification B1');
+    assert.strictEqual(c2NotifStr.includes(notifA1Id), false, 'Customer 2 must not see Customer 1 notification ID');
+    console.log('  ✅ NOTIF-3 PASSED: Cross-customer isolation verified; Customer A cannot view Customer B notifications');
+
+    // NOTIF-4: Customer A cannot read Customer B notification (IDOR Detail Access Rejection)
+    console.log('\n[NOTIF-4] Testing IDOR Defense on Single Notification Detail (Customer A cannot read Customer B notification)...');
+    const notif4CrossRes = await request(`/api/account/notifications/${notifB1Id}`, {
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(notif4CrossRes.status, 403, 'Cross-tenant notification access must return 403 FORBIDDEN');
+    assert.strictEqual(notif4CrossRes.body.error.code, 'FORBIDDEN');
+
+    // Authorized owner can read
+    const notif4OwnerRes = await request(`/api/account/notifications/${notifB1Id}`, {
+      headers: { Authorization: `Bearer ${customer2Token}` }
+    });
+    assert.strictEqual(notif4OwnerRes.status, 200);
+    assert.strictEqual(notif4OwnerRes.body.notification.id, notifB1Id);
+    console.log('  ✅ NOTIF-4 PASSED: Customer A blocked from accessing Customer B notification (403 FORBIDDEN); Owner retrieves 200 OK');
+
+    // NOTIF-5: Customer A cannot mark Customer B notification as read (IDOR Write Defense)
+    console.log('\n[NOTIF-5] Testing IDOR Defense on Mark Notification Read (Customer A cannot mark Customer B notification)...');
+    const notif5CrossRes = await request(`/api/account/notifications/${notifB1Id}/read`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(notif5CrossRes.status, 403, 'Cross-tenant mark-read must return 403 FORBIDDEN');
+    assert.strictEqual(notif5CrossRes.body.error.code, 'FORBIDDEN');
+
+    // Verify Customer B notification remained unread
+    const notif5CheckB = await request(`/api/account/notifications/${notifB1Id}`, {
+      headers: { Authorization: `Bearer ${customer2Token}` }
+    });
+    assert.strictEqual(notif5CheckB.body.notification.isRead, false, 'Customer B notification must remain unread');
+    assert.strictEqual(notif5CheckB.body.notification.read, false);
+    console.log('  ✅ NOTIF-5 PASSED: Unauthorized mark-as-read blocked (403 FORBIDDEN); target notification remains unread');
+
+    // NOTIF-6: Mark own notification as read
+    console.log('\n[NOTIF-6] Testing Mark Own Notification As Read...');
+    const notif6Res = await request(`/api/account/notifications/${notifA1Id}/read`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(notif6Res.status, 200);
+    assert.strictEqual(notif6Res.body.success, true);
+    assert.strictEqual(notif6Res.body.notification.id, notifA1Id);
+    assert.strictEqual(notif6Res.body.notification.isRead, true);
+    assert.strictEqual(notif6Res.body.notification.read, true);
+    console.log('  ✅ NOTIF-6 PASSED: Customer successfully marks own notification as read (200 OK)');
+
+    // NOTIF-7: readAt is populated
+    console.log('\n[NOTIF-7] Testing readAt Timestamp Population...');
+    assert.ok(notif6Res.body.notification.readAt, 'readAt timestamp must be populated');
+    const readAtDate = new Date(notif6Res.body.notification.readAt);
+    assert.strictEqual(isNaN(readAtDate.getTime()), false, 'readAt must be a valid date');
+    const notif7DetailRes = await request(`/api/account/notifications/${notifA1Id}`, {
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(notif7DetailRes.status, 200);
+    assert.strictEqual(notif7DetailRes.body.notification.readAt, notif6Res.body.notification.readAt);
+    console.log('  ✅ NOTIF-7 PASSED: readAt timestamp correctly populated and verified in detail query');
+
+    // NOTIF-8: Mark all own notifications as read
+    console.log('\n[NOTIF-8] Testing Mark All Own Notifications As Read...');
+    const notif8Res = await request('/api/account/notifications/read-all', {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(notif8Res.status, 200);
+    assert.strictEqual(notif8Res.body.success, true);
+    assert.strictEqual(notif8Res.body.unreadCount, 0);
+
+    const notif8CheckRes = await request('/api/account/notifications?unread=true', {
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(notif8CheckRes.status, 200);
+    assert.strictEqual(notif8CheckRes.body.notifications.length, 0, 'Unread filtered list must be 0 after mark-all-read');
+    assert.strictEqual(notif8CheckRes.body.unreadCount, 0);
+    console.log('  ✅ NOTIF-8 PASSED: Mark all notifications as read updates all user notifications; unread count reaches 0');
+
+    // NOTIF-9: Mark-all does not modify another customer's notifications
+    console.log('\n[NOTIF-9] Testing Tenant Isolation on Mark-All-Read...');
+    const notif9CheckCust2 = await request('/api/account/notifications', {
+      headers: { Authorization: `Bearer ${customer2Token}` }
+    });
+    assert.strictEqual(notif9CheckCust2.status, 200);
+    assert.ok(notif9CheckCust2.body.unreadCount >= 2, 'Customer 2 unread count must not be altered by Customer 1 action');
+    const cust2NotifB1 = notif9CheckCust2.body.notifications.find(n => n.id === notifB1Id);
+    assert.ok(cust2NotifB1, 'Notification B1 must be found for Customer 2');
+    assert.strictEqual(cust2NotifB1.isRead, false, 'Customer 2 notification B1 must remain unread');
+    console.log('  ✅ NOTIF-9 PASSED: Customer 1 mark-all-read has zero effect on Customer 2 notifications');
+
+    // NOTIF-10: Unread count is accurate
+    console.log('\n[NOTIF-10] Testing Accurate Unread Count Calculation...');
+    const newUnreadKey = `accur_test_${Date.now()}`;
+    await notificationService.dispatchEvent('TOUR_BOOKING_CREATED', {
+      user: customer1User,
+      reference: 'JMT-B-ACCUR-10',
+      title: 'Salalah Mountain Safari',
+      amount: 120,
+      currency: 'OMR',
+      idempotencyKey: newUnreadKey
+    });
+
+    const notif10Res = await request('/api/account/notifications', {
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(notif10Res.status, 200);
+    assert.strictEqual(notif10Res.body.unreadCount, 1, 'Unread count must accurately equal 1');
+    const unreadItems = notif10Res.body.notifications.filter(n => !n.isRead);
+    assert.strictEqual(unreadItems.length, 1);
+    assert.strictEqual(unreadItems[0].reference, 'JMT-B-ACCUR-10');
+    console.log('  ✅ NOTIF-10 PASSED: Notification unread count is mathematically accurate');
+
+    // NOTIF-11: Pagination is bounded
+    console.log('\n[NOTIF-11] Testing Bounded Pagination Enforcement (Max 50, Default 20)...');
+    const notif11ClampRes = await request('/api/account/notifications?limit=250', {
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(notif11ClampRes.status, 200);
+    assert.strictEqual(notif11ClampRes.body.pagination.limit, 50, 'Limit > 50 must be clamped to max 50');
+
+    const notif11DefaultRes = await request('/api/account/notifications', {
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(notif11DefaultRes.status, 200);
+    assert.strictEqual(notif11DefaultRes.body.pagination.limit, 20, 'Default page limit must be 20');
+    console.log('  ✅ NOTIF-11 PASSED: Pagination boundaries enforced (limit clamped to 50, default is 20)');
+
+    // NOTIF-12: Invalid pagination values rejected or safely normalized
+    console.log('\n[NOTIF-12] Testing Invalid Pagination Normalization (page=-10, limit=invalid)...');
+    const notif12Res = await request('/api/account/notifications?page=-10&limit=abc', {
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(notif12Res.status, 200, 'Invalid pagination values must be safely normalized, not crash');
+    assert.strictEqual(notif12Res.body.pagination.page, 1, 'Negative page must normalize to 1');
+    assert.strictEqual(notif12Res.body.pagination.limit, 20, 'Non-numeric limit must normalize to default 20');
+    console.log('  ✅ NOTIF-12 PASSED: Malformed pagination values safely normalized without error');
+
+    // NOTIF-13: Customer DTO does not expose internal/admin fields
+    console.log('\n[NOTIF-13] Testing Sanitized Customer DTO (No internal/provider fields exposed)...');
+    const sampleDto = notif10Res.body.notifications[0];
+    assert.strictEqual(sampleDto.provider, undefined, 'provider must not be exposed');
+    assert.strictEqual(sampleDto.providerMessageId, undefined, 'providerMessageId must not be exposed');
+    assert.strictEqual(sampleDto.failureReason, undefined, 'failureReason must not be exposed');
+    assert.strictEqual(sampleDto.retryCount, undefined, 'retryCount must not be exposed');
+    assert.strictEqual(sampleDto._id, undefined, '_id must not be exposed');
+    assert.strictEqual(sampleDto.__v, undefined, '__v must not be exposed');
+    assert.strictEqual(sampleDto.adminNotes, undefined, 'adminNotes must not be exposed');
+    const dtoRawString = JSON.stringify(notif10Res.body);
+    assert.strictEqual(dtoRawString.includes('providerMessageId'), false, 'Response payload must not contain providerMessageId');
+    assert.strictEqual(dtoRawString.includes('failureReason'), false, 'Response payload must not contain failureReason');
+    console.log('  ✅ NOTIF-13 PASSED: Customer DTO strictly sanitized; zero internal or delivery metadata exposed');
+
+    // NOTIF-14: Hotel inquiry creates customer notification
+    console.log('\n[NOTIF-14] Testing Hotel Inquiry Notification Dispatch (POST /api/account/travel-requests)...');
+    const notif14HotelRes = await request('/api/account/travel-requests', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${customer1Token}`,
+        'x-forwarded-for': '198.51.100.220'
+      },
+      body: {
+        type: 'HOTEL',
+        destination: 'Salalah Palm Oasis',
+        checkInDate: '2026-12-01',
+        checkOutDate: '2026-12-05',
+        adults: 2,
+        rooms: 1
+      }
+    });
+    assert.strictEqual(notif14HotelRes.status, 201);
+    const hotelInqRef = notif14HotelRes.body.inquiry.reference;
+
+    const notif14Check = await request('/api/account/notifications?category=HOTEL', {
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(notif14Check.status, 200);
+    const hotelNotif = notif14Check.body.notifications.find(n => n.reference === hotelInqRef);
+    assert.ok(hotelNotif, `Notification for hotel inquiry ${hotelInqRef} must exist`);
+    assert.strictEqual(hotelNotif.category, 'HOTEL');
+    assert.strictEqual(hotelNotif.actionUrl, '/account/travel-requests');
+    assert.strictEqual(hotelNotif.isRead, false);
+    console.log('  ✅ NOTIF-14 PASSED: Hotel inquiry creation successfully emits customer notification');
+
+    // NOTIF-15: Flight inquiry creates customer notification
+    console.log('\n[NOTIF-15] Testing Flight Inquiry Notification Dispatch (POST /api/account/travel-requests)...');
+    const notif15FlightRes = await request('/api/account/travel-requests', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${customer1Token}`,
+        'x-forwarded-for': '198.51.100.221'
+      },
+      body: {
+        type: 'FLIGHT',
+        origin: 'Muscat (MCT)',
+        destination: 'Doha (DOH)',
+        departureDate: '2026-12-15',
+        tripType: 'one-way',
+        adults: 1
+      }
+    });
+    assert.strictEqual(notif15FlightRes.status, 201);
+    const flightInqRef = notif15FlightRes.body.inquiry.reference;
+
+    const notif15Check = await request('/api/account/notifications?category=FLIGHT', {
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(notif15Check.status, 200);
+    const flightNotif = notif15Check.body.notifications.find(n => n.reference === flightInqRef);
+    assert.ok(flightNotif, `Notification for flight inquiry ${flightInqRef} must exist`);
+    assert.strictEqual(flightNotif.category, 'FLIGHT');
+    assert.strictEqual(flightNotif.actionUrl, '/account/travel-requests');
+    console.log('  ✅ NOTIF-15 PASSED: Flight inquiry creation successfully emits customer notification');
+
+    // NOTIF-16: Visa notification ownership is correct
+    console.log('\n[NOTIF-16] Testing Visa Notification Ownership...');
+    const visaNotifKey = `visa_notif_${Date.now()}`;
+    await notificationService.dispatchEvent('VISA_APPROVED', {
+      user: customer1User,
+      reference: 'JMT-V-OWNER-16',
+      idempotencyKey: visaNotifKey
+    });
+
+    const notif16C1 = await request('/api/account/notifications?category=VISA', {
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(notif16C1.status, 200);
+    const c1VisaNotif = notif16C1.body.notifications.find(n => n.reference === 'JMT-V-OWNER-16');
+    assert.ok(c1VisaNotif, 'Customer 1 must receive visa approved notification');
+    assert.strictEqual(c1VisaNotif.category, 'VISA');
+
+    const notif16C2 = await request('/api/account/notifications?category=VISA', {
+      headers: { Authorization: `Bearer ${customer2Token}` }
+    });
+    const c2VisaNotif = notif16C2.body.notifications.find(n => n.reference === 'JMT-V-OWNER-16');
+    assert.strictEqual(c2VisaNotif, undefined, 'Customer 2 must NOT receive Customer 1 visa notification');
+    console.log('  ✅ NOTIF-16 PASSED: Visa notification ownership is strictly bound to targeted customer');
+
+    // NOTIF-17: Support notification ownership is correct
+    console.log('\n[NOTIF-17] Testing Support Notification Ownership...');
+    const supportNotifKey = `supp_notif_${Date.now()}`;
+    await notificationService.dispatchEvent('SUPPORT_TICKET_REPLY', {
+      user: customer1User,
+      reference: 'TICKET-9988',
+      idempotencyKey: supportNotifKey
+    });
+
+    const notif17C1 = await request('/api/account/notifications?category=SUPPORT', {
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(notif17C1.status, 200);
+    const c1SuppNotif = notif17C1.body.notifications.find(n => n.reference === 'TICKET-9988');
+    assert.ok(c1SuppNotif, 'Customer 1 must receive support notification');
+    assert.strictEqual(c1SuppNotif.category, 'SUPPORT');
+
+    const notif17C2 = await request('/api/account/notifications?category=SUPPORT', {
+      headers: { Authorization: `Bearer ${customer2Token}` }
+    });
+    const c2SuppNotif = notif17C2.body.notifications.find(n => n.reference === 'TICKET-9988');
+    assert.strictEqual(c2SuppNotif, undefined, 'Customer 2 must NOT receive Customer 1 support notification');
+    console.log('  ✅ NOTIF-17 PASSED: Support ticket notification strictly isolated to ticket owner');
+
+    // NOTIF-18: Duplicate event protection works where applicable (Idempotency)
+    console.log('\n[NOTIF-18] Testing Duplicate Notification Protection via Idempotency Key...');
+    const dupKey = `idemp_unique_${Date.now()}`;
+    const firstDupDispatch = await notificationService.dispatchEvent('VISA_STATUS_CHANGED', {
+      user: customer1User,
+      reference: 'JMT-V-DUP-TEST',
+      status: 'UNDER_REVIEW',
+      idempotencyKey: dupKey
+    });
+    assert.strictEqual(firstDupDispatch.success, true);
+    assert.strictEqual(firstDupDispatch.isDuplicate, undefined);
+
+    const secondDupDispatch = await notificationService.dispatchEvent('VISA_STATUS_CHANGED', {
+      user: customer1User,
+      reference: 'JMT-V-DUP-TEST',
+      status: 'UNDER_REVIEW',
+      idempotencyKey: dupKey
+    });
+    assert.strictEqual(secondDupDispatch.success, true);
+    assert.strictEqual(secondDupDispatch.isDuplicate, true, 'Second dispatch must be detected as duplicate');
+
+    const matchingNotifs = await db.notifications.find({ idempotencyKey: dupKey });
+    assert.strictEqual(matchingNotifs.length, 1, 'Only exactly 1 notification record must be persisted for given idempotencyKey');
+    console.log('  ✅ NOTIF-18 PASSED: Duplicate notification event suppressed; idempotency verified');
+
+    // NOTIF-19: Dashboard unread count matches notification state
+    console.log('\n[NOTIF-19] Testing Dashboard Unread Count Sync (GET /api/account/dashboard)...');
+    const notif19List = await request('/api/account/notifications', {
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    const expectedUnread = notif19List.body.unreadCount;
+
+    const notif19Dash = await request('/api/account/dashboard', {
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(notif19Dash.status, 200);
+    assert.strictEqual(notif19Dash.body.summary.unreadNotifications, expectedUnread, 'Dashboard unreadNotifications must exactly match notifications endpoint unread count');
+    console.log('  ✅ NOTIF-19 PASSED: Dashboard summary.unreadNotifications strictly mirrors live notification state');
+
+    // NOTIF-20: Notifications route is authenticated
+    console.log('\n[NOTIF-20] Testing Authentication Enforcement on Notification Routes...');
+    const n20DetailNoAuth = await request(`/api/account/notifications/${notifA1Id}`);
+    assert.strictEqual(n20DetailNoAuth.status, 401, 'GET detail without token must return 401');
+
+    const n20ReadNoAuth = await request(`/api/account/notifications/${notifA1Id}/read`, { method: 'PATCH' });
+    assert.strictEqual(n20ReadNoAuth.status, 401, 'PATCH read without token must return 401');
+
+    const n20ReadAllNoAuth = await request('/api/account/notifications/read-all', { method: 'PATCH' });
+    assert.strictEqual(n20ReadAllNoAuth.status, 401, 'PATCH read-all without token must return 401');
+    console.log('  ✅ NOTIF-20 PASSED: All notification endpoints reject unauthenticated access (401 UNAUTHORIZED)');
+
+    // NOTIF-21: Notification action URL is safe
+    console.log('\n[NOTIF-21] Testing Safe Action URLs (No javascript:, no unvetted external protocols)...');
+    const notif21List = await request('/api/account/notifications?limit=50', {
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    for (const notif of notif21List.body.notifications) {
+      if (notif.actionUrl) {
+        assert.ok(notif.actionUrl.startsWith('/'), `actionUrl (${notif.actionUrl}) must be relative and start with /`);
+        assert.strictEqual(notif.actionUrl.toLowerCase().includes('javascript:'), false);
+        assert.strictEqual(notif.actionUrl.toLowerCase().includes('data:'), false);
+      }
+    }
+    console.log('  ✅ NOTIF-21 PASSED: All customer notification action URLs verified safe and relative');
+
+    // NOTIF-22: No payment behavior changed
+    console.log('\n[NOTIF-22] Testing Payment Module Untouched Verification...');
+    const notif22GitStatus = childProcess.execSync('git status --porcelain backend/services/payment.js', {
+      cwd: path.join(__dirname, '..'),
+      encoding: 'utf8'
+    }).trim();
+    assert.strictEqual(notif22GitStatus, '', 'backend/services/payment.js must remain 100% untouched and clean');
+    console.log('  ✅ NOTIF-22 PASSED: Payment module verified completely untouched and clean');
+
+    // NOTIF-23: Hotels regression passes
+    console.log('\n[NOTIF-23] Testing Hotels Regression Verification...');
+    const notif23HotelsRes = await request('/hotels');
+    assert.strictEqual(notif23HotelsRes.status, 200, 'GET /hotels must return 200 OK');
+    const notif23AppJs = fs.readFileSync(path.join(__dirname, '../frontend/public/assets/js/app.js'), 'utf8');
+    assert.ok(notif23AppJs.includes('HOTEL_DATASET'), 'app.js must maintain HOTEL_DATASET');
+    assert.ok(notif23AppJs.includes('renderHotelsPage'), 'app.js must maintain renderHotelsPage');
+    console.log('  ✅ NOTIF-23 PASSED: Hotels public pages and datasets intact');
+
+    // NOTIF-24: Flights regression passes
+    console.log('\n[NOTIF-24] Testing Flights Regression Verification...');
+    const notif24FlightsRes = await request('/flights');
+    assert.strictEqual(notif24FlightsRes.status, 200, 'GET /flights must return 200 OK');
+    assert.ok(notif23AppJs.includes('AIRPORT_DATASET'), 'app.js must maintain AIRPORT_DATASET');
+    assert.ok(notif23AppJs.includes('renderFlightsPage'), 'app.js must maintain renderFlightsPage');
+    console.log('  ✅ NOTIF-24 PASSED: Flights public pages and datasets intact');
+
+    // NOTIF-25: Visa regression passes
+    console.log('\n[NOTIF-25] Testing Visa Regression Verification...');
+    const notif25VisaRes = await request('/api/account/visa', {
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(notif25VisaRes.status, 200, 'GET /api/account/visa must return 200 OK');
+    assert.ok(Array.isArray(notif25VisaRes.body.applications), 'applications array must be returned');
+    console.log('  ✅ NOTIF-25 PASSED: Visa account portal API functional');
+
+    // NOTIF-26: My Trips regression passes
+    console.log('\n[NOTIF-26] Testing My Trips Regression Verification...');
+    const notif26TripsRes = await request('/api/account/my-trips', {
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(notif26TripsRes.status, 200, 'GET /api/account/my-trips must return 200 OK');
+    assert.ok(Array.isArray(notif26TripsRes.body.trips), 'trips array must be returned');
+    console.log('  ✅ NOTIF-26 PASSED: My Trips portal API functional');
+
+    // NOTIF-27: Travel Requests regression passes
+    console.log('\n[NOTIF-27] Testing Travel Requests Regression Verification...');
+    const notif27ReqRes = await request('/api/account/travel-requests', {
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(notif27ReqRes.status, 200, 'GET /api/account/travel-requests must return 200 OK');
+    assert.ok(Array.isArray(notif27ReqRes.body.inquiries), 'inquiries array must be returned');
+    console.log('  ✅ NOTIF-27 PASSED: Travel requests API functional');
+
+    // NOTIF-28: Authentication regression passes
+    console.log('\n[NOTIF-28] Testing Authentication Regression Verification...');
+    const notif28ProfileRes = await request('/api/account/profile', {
+      headers: { Authorization: `Bearer ${customer1Token}` }
+    });
+    assert.strictEqual(notif28ProfileRes.status, 200, 'GET /api/account/profile must return 200 OK');
+    assert.strictEqual(notif28ProfileRes.body.user.id, customer1User.id);
+    console.log('  ✅ NOTIF-28 PASSED: Authentication and profile APIs functional');
+
     console.log('\n================================================================');
-    console.log('🎉 ALL AUTOMATED TESTS PASSED SUCCESSFULLY! (233/233)');
+    console.log('🎉 ALL AUTOMATED TESTS PASSED SUCCESSFULLY! (261/261)');
     console.log('================================================================');
   } catch (err) {
     console.error('\n❌ Test Failure Details:', err);
