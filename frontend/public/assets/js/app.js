@@ -76,7 +76,18 @@ async function apiCall(endpoint, method = 'GET', data = null) {
   const fetchPromise = (async () => {
     try {
       const res = await fetch(endpoint, config);
-      const result = await res.json();
+      const raw = await res.text();
+      let result = {};
+      if (raw) {
+        try {
+          result = JSON.parse(raw);
+        } catch (parseErr) {
+          if (!res.ok) {
+            throw new Error(`API request failed (HTTP ${res.status})`);
+          }
+          throw new Error('The server returned an invalid response. Please try again.');
+        }
+      }
       if (!res.ok) throw new Error(result.error?.message || 'API request failed');
       return result;
     } catch (err) {

@@ -3532,11 +3532,32 @@ app.post('/api/reviews', submissionLimiter, async (req, res) => {
 });
 
 app.post('/api/feedback', submissionLimiter, async (req, res) => {
-  const { name, contact, type, message, website } = req.body || {};
-  if (website) return res.json({ success: true, message: 'Feedback received.' });
-  await db.contactInquiries.create({ name, contact, type, message, status: 'OPEN' });
-  await notificationService.sendEmail({ to: process.env.FEEDBACK_EMAIL || 'info@jmttravels.com', subject: `[JMT Contact] ${type}: ${name}`, text: message });
-  res.json({ success: true, message: 'Thank you for your feedback.' });
+  try {
+    const { name, contact, type, message, website } = req.body || {};
+    if (website) return res.json({ success: true, message: 'Feedback received.' });
+
+    await db.contactInquiries.create({ name, contact, type, message, status: 'OPEN' });
+
+    // Email delivery is a secondary notification. Do not fail the customer's
+    // inquiry submission when the mail provider is unavailable/misconfigured.
+    try {
+      await notificationService.sendEmail({
+        to: process.env.FEEDBACK_EMAIL || 'info@jmttravels.com',
+        subject: `[JMT Contact] ${type}: ${name}`,
+        text: message
+      });
+    } catch (emailErr) {
+      console.error('[FEEDBACK EMAIL ERROR]', emailErr.message);
+    }
+
+    return res.json({ success: true, message: 'Thank you for your feedback.' });
+  } catch (err) {
+    console.error('[FEEDBACK API ERROR]', err.message);
+    return res.status(500).json({
+      success: false,
+      error: { code: 'FEEDBACK_ERROR', message: 'Unable to submit your enquiry right now. Please try again.' }
+    });
+  }
 });
 
 // --- 9. PUBLIC TRACKING ---
