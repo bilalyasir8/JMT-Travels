@@ -221,8 +221,10 @@ class BaseRepository {
   async update(id, updates) {
     const isConnected = this._checkProductionStatus();
     if (isConnected && this.model) {
+      const isObjId = mongoose.Types.ObjectId.isValid(id);
+      const query = isObjId ? { $or: [{ id }, { _id: id }] } : { id };
       const updated = await this.model.findOneAndUpdate(
-        { $or: [{ id }, { _id: id }] },
+        query,
         { $set: { ...updates, updatedAt: new Date().toISOString() } },
         { new: true }
       ).lean();
@@ -241,7 +243,9 @@ class BaseRepository {
   async delete(id) {
     const isConnected = this._checkProductionStatus();
     if (isConnected && this.model) {
-      const res = await this.model.deleteOne({ $or: [{ id }, { _id: id }] });
+      const isObjId = mongoose.Types.ObjectId.isValid(id);
+      const query = isObjId ? { $or: [{ id }, { _id: id }] } : { id };
+      const res = await this.model.deleteOne(query);
       return res.deletedCount > 0;
     }
     let items = readJson(this.name);
