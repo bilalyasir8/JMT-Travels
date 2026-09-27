@@ -16542,11 +16542,14 @@ async function renderTravelRequestsPage(container, path) {
               ` : ''}
             </div>
 
-            <!-- CUSTOMER-SAFE TIMELINE -->
+            <!-- CUSTOMER-FACING STATUS TIMELINE (CURRENT REQUEST LIFECYCLE) -->
             <div style="margin-bottom: 24px;">
-              <h4 style="font-size: 14px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: #00E676; margin: 0 0 14px;">
-                Consultation Timeline
+              <h4 style="font-size: 14px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: #00E676; margin: 0 0 4px;">
+                Current Request Lifecycle
               </h4>
+              <p style="font-size: 11.5px; color: #94A3B8; margin: 0 0 14px;">
+                Status milestones reflect the current lifecycle state of your request.
+              </p>
               <div style="display: flex; flex-direction: column; gap: 14px; border-left: 2px solid rgba(0, 230, 118, 0.4); padding-left: 16px; margin-left: 8px;">
                 ${(req.timeline || []).map(t => `
                   <div>

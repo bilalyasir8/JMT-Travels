@@ -1498,7 +1498,18 @@ async function getCustomerTripsData(user) {
       { sort: { createdAt: -1 }, limit: 50, lean: true }
     ),
     db.contactInquiries.find(
-      userContacts.length > 0 ? { $or: [{ userId: customerId }, { contact: { $in: userContacts } }] } : { userId: customerId },
+      userContacts.length > 0
+        ? {
+            $or: [
+              { userId: customerId },
+              {
+                userId: { $in: [null, ''] },
+                type: { $nin: ['HOTEL_INQUIRY', 'FLIGHT_INQUIRY', 'hotel', 'flight'] },
+                contact: { $in: userContacts }
+              }
+            ]
+          }
+        : { userId: customerId },
       { id: 1, reference: 1, userId: 1, type: 1, message: 1, status: 1, details: 1, staffResponse: 1, createdAt: 1, updatedAt: 1 },
       { sort: { createdAt: -1 }, limit: 25, lean: true }
     )
@@ -1548,8 +1559,15 @@ async function getCustomerTripsData(user) {
   const hotelInquiries = [];
   const flightInquiries = [];
   inquiries.forEach(inq => {
-    const isFlight = inq.type === 'FLIGHT_INQUIRY' || inq.type === 'flight' || /flight|airline|ticket|air/i.test(inq.message || '');
-    const isHotel = inq.type === 'HOTEL_INQUIRY' || inq.type === 'hotel' || /hotel|resort|stay|suite|room/i.test(inq.message || '');
+    // Defense-in-depth: Strict customer isolation — never expose an inquiry owned by another registered customer
+    if (inq.userId && inq.userId !== customerId) return;
+
+    const isFlight = inq.type === 'FLIGHT_INQUIRY' || inq.type === 'flight' || (inq.reference && inq.reference.startsWith('JMT-F-')) || (inq.userId === customerId && /flight|airline|ticket|air/i.test(inq.message || ''));
+    const isHotel = inq.type === 'HOTEL_INQUIRY' || inq.type === 'hotel' || (inq.reference && inq.reference.startsWith('JMT-H-')) || (inq.userId === customerId && /hotel|resort|stay|suite|room/i.test(inq.message || ''));
+
+    // V5.5 travel requests strictly require matching customerId ownership
+    if ((isFlight || isHotel) && inq.userId !== customerId) return;
+
     const details = inq.details || {};
     const ref = inq.reference || inq.id;
     let tripStatus = 'UPCOMING';
@@ -2246,7 +2264,8 @@ function formatCustomerTravelRequestDTO(inquiry) {
   const isFlight = inq.type === 'FLIGHT_INQUIRY' || inq.type === 'flight';
   const details = inq.details || {};
 
-  // Build customer-safe timeline
+  // Customer-facing status timeline (Current request lifecycle derived from current inquiry status
+  // and real document timestamps; milestones reflect current status, NOT an audit event history log)
   const timeline = [
     {
       status: 'SUBMITTED',

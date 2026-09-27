@@ -3772,8 +3772,99 @@ async function runTestSuite() {
     assert.ok(typeof dashCheck.body.summary.activeTravelRequests === 'number');
     console.log('  ✅ TRAVEL-20 PASSED: Payment module verified 100% untouched; dashboard metrics verify travel requests');
 
+    // TRAVEL-SEC-1: Cross-customer inquiry isolation in My Trips when two users share same contact value
+    console.log('\n[TRAVEL-SEC-1] Testing Shared-Contact Inquiries Isolation in /api/account/my-trips...');
+    const sharedPhone = '+96899887711';
+    const emailSecA = `cust_sec_a_${Date.now()}@testshared.com`;
+    const emailSecB = `cust_sec_b_${Date.now()}@testshared.com`;
+
+    // 1. Register Customer A and Customer B with identical phone numbers
+    const regARes = await request('/api/auth/register', {
+      method: 'POST',
+      headers: { 'x-forwarded-for': '198.51.100.201' },
+      body: { name: 'Customer Shared A', email: emailSecA, phone: sharedPhone, password: 'SecurePassword123!' }
+    });
+    assert.strictEqual(regARes.status, 201, 'Customer A registration must succeed');
+    const tokenA = regARes.body.token;
+
+    const regBRes = await request('/api/auth/register', {
+      method: 'POST',
+      headers: { 'x-forwarded-for': '198.51.100.202' },
+      body: { name: 'Customer Shared B', email: emailSecB, phone: sharedPhone, password: 'SecurePassword123!' }
+    });
+    assert.strictEqual(regBRes.status, 201, 'Customer B registration must succeed');
+    const tokenB = regBRes.body.token;
+
+    // 2. Customer A creates inquiry A (Hotel)
+    const inqARes = await request('/api/account/travel-requests', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${tokenA}`,
+        'x-forwarded-for': '198.51.100.201'
+      },
+      body: {
+        type: 'HOTEL',
+        destination: 'Salalah Coastal Haven',
+        checkInDate: '2026-12-10',
+        checkOutDate: '2026-12-15',
+        adults: 2
+      }
+    });
+    assert.strictEqual(inqARes.status, 201, 'Inquiry A creation must succeed');
+    const inqARef = inqARes.body.inquiry.reference;
+
+    // 3. Customer B creates inquiry B (Flight)
+    const inqBRes = await request('/api/account/travel-requests', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${tokenB}`,
+        'x-forwarded-for': '198.51.100.202'
+      },
+      body: {
+        type: 'FLIGHT',
+        origin: 'Muscat (MCT)',
+        destination: 'Salalah (SLL)',
+        departureDate: '2026-12-10',
+        tripType: 'one-way',
+        adults: 1
+      }
+    });
+    assert.strictEqual(inqBRes.status, 201, 'Inquiry B creation must succeed');
+    const inqBRef = inqBRes.body.inquiry.reference;
+
+    // 4. Authenticate as Customer A and call /api/account/my-trips
+    const myTripsARes = await request('/api/account/my-trips', {
+      headers: { Authorization: `Bearer ${tokenA}` }
+    });
+    assert.strictEqual(myTripsARes.status, 200, 'Customer A GET /api/account/my-trips must return 200');
+    const tripsA = myTripsARes.body.trips || [];
+    const tripsARefs = tripsA.map(t => t.reference);
+
+    // 5. Verify inquiry A IS returned
+    assert.strictEqual(tripsARefs.includes(inqARef), true, `Inquiry A (${inqARef}) MUST be returned for Customer A`);
+
+    // 6. Verify inquiry B is NOT returned
+    assert.strictEqual(tripsARefs.includes(inqBRef), false, `Inquiry B (${inqBRef}) MUST NOT be returned for Customer A despite sharing contact`);
+
+    // 7. Defense-in-depth: Verify Customer B perspective
+    const myTripsBRes = await request('/api/account/my-trips', {
+      headers: { Authorization: `Bearer ${tokenB}` }
+    });
+    assert.strictEqual(myTripsBRes.status, 200, 'Customer B GET /api/account/my-trips must return 200');
+    const tripsB = myTripsBRes.body.trips || [];
+    const tripsBRefs = tripsB.map(t => t.reference);
+    assert.strictEqual(tripsBRefs.includes(inqBRef), true, `Inquiry B (${inqBRef}) MUST be returned for Customer B`);
+    assert.strictEqual(tripsBRefs.includes(inqARef), false, `Inquiry A (${inqARef}) MUST NOT be returned for Customer B`);
+
+    // 8. IDOR detail access defense with shared contact
+    const crossTripRes = await request(`/api/account/my-trips/${inqBRef}`, {
+      headers: { Authorization: `Bearer ${tokenA}` }
+    });
+    assert.strictEqual(crossTripRes.status, 404, 'Direct access to Inquiry B via Customer A session must return 404');
+    console.log('  ✅ TRAVEL-SEC-1 PASSED: Strict userId ownership enforced; cross-customer inquiry exposure prevented');
+
     console.log('\n================================================================');
-    console.log('🎉 ALL AUTOMATED TESTS PASSED SUCCESSFULLY! (232/232)');
+    console.log('🎉 ALL AUTOMATED TESTS PASSED SUCCESSFULLY! (233/233)');
     console.log('================================================================');
   } catch (err) {
     console.error('\n❌ Test Failure Details:', err);
