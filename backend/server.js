@@ -1300,7 +1300,7 @@ app.get('/api/account/dashboard', authenticate, async (req, res) => {
     const customerId = req.user.id;
 
     // Concurrently fetch customer's records with bounded queries and selective projection
-    const [bookingsRaw, visasRaw, ticketsRaw] = await Promise.all([
+    const [bookingsRaw, visasRaw, ticketsRaw, inquiriesRaw] = await Promise.all([
       db.tourBookings.find(
         { userId: customerId },
         { id: 1, bookingNumber: 1, packageTitle: 1, amount: 1, currency: 1, status: 1, travelDate: 1, createdAt: 1 },
@@ -1315,12 +1315,18 @@ app.get('/api/account/dashboard', authenticate, async (req, res) => {
         { userId: customerId },
         { id: 1, ticketId: 1, subject: 1, status: 1, priority: 1, createdAt: 1 },
         { sort: { createdAt: -1 }, limit: 10, lean: true }
+      ),
+      db.contactInquiries.find(
+        { userId: customerId },
+        { id: 1, reference: 1, type: 1, status: 1, details: 1, createdAt: 1 },
+        { sort: { createdAt: -1 }, limit: 10, lean: true }
       )
     ]);
 
     const bookings = Array.isArray(bookingsRaw) ? bookingsRaw : [];
     const visas = Array.isArray(visasRaw) ? visasRaw : [];
     const tickets = Array.isArray(ticketsRaw) ? ticketsRaw : [];
+    const inquiries = Array.isArray(inquiriesRaw) ? inquiriesRaw : [];
 
     // Calculate Summary Metrics
     const upcomingTrips = bookings.filter(b =>
@@ -1335,10 +1341,15 @@ app.get('/api/account/dashboard', authenticate, async (req, res) => {
 
     const totalBookings = bookings.filter(b => b.status !== 'CANCELLED').length;
 
+    const activeTravelRequests = inquiries.filter(i =>
+      ['NEW', 'IN_REVIEW', 'CUSTOMER_ACTION_REQUIRED', 'QUOTED'].includes(i.status)
+    ).length;
+
     const pendingActions =
       visas.filter(v => ['ADDITIONAL_DOCUMENTS_REQUIRED', 'PENDING_DOCUMENTS', 'Documents required'].includes(v.status)).length +
       bookings.filter(b => ['PENDING_PAYMENT', 'PAYMENT_PENDING'].includes(b.status)).length +
-      tickets.filter(t => t.status === 'WAITING_FOR_CUSTOMER').length;
+      tickets.filter(t => t.status === 'WAITING_FOR_CUSTOMER').length +
+      inquiries.filter(i => i.status === 'CUSTOMER_ACTION_REQUIRED').length;
 
     // Upcoming Activity (up to 5 items)
     const upcomingItems = [];
@@ -1414,6 +1425,19 @@ app.get('/api/account/dashboard', authenticate, async (req, res) => {
       });
     });
 
+    inquiries.forEach(i => {
+      const isHotel = i.type === 'HOTEL_INQUIRY' || i.type === 'hotel';
+      recentItems.push({
+        id: i.id || i.reference,
+        type: 'TRAVEL_REQUEST',
+        title: isHotel ? 'Hotel Consultation Request' : 'Flight Consultation Request',
+        reference: i.reference || i.id,
+        date: i.createdAt,
+        status: i.status,
+        badgeColor: ['CONFIRMED', 'QUOTED'].includes(i.status) ? 'success' : (i.status === 'CANCELLED' ? 'danger' : 'info')
+      });
+    });
+
     recentItems.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
     const recentActivity = recentItems.slice(0, 5);
 
@@ -1434,7 +1458,9 @@ app.get('/api/account/dashboard', authenticate, async (req, res) => {
         upcomingTrips,
         activeVisas,
         bookings: totalBookings,
-        pendingActions
+        pendingActions,
+        pendingTravelRequests: activeTravelRequests,
+        activeTravelRequests
       },
       upcomingActivity,
       recentActivity
@@ -1471,11 +1497,11 @@ async function getCustomerTripsData(user) {
       { id: 1, paymentNumber: 1, bookingId: 1, visaApplicationId: 1, amount: 1, currency: 1, status: 1, paymentMethod: 1, createdAt: 1 },
       { sort: { createdAt: -1 }, limit: 50, lean: true }
     ),
-    userContacts.length > 0 ? db.contactInquiries.find(
-      { contact: { $in: userContacts } },
-      { id: 1, type: 1, message: 1, status: 1, createdAt: 1 },
-      { sort: { createdAt: -1 }, limit: 20, lean: true }
-    ) : []
+    db.contactInquiries.find(
+      userContacts.length > 0 ? { $or: [{ userId: customerId }, { contact: { $in: userContacts } }] } : { userId: customerId },
+      { id: 1, reference: 1, userId: 1, type: 1, message: 1, status: 1, details: 1, staffResponse: 1, createdAt: 1, updatedAt: 1 },
+      { sort: { createdAt: -1 }, limit: 25, lean: true }
+    )
   ]);
 
   const bookings = Array.isArray(bookingsRaw) ? bookingsRaw : [];
@@ -1522,22 +1548,56 @@ async function getCustomerTripsData(user) {
   const hotelInquiries = [];
   const flightInquiries = [];
   inquiries.forEach(inq => {
-    const isFlight = inq.type === 'flight' || /flight|airline|ticket|air/i.test(inq.message || '');
-    const isHotel = inq.type === 'hotel' || /hotel|resort|stay|suite|room/i.test(inq.message || '');
+    const isFlight = inq.type === 'FLIGHT_INQUIRY' || inq.type === 'flight' || /flight|airline|ticket|air/i.test(inq.message || '');
+    const isHotel = inq.type === 'HOTEL_INQUIRY' || inq.type === 'hotel' || /hotel|resort|stay|suite|room/i.test(inq.message || '');
+    const details = inq.details || {};
+    const ref = inq.reference || inq.id;
+    let tripStatus = 'UPCOMING';
+    let nextAction = 'Concierge review in progress';
+
+    if (inq.status === 'CANCELLED' || inq.status === 'CLOSED' || inq.status === 'RESOLVED') {
+      tripStatus = 'COMPLETED';
+      nextAction = inq.status === 'CANCELLED' ? 'Request cancelled' : 'Consultation concluded';
+    } else if (inq.status === 'CUSTOMER_ACTION_REQUIRED') {
+      tripStatus = 'ACTION_REQUIRED';
+      nextAction = 'Submit requested consultation details';
+    } else if (inq.status === 'QUOTED') {
+      tripStatus = 'UPCOMING';
+      nextAction = 'Consultation quote ready for review';
+    } else if (inq.status === 'CONFIRMED') {
+      tripStatus = 'UPCOMING';
+      nextAction = 'Consultation confirmed';
+    }
+
     if (isFlight) {
       flightInquiries.push({
         id: inq.id,
+        reference: ref,
         type: 'Flight Consultation',
-        status: inq.status === 'RESOLVED' ? 'COMPLETED' : 'IN_PROGRESS',
+        status: tripStatus,
+        rawStatus: inq.status,
+        destination: details.destination || 'International / GCC',
+        origin: details.origin || 'Muscat (MCT)',
+        startDate: details.departureDate || inq.createdAt,
+        endDate: details.returnDate || null,
         message: (inq.message || '').slice(0, 120),
+        details,
+        nextAction,
         createdAt: inq.createdAt
       });
     } else if (isHotel) {
       hotelInquiries.push({
         id: inq.id,
+        reference: ref,
         type: 'Hotel Consultation',
-        status: inq.status === 'RESOLVED' ? 'COMPLETED' : 'IN_PROGRESS',
+        status: tripStatus,
+        rawStatus: inq.status,
+        destination: details.destination || 'Oman / GCC',
+        startDate: details.checkInDate || inq.createdAt,
+        endDate: details.checkOutDate || null,
         message: (inq.message || '').slice(0, 120),
+        details,
+        nextAction,
         createdAt: inq.createdAt
       });
     }
@@ -1565,11 +1625,9 @@ async function getCustomerTripsData(user) {
     // Associated documents from linked visa
     const tripDocs = linkedVisa ? (docsByApp.get(String(linkedVisa.id)) || docsByApp.get(String(linkedVisa.applicationNumber)) || []) : [];
 
-    // Check for consultations
-    const linkedHotel = hotelInquiries.find(h => !linkedInquiryIds.has(h.id));
-    if (linkedHotel) linkedInquiryIds.add(linkedHotel.id);
-    const linkedFlight = flightInquiries.find(f => !linkedInquiryIds.has(f.id));
-    if (linkedFlight) linkedInquiryIds.add(linkedFlight.id);
+    // Check for consultations explicitly referencing this booking
+    const linkedHotel = hotelInquiries.find(h => h.details?.bookingId === b.id || h.details?.bookingNumber === b.bookingNumber);
+    const linkedFlight = flightInquiries.find(f => f.details?.bookingId === b.id || f.details?.bookingNumber === b.bookingNumber);
 
     // Classification
     let tripStatus = 'UPCOMING';
@@ -1737,43 +1795,38 @@ async function getCustomerTripsData(user) {
             status: r.status
           }))
         },
-        hotel: linkedHotel ? {
-          reference: linkedHotel.id,
-          type: 'Hotel Consultation',
-          status: linkedHotel.status
-        } : null,
-        flight: linkedFlight ? {
-          reference: linkedFlight.id,
-          type: 'Flight Consultation',
-          status: linkedFlight.status
-        } : null
+        hotel: null,
+        flight: null
       },
       documents: tripDocs,
       createdAt: v.createdAt
     });
   });
 
-  // 3. Process remaining Standalone Hotel / Flight Consultations
+  // 3. Process Hotel & Flight Consultations into Unified Trips
   [...hotelInquiries, ...flightInquiries].forEach(inq => {
-    if (linkedInquiryIds.has(inq.id)) return;
-    const isFlight = inq.type === 'Flight Consultation';
+    const isFlight = inq.type === 'Flight Consultation' || inq.type === 'FLIGHT_INQUIRY' || (inq.reference && inq.reference.startsWith('JMT-F-'));
     trips.push({
       id: inq.id,
-      reference: inq.id,
+      reference: inq.reference || inq.id,
       type: isFlight ? 'FLIGHT_CONSULTATION' : 'HOTEL_CONSULTATION',
-      title: isFlight ? 'Flight Consultation Request' : 'Hotel Consultation Request',
-      destination: 'Oman / GCC',
-      startDate: inq.createdAt,
-      endDate: null,
-      status: inq.status === 'COMPLETED' ? 'COMPLETED' : 'UPCOMING',
+      isConsultation: true,
+      title: isFlight
+        ? (inq.destination ? `Flight Consultation: ${inq.origin || 'MCT'} to ${inq.destination}` : 'Flight Consultation Request')
+        : (inq.destination ? `Hotel Consultation: ${inq.destination}` : 'Hotel Consultation Request'),
+      destination: inq.destination || 'Oman / GCC',
+      startDate: inq.startDate || inq.createdAt,
+      endDate: inq.endDate || null,
+      status: inq.status,
+      isConsultation: true,
       paymentStatus: 'N/A',
       payment: null,
-      nextAction: inq.status === 'COMPLETED' ? 'Consultation completed' : 'Concierge review in progress',
+      nextAction: inq.nextAction || (inq.status === 'COMPLETED' ? 'Consultation completed' : 'Concierge review in progress'),
       services: {
         tour: null,
         visa: null,
-        hotel: !isFlight ? { reference: inq.id, type: 'Hotel Consultation', status: inq.status, details: inq.message } : null,
-        flight: isFlight ? { reference: inq.id, type: 'Flight Consultation', status: inq.status, details: inq.message } : null
+        hotel: !isFlight ? { reference: inq.reference || inq.id, type: 'Hotel Consultation', status: inq.rawStatus || inq.status, details: inq.message } : null,
+        flight: isFlight ? { reference: inq.reference || inq.id, type: 'Flight Consultation', status: inq.rawStatus || inq.status, details: inq.message } : null
       },
       documents: [],
       createdAt: inq.createdAt
@@ -2176,6 +2229,477 @@ app.get('/api/account/documents/:id', authenticate, async (req, res) => {
     res.json({
       success: true,
       document: sanitized
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: err.message } });
+  }
+});
+
+// -------------------------------------------------------------
+// V5.5 CUSTOMER TRAVEL REQUESTS (HOTEL & FLIGHT INQUIRIES)
+// -------------------------------------------------------------
+
+function formatCustomerTravelRequestDTO(inquiry) {
+  if (!inquiry) return null;
+  const inq = typeof inquiry.toObject === 'function' ? inquiry.toObject() : { ...inquiry };
+  const isHotel = inq.type === 'HOTEL_INQUIRY' || inq.type === 'hotel';
+  const isFlight = inq.type === 'FLIGHT_INQUIRY' || inq.type === 'flight';
+  const details = inq.details || {};
+
+  // Build customer-safe timeline
+  const timeline = [
+    {
+      status: 'SUBMITTED',
+      title: 'Consultation Request Submitted',
+      description: 'Your travel inquiry has been received by the JMT Concierge Desk.',
+      timestamp: inq.createdAt
+    }
+  ];
+
+  if (inq.status === 'IN_REVIEW') {
+    timeline.push({
+      status: 'IN_REVIEW',
+      title: 'Under Concierge Review',
+      description: 'A JMT travel specialist is reviewing accommodation / flight route availability and negotiated rates.',
+      timestamp: inq.updatedAt || inq.createdAt
+    });
+  } else if (inq.status === 'CUSTOMER_ACTION_REQUIRED') {
+    timeline.push({
+      status: 'CUSTOMER_ACTION_REQUIRED',
+      title: 'Customer Details Required',
+      description: inq.staffResponse || 'JMT travel specialist requires additional preferences or date confirmation.',
+      timestamp: inq.updatedAt || inq.createdAt
+    });
+  } else if (inq.status === 'QUOTED') {
+    timeline.push({
+      status: 'QUOTED',
+      title: 'Consultation Options Prepared',
+      description: inq.staffResponse || 'Custom itinerary and fare options are ready for your review.',
+      timestamp: inq.updatedAt || inq.createdAt
+    });
+  } else if (inq.status === 'CONFIRMED') {
+    timeline.push({
+      status: 'CONFIRMED',
+      title: 'Consultation Confirmed',
+      description: 'Consultation confirmed with JMT travel desk.',
+      timestamp: inq.updatedAt || inq.createdAt
+    });
+  } else if (inq.status === 'CANCELLED') {
+    timeline.push({
+      status: 'CANCELLED',
+      title: 'Request Cancelled',
+      description: 'This travel request was cancelled by customer.',
+      timestamp: inq.updatedAt || inq.createdAt
+    });
+  } else if (inq.status === 'CLOSED' || inq.status === 'RESOLVED') {
+    timeline.push({
+      status: 'COMPLETED',
+      title: 'Consultation Concluded',
+      description: 'This consultation request has been concluded.',
+      timestamp: inq.updatedAt || inq.createdAt
+    });
+  }
+
+  let nextAction = 'JMT team will verify availability and reach out with consultation options';
+  if (inq.status === 'CUSTOMER_ACTION_REQUIRED') {
+    nextAction = 'Action Required: Please provide requested information via WhatsApp or reply to JMT';
+  } else if (inq.status === 'QUOTED') {
+    nextAction = 'Review consultation quote with your JMT travel consultant';
+  } else if (inq.status === 'CONFIRMED') {
+    nextAction = 'Consultation confirmed — preparation for itinerary handover';
+  } else if (inq.status === 'CANCELLED') {
+    nextAction = 'Request cancelled';
+  } else if (inq.status === 'CLOSED' || inq.status === 'RESOLVED') {
+    nextAction = 'Consultation completed';
+  }
+
+  // Sanitized details (strictly excluding internal staff notes, storage paths, passwords, payment secrets)
+  const sanitizedDetails = { ...details };
+  delete sanitizedDetails.adminNotes;
+  delete sanitizedDetails.internalNotes;
+  delete sanitizedDetails.staffNotes;
+  delete sanitizedDetails.storageKey;
+  delete sanitizedDetails.filePath;
+  delete sanitizedDetails.diskPath;
+
+  return {
+    id: inq.id,
+    reference: inq.reference || inq.id,
+    type: inq.type,
+    category: isHotel ? 'HOTEL' : (isFlight ? 'FLIGHT' : 'GENERAL'),
+    status: inq.status,
+    title: isHotel
+      ? (details.preferredHotel ? `Hotel Consultation: ${details.preferredHotel}` : `Hotel Consultation: ${details.destination || 'Oman'}`)
+      : (isFlight ? `Flight Consultation: ${details.origin || 'MCT'} → ${details.destination || 'DXB'}` : 'Travel Consultation Request'),
+    destination: details.destination || 'Oman / GCC',
+    origin: isFlight ? (details.origin || 'Muscat (MCT)') : null,
+    startDate: details.checkInDate || details.departureDate || inq.createdAt,
+    endDate: details.checkOutDate || details.returnDate || null,
+    guestCount: isHotel
+      ? { adults: details.adults || 1, children: details.children || 0, rooms: details.rooms || 1 }
+      : null,
+    passengerCount: isFlight
+      ? { adults: details.adults || 1, children: details.children || 0, infants: details.infants || 0 }
+      : null,
+    details: sanitizedDetails,
+    staffResponse: inq.staffResponse || null,
+    nextAction,
+    timeline,
+    supportContact: {
+      phone: '+968 9760 8999',
+      whatsappUrl: `https://wa.me/96897608999?text=${encodeURIComponent(`Travel Inquiry Ref: ${inq.reference || inq.id}`)}`,
+      email: 'info@jmttravels.com'
+    },
+    createdAt: inq.createdAt,
+    updatedAt: inq.updatedAt
+  };
+}
+
+// POST /api/account/travel-requests - Authenticated customer travel inquiry submission
+app.post('/api/account/travel-requests', authenticate, submissionLimiter, async (req, res) => {
+  try {
+    // SECURITY: Always derive userId strictly from authenticated session
+    const userId = req.user.id;
+
+    const payload = req.body || {};
+    const rawType = String(payload.type || '').trim().toUpperCase();
+    const typeMapping = {
+      'HOTEL': 'HOTEL_INQUIRY',
+      'HOTEL_INQUIRY': 'HOTEL_INQUIRY',
+      'FLIGHT': 'FLIGHT_INQUIRY',
+      'FLIGHT_INQUIRY': 'FLIGHT_INQUIRY'
+    };
+    const inquiryType = typeMapping[rawType];
+    if (!inquiryType) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'INVALID_INQUIRY_TYPE',
+          message: 'Inquiry type must be HOTEL_INQUIRY or FLIGHT_INQUIRY'
+        }
+      });
+    }
+
+    // Common sanitization helper
+    const sanitizeStr = (val, maxLen = 200) => typeof val === 'string' ? val.trim().slice(0, maxLen) : '';
+
+    const destination = sanitizeStr(payload.destination, 120);
+    if (!destination || destination.length < 2) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'VALIDATION_ERROR', message: 'Destination is required (minimum 2 characters).' }
+      });
+    }
+
+    const todayDateStr = new Date().toISOString().split('T')[0];
+    const isValidDate = (dStr) => /^\d{4}-\d{2}-\d{2}$/.test(dStr) && !isNaN(new Date(dStr).getTime());
+
+    let validatedDetails = {};
+    let summaryMessage = '';
+    let refPrefix = 'JMT-';
+
+    if (inquiryType === 'HOTEL_INQUIRY') {
+      refPrefix = 'JMT-H-';
+      const checkInDate = sanitizeStr(payload.checkInDate, 10);
+      const checkOutDate = sanitizeStr(payload.checkOutDate, 10);
+
+      if (!checkInDate || !isValidDate(checkInDate)) {
+        return res.status(400).json({
+          success: false,
+          error: { code: 'INVALID_CHECKIN_DATE', message: 'Valid check-in date (YYYY-MM-DD) is required.' }
+        });
+      }
+      if (checkInDate < todayDateStr) {
+        return res.status(400).json({
+          success: false,
+          error: { code: 'PAST_TRAVEL_DATE', message: 'Check-in date cannot be in the past.' }
+        });
+      }
+      if (!checkOutDate || !isValidDate(checkOutDate)) {
+        return res.status(400).json({
+          success: false,
+          error: { code: 'INVALID_CHECKOUT_DATE', message: 'Valid check-out date (YYYY-MM-DD) is required.' }
+        });
+      }
+      if (checkOutDate < checkInDate) {
+        return res.status(400).json({
+          success: false,
+          error: { code: 'INVALID_DATE_ORDER', message: 'Check-out date must be on or after check-in date.' }
+        });
+      }
+
+      const adults = parseInt(payload.adults, 10);
+      if (isNaN(adults) || adults < 1 || adults > 20) {
+        return res.status(400).json({
+          success: false,
+          error: { code: 'INVALID_GUEST_COUNT', message: 'Adults must be between 1 and 20.' }
+        });
+      }
+      const children = parseInt(payload.children, 10) || 0;
+      if (children < 0 || children > 20) {
+        return res.status(400).json({
+          success: false,
+          error: { code: 'INVALID_GUEST_COUNT', message: 'Children count must be between 0 and 20.' }
+        });
+      }
+      const rooms = parseInt(payload.rooms, 10) || 1;
+      if (rooms < 1 || rooms > 10) {
+        return res.status(400).json({
+          success: false,
+          error: { code: 'INVALID_ROOM_COUNT', message: 'Rooms must be between 1 and 10.' }
+        });
+      }
+
+      validatedDetails = {
+        destination,
+        checkInDate,
+        checkOutDate,
+        adults,
+        children,
+        rooms,
+        preferredHotel: sanitizeStr(payload.preferredHotel, 150),
+        roomPreference: sanitizeStr(payload.roomPreference, 100),
+        budgetRange: sanitizeStr(payload.budgetRange, 80),
+        specialRequirements: sanitizeStr(payload.specialRequirements, 1000),
+        contactPreference: sanitizeStr(payload.contactPreference, 60) || 'WHATSAPP'
+      };
+
+      summaryMessage = `Hotel Inquiry: ${validatedDetails.preferredHotel || destination} (${checkInDate} to ${checkOutDate}, ${rooms} room(s), ${adults} adult(s)${children ? `, ${children} child(ren)` : ''})`;
+    } else {
+      // FLIGHT_INQUIRY
+      refPrefix = 'JMT-F-';
+      const origin = sanitizeStr(payload.origin, 120);
+      if (!origin || origin.length < 2) {
+        return res.status(400).json({
+          success: false,
+          error: { code: 'VALIDATION_ERROR', message: 'Origin is required (minimum 2 characters).' }
+        });
+      }
+      if (origin.toLowerCase() === destination.toLowerCase()) {
+        return res.status(400).json({
+          success: false,
+          error: { code: 'SAME_ORIGIN_DESTINATION', message: 'Origin and destination cannot be identical.' }
+        });
+      }
+
+      const departureDate = sanitizeStr(payload.departureDate, 10);
+      if (!departureDate || !isValidDate(departureDate)) {
+        return res.status(400).json({
+          success: false,
+          error: { code: 'INVALID_DEPARTURE_DATE', message: 'Valid departure date (YYYY-MM-DD) is required.' }
+        });
+      }
+      if (departureDate < todayDateStr) {
+        return res.status(400).json({
+          success: false,
+          error: { code: 'PAST_TRAVEL_DATE', message: 'Departure date cannot be in the past.' }
+        });
+      }
+
+      const tripType = ['round-trip', 'one-way', 'multi-city'].includes(payload.tripType) ? payload.tripType : 'round-trip';
+      let returnDate = null;
+      if (tripType === 'round-trip') {
+        returnDate = sanitizeStr(payload.returnDate, 10);
+        if (!returnDate || !isValidDate(returnDate)) {
+          return res.status(400).json({
+            success: false,
+            error: { code: 'INVALID_RETURN_DATE', message: 'Valid return date (YYYY-MM-DD) is required for round trips.' }
+          });
+        }
+        if (returnDate < departureDate) {
+          return res.status(400).json({
+            success: false,
+            error: { code: 'INVALID_DATE_ORDER', message: 'Return date must be on or after departure date.' }
+          });
+        }
+      }
+
+      const adults = parseInt(payload.adults, 10);
+      if (isNaN(adults) || adults < 1 || adults > 20) {
+        return res.status(400).json({
+          success: false,
+          error: { code: 'INVALID_PASSENGER_COUNT', message: 'Adults must be between 1 and 20.' }
+        });
+      }
+      const children = parseInt(payload.children, 10) || 0;
+      if (children < 0 || children > 20) {
+        return res.status(400).json({
+          success: false,
+          error: { code: 'INVALID_PASSENGER_COUNT', message: 'Children count must be between 0 and 20.' }
+        });
+      }
+      const infants = parseInt(payload.infants, 10) || 0;
+      if (infants < 0 || infants > 10) {
+        return res.status(400).json({
+          success: false,
+          error: { code: 'INVALID_PASSENGER_COUNT', message: 'Infants count must be between 0 and 10.' }
+        });
+      }
+
+      validatedDetails = {
+        origin,
+        destination,
+        tripType,
+        departureDate,
+        returnDate,
+        adults,
+        children,
+        infants,
+        preferredCabin: sanitizeStr(payload.preferredCabin, 50) || 'Economy',
+        preferredAirline: sanitizeStr(payload.preferredAirline, 100),
+        specialRequirements: sanitizeStr(payload.specialRequirements, 1000),
+        contactPreference: sanitizeStr(payload.contactPreference, 60) || 'WHATSAPP'
+      };
+
+      summaryMessage = `Flight Inquiry: ${origin} to ${destination} (${tripType}, ${departureDate}${returnDate ? ` to ${returnDate}` : ''}, ${adults} adult(s)${children ? `, ${children} child(ren)` : ''})`;
+    }
+
+    const reference = `${refPrefix}${Math.floor(100000 + Math.random() * 900000)}`;
+    const inquiryId = `inq_${crypto.randomUUID()}`;
+
+    const newInquiry = await db.contactInquiries.create({
+      id: inquiryId,
+      reference,
+      userId,
+      name: req.user.name,
+      contact: req.user.email || req.user.phone || 'customer@jmttravels.com',
+      type: inquiryType,
+      status: 'NEW',
+      message: summaryMessage,
+      details: validatedDetails,
+      staffResponse: '',
+      adminNotes: ''
+    });
+
+    await logAudit(req, 'CREATE_TRAVEL_REQUEST', 'CONTACT_INQUIRY', newInquiry.id, {
+      reference,
+      type: inquiryType,
+      destination: validatedDetails.destination
+    });
+
+    const inqDto = formatCustomerTravelRequestDTO(newInquiry);
+    res.status(201).json({
+      success: true,
+      message: 'Travel inquiry submitted successfully. JMT team will review availability and contact you.',
+      request: inqDto,
+      inquiry: inqDto
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: err.message } });
+  }
+});
+
+// GET /api/account/travel-requests - List customer's own travel inquiries
+app.get('/api/account/travel-requests', authenticate, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { type, status } = req.query || {};
+
+    const filter = { userId };
+    if (type && type !== 'ALL') {
+      const typeUpper = String(type).trim().toUpperCase();
+      if (['HOTEL', 'HOTEL_INQUIRY'].includes(typeUpper)) {
+        filter.type = { $in: ['HOTEL_INQUIRY', 'hotel'] };
+      } else if (['FLIGHT', 'FLIGHT_INQUIRY'].includes(typeUpper)) {
+        filter.type = { $in: ['FLIGHT_INQUIRY', 'flight'] };
+      }
+    }
+    if (status && status !== 'ALL') {
+      filter.status = String(status).trim().toUpperCase();
+    }
+
+    const inquiries = await db.contactInquiries.find(filter, null, { sort: { createdAt: -1 } });
+    const formatted = (Array.isArray(inquiries) ? inquiries : []).map(formatCustomerTravelRequestDTO);
+
+    res.json({
+      success: true,
+      count: formatted.length,
+      requests: formatted,
+      inquiries: formatted
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: err.message } });
+  }
+});
+
+// GET /api/account/travel-requests/:id - Single travel request detail with IDOR defense
+app.get('/api/account/travel-requests/:id', authenticate, async (req, res) => {
+  try {
+    const targetId = String(req.params.id || '').trim();
+    if (!targetId) {
+      return res.status(400).json({ success: false, error: { code: 'INVALID_ID', message: 'Inquiry ID is required.' } });
+    }
+
+    const inquiry = await db.contactInquiries.findOne({
+      $or: [{ id: targetId }, { reference: targetId }]
+    }) || await db.contactInquiries.findById(targetId);
+
+    if (!inquiry) {
+      return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Travel request not found.' } });
+    }
+
+    const isStaff = ['STAFF', 'ADMIN', 'SUPER_ADMIN'].includes(req.user.role);
+    if (!isStaff && inquiry.userId !== req.user.id) {
+      await logAudit(req, 'SUSPICIOUS_IDOR_TRAVEL_REQUEST_VIEW_ATTEMPT', 'CONTACT_INQUIRY', targetId);
+      return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Access denied: You do not own this travel request.' } });
+    }
+
+    const inqDto = formatCustomerTravelRequestDTO(inquiry);
+    res.json({
+      success: true,
+      request: inqDto,
+      inquiry: inqDto
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: err.message } });
+  }
+});
+
+// PATCH /api/account/travel-requests/:id/cancel - Customer cancellation of own pending request
+app.patch('/api/account/travel-requests/:id/cancel', authenticate, async (req, res) => {
+  try {
+    const targetId = String(req.params.id || '').trim();
+    if (!targetId) {
+      return res.status(400).json({ success: false, error: { code: 'INVALID_ID', message: 'Inquiry ID is required.' } });
+    }
+
+    const inquiry = await db.contactInquiries.findOne({
+      $or: [{ id: targetId }, { reference: targetId }]
+    }) || await db.contactInquiries.findById(targetId);
+
+    if (!inquiry) {
+      return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Travel request not found.' } });
+    }
+
+    const isStaff = ['STAFF', 'ADMIN', 'SUPER_ADMIN'].includes(req.user.role);
+    if (!isStaff && inquiry.userId !== req.user.id) {
+      await logAudit(req, 'SUSPICIOUS_IDOR_TRAVEL_REQUEST_CANCEL_ATTEMPT', 'CONTACT_INQUIRY', targetId);
+      return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Access denied: You do not own this travel request.' } });
+    }
+
+    if (['CANCELLED', 'CLOSED', 'RESOLVED'].includes(inquiry.status)) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'REQUEST_ALREADY_CLOSED', message: 'Travel request is already closed or cancelled.' }
+      });
+    }
+
+    const updated = await db.contactInquiries.update(inquiry.id, {
+      status: 'CANCELLED',
+      staffResponse: inquiry.staffResponse ? `${inquiry.staffResponse}\n[Customer cancelled request]` : '[Customer cancelled request]'
+    });
+
+    await logAudit(req, 'CANCEL_TRAVEL_REQUEST', 'CONTACT_INQUIRY', inquiry.id, {
+      reference: inquiry.reference,
+      type: inquiry.type
+    });
+
+    const updatedDto = formatCustomerTravelRequestDTO(updated);
+    res.json({
+      success: true,
+      message: 'Travel request has been successfully cancelled.',
+      request: updatedDto,
+      inquiry: updatedDto
     });
   } catch (err) {
     res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: err.message } });
@@ -3524,6 +4048,42 @@ app.patch('/api/admin/contact-inquiries/:id/resolve', authenticate, authorize('S
 
     const updated = await db.contactInquiries.update(inquiry.id, { resolved: true, resolvedBy: req.user.id, resolvedAt: new Date() });
     await logAudit(req, 'RESOLVE_CONTACT_INQUIRY', 'CONTACT_INQUIRY', inquiry.id);
+
+    res.json({ success: true, inquiry: updated });
+  } catch (err) {
+    res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: err.message } });
+  }
+});
+
+app.patch('/api/admin/contact-inquiries/:id/status', authenticate, authorize('STAFF', 'ADMIN', 'SUPER_ADMIN'), async (req, res) => {
+  try {
+    const { status, staffResponse, adminNotes } = req.body || {};
+    const validStatuses = ['NEW', 'IN_REVIEW', 'CUSTOMER_ACTION_REQUIRED', 'QUOTED', 'CONFIRMED', 'CLOSED', 'CANCELLED'];
+    if (status && !validStatuses.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'INVALID_STATUS', message: `Status must be one of: ${validStatuses.join(', ')}` }
+      });
+    }
+
+    const inquiry = await db.contactInquiries.findById(req.params.id) || await db.contactInquiries.findOne({ reference: req.params.id });
+    if (!inquiry) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Inquiry not found.' } });
+
+    const updates = {};
+    if (status) updates.status = status;
+    if (typeof staffResponse === 'string') updates.staffResponse = staffResponse.trim();
+    if (typeof adminNotes === 'string') updates.adminNotes = adminNotes.trim();
+    if (status === 'CLOSED' || status === 'CONFIRMED') {
+      updates.resolved = true;
+      updates.resolvedBy = req.user.id;
+      updates.resolvedAt = new Date();
+    }
+
+    const updated = await db.contactInquiries.update(inquiry.id, updates);
+    await logAudit(req, 'UPDATE_TRAVEL_INQUIRY_STATUS', 'CONTACT_INQUIRY', inquiry.id, {
+      status: updates.status,
+      reference: inquiry.reference
+    });
 
     res.json({ success: true, inquiry: updated });
   } catch (err) {
