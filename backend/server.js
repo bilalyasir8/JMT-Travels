@@ -3449,15 +3449,37 @@ app.post('/api/support/tickets', submissionLimiter, async (req, res) => {
       return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Subject and message are required.' } });
     }
 
+    const ticketId = `TCK-${Date.now().toString().slice(-6)}-${Math.floor(100 + Math.random() * 900)}`;
+    const ticketNumber = `JMT-T-${Math.floor(100000 + Math.random() * 900000)}`;
+    const ticketMessage = String(message).trim();
     const ticket = await db.supportTickets.create({
-      ticketId: `TCK-${Date.now().toString().slice(-6)}`,
+      ticketId,
+      ticketNumber,
       userId: req.user ? req.user.id : null,
-      subject,
+      userName: req.user ? req.user.name : 'Guest',
+      userEmail: req.user ? req.user.email : null,
+      subject: String(subject).trim(),
       category: category || 'General',
       priority: 'MEDIUM',
       status: 'OPEN',
-      messages: [{ sender: req.user ? req.user.name : 'Guest', message, timestamp: new Date().toISOString() }]
+      messages: [{
+        sender: req.user ? 'CUSTOMER' : 'GUEST',
+        senderId: req.user ? req.user.id : null,
+        senderName: req.user ? req.user.name : 'Guest',
+        message: ticketMessage,
+        text: ticketMessage,
+        timestamp: new Date().toISOString()
+      }]
     });
+
+    if (req.user) {
+      notificationService.dispatchEvent('SUPPORT_TICKET_CREATED', {
+        user: req.user,
+        reference: ticket.ticketNumber || ticket.ticketId,
+        title: `Support Ticket Received: ${ticket.subject}`,
+        message: `Your support ticket (${ticket.ticketNumber || ticket.ticketId}) has been submitted to JMT help desk.`
+      }).catch(() => {});
+    }
 
     res.status(201).json({ success: true, ticket });
   } catch (err) {
