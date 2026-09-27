@@ -13584,6 +13584,185 @@ window.closeTripModal = function() {
   }
 };
 
+// V5.5 Plan Your Next Journey Concierge Modal
+window.openPlanJourneyModal = function() {
+  let modalContainer = document.getElementById('jmt-plan-journey-modal-overlay');
+  if (!modalContainer) {
+    modalContainer = document.createElement('div');
+    modalContainer.id = 'jmt-plan-journey-modal-overlay';
+    modalContainer.className = 'jmt-modal-overlay';
+    document.body.appendChild(modalContainer);
+  }
+
+  modalContainer.innerHTML = `
+    <div class="jmt-modal-card" role="dialog" aria-modal="true" aria-labelledby="plan-journey-modal-title" style="max-width: 520px; width: 100%; box-sizing: border-box; padding: 26px; max-height: 90vh; overflow-y: auto;">
+      <style>
+        .jmt-plan-option-card {
+          background: rgba(255, 255, 255, 0.04);
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          border-radius: 14px;
+          padding: 16px 18px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 14px;
+          flex-wrap: wrap;
+          transition: all 0.2s ease;
+        }
+        .jmt-plan-option-card:hover {
+          background: rgba(255, 255, 255, 0.07);
+          border-color: rgba(0, 230, 118, 0.35);
+        }
+        .jmt-plan-option-info {
+          flex: 1 1 200px;
+        }
+        .jmt-plan-btn {
+          background: #00A651 !important;
+          color: #FFFFFF !important;
+          font-weight: 700;
+          font-size: 13px;
+          padding: 9px 20px;
+          border-radius: 99px;
+          border: 0;
+          cursor: pointer;
+          white-space: nowrap;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          box-shadow: 0 2px 8px rgba(0, 166, 81, 0.3);
+          transition: transform 0.15s ease, background-color 0.15s ease;
+        }
+        .jmt-plan-btn:hover {
+          background: #008742 !important;
+          transform: translateY(-1px);
+        }
+        @media (max-width: 480px) {
+          .jmt-plan-option-card {
+            padding: 14px;
+          }
+          .jmt-plan-btn {
+            width: 100%;
+          }
+        }
+      </style>
+
+      <div class="jmt-modal-header" style="margin-bottom: 18px; padding-bottom: 14px; border-bottom: 1px solid rgba(255, 255, 255, 0.15); display: flex; justify-content: space-between; align-items: flex-start;">
+        <div>
+          <span style="background: rgba(0, 230, 118, 0.15); color: #00E676; padding: 3px 10px; border-radius: 99px; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px;">
+            JMT Concierge
+          </span>
+          <h3 id="plan-journey-modal-title" style="font-size: 20px; font-weight: 800; color: #FFFFFF; margin: 6px 0 2px;">
+            Plan Your Next Journey
+          </h3>
+          <p style="font-size: 13px; color: #CBD5E1; margin: 0; line-height: 1.4;">
+            Choose how you'd like JMT Travels to help you.
+          </p>
+        </div>
+        <button type="button" class="jmt-modal-close" onclick="closePlanJourneyModal()" aria-label="Close Modal" style="background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.25); color: #FFF; width: 34px; height: 34px; border-radius: 50%; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-left: 12px;">×</button>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px;">
+
+        <!-- Option 1: Tour Package -->
+        <div class="jmt-plan-option-card">
+          <div class="jmt-plan-option-info">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+              <span style="font-size: 20px;" aria-hidden="true">🏖️</span>
+              <h4 style="font-size: 15px; font-weight: 700; color: #FFFFFF; margin: 0;">Tour Package</h4>
+            </div>
+            <p style="font-size: 12.5px; color: #CBD5E1; margin: 0; line-height: 1.45;">
+              Explore curated Oman and international tour packages.
+            </p>
+          </div>
+          <button type="button" onclick="planJourneyNavigate('/tourism')" class="btn jmt-plan-btn">
+            Explore Tours
+          </button>
+        </div>
+
+        <!-- Option 2: Hotel Consultation -->
+        <div class="jmt-plan-option-card">
+          <div class="jmt-plan-option-info">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+              <span style="font-size: 20px;" aria-hidden="true">🏨</span>
+              <h4 style="font-size: 15px; font-weight: 700; color: #FFFFFF; margin: 0;">Hotel Consultation</h4>
+            </div>
+            <p style="font-size: 12.5px; color: #CBD5E1; margin: 0; line-height: 1.45;">
+              Tell our travel team where and when you want to stay.
+            </p>
+          </div>
+          <button type="button" onclick="planJourneyNavigate('/hotels')" class="btn jmt-plan-btn">
+            Request Hotel
+          </button>
+        </div>
+
+        <!-- Option 3: Flight Consultation -->
+        <div class="jmt-plan-option-card">
+          <div class="jmt-plan-option-info">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+              <span style="font-size: 20px;" aria-hidden="true">✈️</span>
+              <h4 style="font-size: 15px; font-weight: 700; color: #FFFFFF; margin: 0;">Flight Consultation</h4>
+            </div>
+            <p style="font-size: 12.5px; color: #CBD5E1; margin: 0; line-height: 1.45;">
+              Request a flight itinerary and let our team check available options.
+            </p>
+          </div>
+          <button type="button" onclick="planJourneyNavigate('/flights')" class="btn jmt-plan-btn">
+            Request Flight
+          </button>
+        </div>
+
+      </div>
+
+      <!-- Secondary Action: View My Travel Requests -->
+      <div style="text-align: center; padding-top: 14px; border-top: 1px solid rgba(255, 255, 255, 0.12);">
+        <button type="button" onclick="planJourneyNavigate('/account/travel-requests')" class="btn" style="background: transparent; color: #00E676 !important; font-weight: 700; font-size: 13px; border: 1px solid rgba(0, 230, 118, 0.4); padding: 8px 20px; border-radius: 99px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s ease;">
+          <span>📝</span> View My Travel Requests
+        </button>
+      </div>
+    </div>
+  `;
+
+  modalContainer.onclick = function(e) {
+    if (e.target === modalContainer) {
+      closePlanJourneyModal();
+    }
+  };
+
+  if (window._planJourneyEscHandler) {
+    document.removeEventListener('keydown', window._planJourneyEscHandler);
+  }
+  window._planJourneyEscHandler = function(e) {
+    if (e.key === 'Escape' || e.keyCode === 27) {
+      closePlanJourneyModal();
+    }
+  };
+  document.addEventListener('keydown', window._planJourneyEscHandler);
+
+  modalContainer.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+
+  const closeBtn = modalContainer.querySelector('.jmt-modal-close');
+  if (closeBtn) closeBtn.focus();
+};
+
+window.closePlanJourneyModal = function() {
+  const modalContainer = document.getElementById('jmt-plan-journey-modal-overlay');
+  if (modalContainer) {
+    modalContainer.style.display = 'none';
+  }
+  document.body.style.overflow = '';
+  if (window._planJourneyEscHandler) {
+    document.removeEventListener('keydown', window._planJourneyEscHandler);
+    window._planJourneyEscHandler = null;
+  }
+};
+
+window.planJourneyNavigate = function(route) {
+  closePlanJourneyModal();
+  navigate(route);
+};
+
 function renderMyTripsContent() {
   const contentContainer = document.getElementById('mytrips-content-area');
   if (!contentContainer || !cachedMyTripsData) return;
@@ -14035,9 +14214,9 @@ async function renderMyTripsPage(container, path) {
                     </p>
                   </div>
                   <div>
-                    <a href="/tourism" onclick="event.preventDefault(); navigate('/tourism')" class="btn" style="background: #00A651 !important; color: #FFFFFF !important; font-weight: 700; padding: 10px 22px; border-radius: 99px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 14px rgba(0,166,81,0.3); font-size: 13.5px;">
+                    <button type="button" onclick="openPlanJourneyModal()" class="btn" style="background: #00A651 !important; color: #FFFFFF !important; font-weight: 700; padding: 10px 22px; border-radius: 99px; border: 0; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 14px rgba(0,166,81,0.3); font-size: 13.5px;">
                       <span>🧭</span> Book New Journey
-                    </a>
+                    </button>
                   </div>
                 </div>
               </div>
