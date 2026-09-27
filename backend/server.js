@@ -682,8 +682,8 @@ async function logAudit(req, action, entityType, entityId, metadata = {}) {
       }
     }
     await db.auditLogs.create({
-      actorId: req.user ? req.user.id : 'ANONYMOUS',
-      actorRole: req.user ? req.user.role : 'GUEST',
+      actorId: req && req.user ? req.user.id : 'ANONYMOUS',
+      actorRole: req && req.user ? req.user.role : 'GUEST',
       action,
       entityType,
       entityId,
