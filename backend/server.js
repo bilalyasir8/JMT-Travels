@@ -3449,15 +3449,37 @@ app.post('/api/support/tickets', submissionLimiter, async (req, res) => {
       return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Subject and message are required.' } });
     }
 
+    const ticketId = `TCK-${Date.now().toString().slice(-6)}-${Math.floor(100 + Math.random() * 900)}`;
+    const ticketNumber = `JMT-T-${Math.floor(100000 + Math.random() * 900000)}`;
+    const ticketMessage = String(message).trim();
     const ticket = await db.supportTickets.create({
-      ticketId: `TCK-${Date.now().toString().slice(-6)}`,
+      ticketId,
+      ticketNumber,
       userId: req.user ? req.user.id : null,
-      subject,
+      userName: req.user ? req.user.name : 'Guest',
+      userEmail: req.user ? req.user.email : null,
+      subject: String(subject).trim(),
       category: category || 'General',
       priority: 'MEDIUM',
       status: 'OPEN',
-      messages: [{ sender: req.user ? req.user.name : 'Guest', message, timestamp: new Date().toISOString() }]
+      messages: [{
+        sender: req.user ? 'CUSTOMER' : 'GUEST',
+        senderId: req.user ? req.user.id : null,
+        senderName: req.user ? req.user.name : 'Guest',
+        message: ticketMessage,
+        text: ticketMessage,
+        timestamp: new Date().toISOString()
+      }]
     });
+
+    if (req.user) {
+      notificationService.dispatchEvent('SUPPORT_TICKET_CREATED', {
+        user: req.user,
+        reference: ticket.ticketNumber || ticket.ticketId,
+        title: `Support Ticket Received: ${ticket.subject}`,
+        message: `Your support ticket (${ticket.ticketNumber || ticket.ticketId}) has been submitted to JMT help desk.`
+      }).catch(() => {});
+    }
 
     res.status(201).json({ success: true, ticket });
   } catch (err) {
@@ -3998,6 +4020,53 @@ app.get('/api/admin/refunds', authenticate, authorize('STAFF', 'ADMIN', 'SUPER_A
       refunds: paginatedRefunds,
       pagination: { total, page, limit, totalPages }
     });
+  } catch (err) {
+    res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: err.message } });
+  }
+});
+
+// CUSTOMER SUPPORT TICKET REPLY (STRICT OWNERSHIP)
+app.post('/api/support/tickets/:id/reply', authenticate, submissionLimiter, async (req, res) => {
+  try {
+    const message = String(req.body?.message || '').trim();
+    if (!message) {
+      return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Reply message is required.' } });
+    }
+
+    const ticket = await db.supportTickets.findById(req.params.id) ||
+      await db.supportTickets.findOne({ ticketId: req.params.id }) ||
+      await db.supportTickets.findOne({ ticketNumber: req.params.id });
+
+    if (!ticket) {
+      return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Support ticket not found.' } });
+    }
+
+    const isStaff = ['STAFF', 'ADMIN', 'SUPER_ADMIN'].includes(req.user.role);
+    if (!isStaff && ticket.userId !== req.user.id) {
+      await logAudit(req, 'SUSPICIOUS_IDOR_SUPPORT_REPLY_ATTEMPT', 'SUPPORT_TICKET', req.params.id);
+      return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Access denied: You do not own this support ticket.' } });
+    }
+
+    const reply = {
+      sender: isStaff ? 'STAFF' : 'CUSTOMER',
+      senderId: req.user.id,
+      senderName: req.user.name,
+      message,
+      text: message,
+      timestamp: new Date().toISOString()
+    };
+
+    const messages = Array.isArray(ticket.messages) ? [...ticket.messages, reply] : [reply];
+    const updatedTicket = await db.supportTickets.update(ticket.id, {
+      messages,
+      status: isStaff ? 'IN_PROGRESS' : 'OPEN'
+    });
+
+    if (!isStaff && ticket.userId) {
+      await logAudit(req, 'CUSTOMER_SUPPORT_REPLY', 'SUPPORT_TICKET', ticket.id);
+    }
+
+    res.json({ success: true, ticket: updatedTicket, reply });
   } catch (err) {
     res.status(500).json({ success: false, error: { code: 'SERVER_ERROR', message: err.message } });
   }

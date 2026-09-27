@@ -943,6 +943,8 @@ async function renderRoute() {
     renderAccountDocumentsPage(container, path);
   } else if (path === '/account/notifications' || path.startsWith('/account/notifications')) {
     renderNotificationsPage(container, path);
+  } else if (path === '/account/support' || path.startsWith('/account/support/')) {
+    renderSupportCenterPage(container, path);
   } else if (path === '/account') {
     renderAccountPage(container);
 
@@ -13087,7 +13089,7 @@ async function renderAccountPage(container) {
                   <span>🔔</span> Notifications
                   ${summary.unreadNotifications > 0 ? `<span class="myjmt-pill-badge" style="background: #00E676; color: #07153B; font-weight: 800;">${summary.unreadNotifications}</span>` : ''}
                 </a>
-                <a href="/support" class="myjmt-nav-item" onclick="event.preventDefault(); navigate('/support')">
+                <a href="/account/support" class="myjmt-nav-item" onclick="event.preventDefault(); navigate('/account/support')">
                   <span>💬</span> Support
                 </a>
                 <a href="/account/profile" class="myjmt-nav-item" onclick="event.preventDefault(); navigate('/account/profile')">
@@ -15748,6 +15750,267 @@ async function renderAccountDocumentsPage(container, path) {
         </div>
       </div>
     `;
+  }
+}
+
+async function renderSupportCenterPage(container, path = '/account/support') {
+  if (!state.user) {
+    navigate('/login');
+    return;
+  }
+
+  updateSEO({
+    title: 'Support Center | My JMT | JMT Travels',
+    description: 'Manage JMT Travels support tickets and continue conversations with the support team.',
+    canonicalUrl: '/account/support',
+    noindex: true
+  });
+  announceToSR('Navigated to Support Center');
+
+  const ticketId = path.startsWith('/account/support/') ? decodeURIComponent(path.slice('/account/support/'.length)) : null;
+
+  const statusLabel = status => ({
+    OPEN: 'Open',
+    IN_PROGRESS: 'In Progress',
+    WAITING_FOR_CUSTOMER: 'Waiting for you',
+    RESOLVED: 'Resolved',
+    CLOSED: 'Closed'
+  }[status] || status || 'Open');
+
+  const statusClass = status => ({
+    OPEN: 'jmt-support-status-open',
+    IN_PROGRESS: 'jmt-support-status-progress',
+    WAITING_FOR_CUSTOMER: 'jmt-support-status-waiting',
+    RESOLVED: 'jmt-support-status-resolved',
+    CLOSED: 'jmt-support-status-closed'
+  }[status] || 'jmt-support-status-open');
+
+  const formatDate = value => {
+    if (!value) return '—';
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? '—' : date.toLocaleString(undefined, {
+      day: '2-digit', month: 'short', year: 'numeric',
+      hour: '2-digit', minute: '2-digit'
+    });
+  };
+
+  const getTicketRef = ticket => ticket?.ticketNumber || ticket?.ticketId || ticket?.id || '';
+
+  const renderShell = (content) => {
+    container.innerHTML = `
+      <div style="background:#07153B;min-height:100vh;color:#FFFFFF;">
+        <style>
+          .jmt-support-shell{max-width:1240px;margin:0 auto;padding:38px 20px 70px;box-sizing:border-box}
+          .jmt-support-grid{display:grid;grid-template-columns:340px minmax(0,1fr);gap:24px;align-items:start}
+          .jmt-support-card{background:#0B286C;border:1px solid rgba(255,255,255,.14);border-radius:18px;padding:22px;box-sizing:border-box}
+          .jmt-support-list{display:flex;flex-direction:column;gap:10px;margin-top:16px}
+          .jmt-support-ticket{width:100%;text-align:left;background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.11);color:#FFFFFF;border-radius:12px;padding:14px;cursor:pointer}
+          .jmt-support-ticket:hover,.jmt-support-ticket.active{border-color:#00E676;background:rgba(0,230,118,.08)}
+          .jmt-support-meta{font-size:11px;color:#94A3B8;line-height:1.5}
+          .jmt-support-status{display:inline-flex;align-items:center;padding:4px 9px;border-radius:99px;font-size:10px;font-weight:800}
+          .jmt-support-status-open{background:rgba(0,230,118,.12);color:#00E676}
+          .jmt-support-status-progress{background:rgba(59,130,246,.15);color:#93C5FD}
+          .jmt-support-status-waiting{background:rgba(245,158,11,.15);color:#FCD34D}
+          .jmt-support-status-resolved,.jmt-support-status-closed{background:rgba(148,163,184,.14);color:#CBD5E1}
+          .jmt-support-message{max-width:78%;padding:12px 14px;border-radius:14px;line-height:1.55;font-size:13.5px}
+          .jmt-support-message.customer{margin-left:auto;background:#00A651;color:#FFFFFF;border-bottom-right-radius:4px}
+          .jmt-support-message.staff{background:#07153B;color:#E2E8F0;border:1px solid rgba(255,255,255,.1);border-bottom-left-radius:4px}
+          .jmt-support-compose{display:flex;gap:10px;align-items:flex-end;margin-top:18px}
+          .jmt-support-compose textarea,.jmt-support-form input,.jmt-support-form select{width:100%;box-sizing:border-box;background:#07153B;color:#FFFFFF;border:1px solid rgba(255,255,255,.16);border-radius:11px;padding:12px 13px;font:inherit;outline:none}
+          .jmt-support-compose textarea{min-height:90px;resize:vertical}
+          .jmt-support-compose textarea:focus,.jmt-support-form input:focus,.jmt-support-form select:focus{border-color:#00E676;box-shadow:0 0 0 3px rgba(0,230,118,.12)}
+          .jmt-support-form{display:grid;gap:12px;margin-top:18px}
+          .jmt-support-form label{font-size:11px;font-weight:800;letter-spacing:.04em;color:#94A3B8;text-transform:uppercase}
+          .jmt-support-btn{border:0;border-radius:11px;padding:12px 18px;background:#00E676;color:#07153B;font-weight:800;cursor:pointer;white-space:nowrap}
+          .jmt-support-btn:disabled{opacity:.55;cursor:not-allowed}
+          .jmt-support-link{color:#00E676;text-decoration:none;font-weight:700}
+          @media(max-width:900px){.jmt-support-grid{grid-template-columns:1fr}.jmt-support-list{max-height:360px;overflow:auto}}
+          @media(max-width:560px){.jmt-support-shell{padding:24px 14px 50px}.jmt-support-card{padding:17px}.jmt-support-message{max-width:90%}.jmt-support-compose{flex-direction:column}.jmt-support-btn{width:100%}}
+        </style>
+        <div class="jmt-support-shell">
+          <div style="display:flex;justify-content:space-between;gap:18px;align-items:flex-start;flex-wrap:wrap;margin-bottom:24px;">
+            <div>
+              <div style="font-size:11px;font-weight:800;letter-spacing:.12em;color:#00E676;text-transform:uppercase;margin-bottom:7px;">MY JMT / SUPPORT</div>
+              <h1 style="font-size:32px;line-height:1.15;margin:0 0 8px;color:#FFFFFF;">Support Center</h1>
+              <p style="margin:0;color:#CBD5E1;line-height:1.6;font-size:14px;">Create a support ticket, follow replies, or continue with the JMT Assistant.</p>
+            </div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;">
+              <button class="jmt-support-btn" type="button" onclick="toggleChat()">Open JMT Assistant</button>
+              <a class="jmt-support-btn" href="/account" onclick="event.preventDefault();navigate('/account')" style="text-decoration:none;">Back to Account</a>
+            </div>
+          </div>
+          ${content}
+        </div>
+      </div>
+    `;
+  };
+
+  const loadTickets = async () => {
+    const data = await apiCall('/api/support/tickets');
+    return Array.isArray(data?.tickets) ? data.tickets : [];
+  };
+
+  const renderList = async () => {
+    renderShell(`
+      <div class="jmt-support-grid">
+        <aside class="jmt-support-card">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
+            <div>
+              <h2 style="font-size:18px;margin:0;color:#FFFFFF;">My Tickets</h2>
+              <div class="jmt-support-meta" style="margin-top:4px;">Your support history</div>
+            </div>
+            <button id="support-new-btn" class="jmt-support-btn" type="button" style="padding:9px 12px;">New Ticket</button>
+          </div>
+          <div id="support-ticket-list" class="jmt-support-list">
+            <div class="jmt-support-meta" style="padding:18px 4px;">Loading tickets…</div>
+          </div>
+        </aside>
+        <section class="jmt-support-card">
+          <div id="support-main-panel">
+            <div style="padding:28px 8px;">
+              <h2 style="font-size:22px;margin:0 0 8px;color:#FFFFFF;">How can we help?</h2>
+              <p style="margin:0;color:#CBD5E1;line-height:1.6;">Select a ticket or create a new support request. You can also open the JMT Assistant for immediate guidance.</p>
+            </div>
+          </div>
+        </section>
+      </div>
+    `);
+
+    const listEl=document.getElementById('support-ticket-list');
+    const mainEl=document.getElementById('support-main-panel');
+    const tickets=await loadTickets();
+
+    const renderTicketList=()=>{
+      if(!tickets.length){
+        listEl.innerHTML='<div class="jmt-support-meta" style="padding:18px 4px;">No support tickets yet.</div>';
+        return;
+      }
+      listEl.innerHTML=tickets.map(ticket=>`
+        <button type="button" class="jmt-support-ticket" data-support-ticket="${escapeHTML(getTicketRef(ticket))}">
+          <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;">
+            <strong style="font-size:13px;line-height:1.35;">${escapeHTML(ticket.subject || 'Support request')}</strong>
+            <span class="jmt-support-status ${statusClass(ticket.status)}">${escapeHTML(statusLabel(ticket.status))}</span>
+          </div>
+          <div class="jmt-support-meta" style="margin-top:7px;">${escapeHTML(getTicketRef(ticket))} · ${escapeHTML(ticket.category || 'General')}</div>
+          <div class="jmt-support-meta" style="margin-top:3px;">${escapeHTML(formatDate(ticket.updatedAt || ticket.createdAt))}</div>
+        </button>
+      `).join('');
+    };
+
+    const showNewTicket=()=>{
+      mainEl.innerHTML=`
+        <h2 style="font-size:21px;margin:0;color:#FFFFFF;">Create a support ticket</h2>
+        <p style="color:#94A3B8;font-size:13px;line-height:1.5;margin:7px 0 0;">Tell the JMT team what you need help with.</p>
+        <form id="support-create-form" class="jmt-support-form">
+          <div><label for="support-subject">Subject</label><input id="support-subject" maxlength="160" required placeholder="What do you need help with?"></div>
+          <div><label for="support-category">Category</label><select id="support-category">
+            <option value="General">General</option>
+            <option value="Visa">Visa</option>
+            <option value="Tourism">Tourism</option>
+            <option value="Flights">Flights</option>
+            <option value="Hotels">Hotels</option>
+            <option value="Documents">Documents</option>
+            <option value="Account">Account</option>
+          </select></div>
+          <div><label for="support-message">Message</label><textarea id="support-message" maxlength="4000" required placeholder="Describe your request…"></textarea></div>
+          <div id="support-create-feedback" class="jmt-support-meta"></div>
+          <button class="jmt-support-btn" type="submit">Submit Ticket</button>
+        </form>
+      `;
+      document.getElementById('support-create-form').addEventListener('submit',async event=>{
+        event.preventDefault();
+        const btn=event.currentTarget.querySelector('button[type="submit"]');
+        const feedback=document.getElementById('support-create-feedback');
+        btn.disabled=true; feedback.textContent='Submitting…';
+        try{
+          const response=await apiCall('/api/support/tickets','POST',{
+            subject:document.getElementById('support-subject').value.trim(),
+            category:document.getElementById('support-category').value,
+            message:document.getElementById('support-message').value.trim()
+          });
+          const created=response?.ticket;
+          if(created){ tickets.unshift(created); renderTicketList(); showTicket(getTicketRef(created)); }
+          else { feedback.textContent='Ticket created. Refreshing your ticket list…'; }
+        }catch(err){ feedback.textContent=err.message || 'Unable to create the ticket.'; btn.disabled=false; }
+      });
+    };
+
+    const showTicket=async ref=>{
+      if(!ref) return;
+      mainEl.innerHTML='<div class="jmt-support-meta" style="padding:28px 8px;">Loading conversation…</div>';
+      try{
+        const data=await apiCall(`/api/support/tickets/${encodeURIComponent(ref)}`);
+        const ticket=data.ticket || {};
+        const raw=[...(Array.isArray(ticket.messages)?ticket.messages:[]),...(Array.isArray(data.messages)?data.messages:[])];
+        const seen=new Set();
+        const messages=raw.filter(m=>{
+          const key=[m.senderId||m.sender||'',m.timestamp||'',m.message||m.text||''].join('|');
+          if(seen.has(key)) return false; seen.add(key); return true;
+        }).sort((a,b)=>new Date(a.timestamp||0)-new Date(b.timestamp||0));
+
+        mainEl.innerHTML=`
+          <div style="display:flex;justify-content:space-between;gap:14px;align-items:flex-start;flex-wrap:wrap;border-bottom:1px solid rgba(255,255,255,.1);padding-bottom:16px;">
+            <div>
+              <div class="jmt-support-meta">${escapeHTML(getTicketRef(ticket))} · ${escapeHTML(ticket.category || 'General')}</div>
+              <h2 style="font-size:21px;margin:6px 0;color:#FFFFFF;">${escapeHTML(ticket.subject || 'Support request')}</h2>
+              <span class="jmt-support-status ${statusClass(ticket.status)}">${escapeHTML(statusLabel(ticket.status))}</span>
+            </div>
+            <button type="button" class="jmt-support-btn" id="support-refresh-btn" style="padding:9px 13px;">Refresh</button>
+          </div>
+          <div id="support-thread" style="display:flex;flex-direction:column;gap:12px;padding:20px 0;">
+            ${messages.length ? messages.map(m=>{
+              const staff=String(m.sender||'').toUpperCase()==='STAFF' || String(m.sender||'').toUpperCase()==='AGENT';
+              return `<div class="jmt-support-message ${staff?'staff':'customer'}">
+                <div style="font-size:10px;font-weight:800;letter-spacing:.04em;opacity:.75;margin-bottom:5px;">${staff?'JMT SUPPORT':'YOU'} · ${escapeHTML(formatDate(m.timestamp))}</div>
+                <div>${escapeHTML(m.message || m.text || '')}</div>
+              </div>`;
+            }).join('') : '<div class="jmt-support-meta">No messages in this ticket yet.</div>'}
+          </div>
+          <form id="support-reply-form" class="jmt-support-compose">
+            <textarea id="support-reply-message" maxlength="4000" required placeholder="Write a reply to JMT Support…"></textarea>
+            <button class="jmt-support-btn" type="submit">Send Reply</button>
+          </form>
+          <div id="support-reply-feedback" class="jmt-support-meta" style="margin-top:8px;"></div>
+        `;
+
+        document.getElementById('support-refresh-btn').addEventListener('click',()=>showTicket(ref));
+        document.getElementById('support-reply-form').addEventListener('submit',async event=>{
+          event.preventDefault();
+          const btn=event.currentTarget.querySelector('button[type="submit"]');
+          const input=document.getElementById('support-reply-message');
+          const feedback=document.getElementById('support-reply-feedback');
+          btn.disabled=true; feedback.textContent='Sending…';
+          try{
+            await apiCall(`/api/support/tickets/${encodeURIComponent(ref)}/reply`,'POST',{message:input.value.trim()});
+            await showTicket(ref);
+          }catch(err){ feedback.textContent=err.message || 'Unable to send reply.'; btn.disabled=false; }
+        });
+      }catch(err){
+        mainEl.innerHTML=`<div style="padding:20px 8px;"><h2 style="margin:0 0 8px;color:#FFFFFF;">Ticket unavailable</h2><p class="jmt-support-meta">${escapeHTML(err.message || 'Unable to load this ticket.')}</p></div>`;
+      }
+    };
+
+    renderTicketList();
+    document.getElementById('support-new-btn').addEventListener('click',showNewTicket);
+    listEl.addEventListener('click',event=>{
+      const button=event.target.closest('[data-support-ticket]');
+      if(!button) return;
+      showTicket(button.getAttribute('data-support-ticket'));
+    });
+
+    if(ticketId) showTicket(ticketId);
+  };
+
+  try {
+    await renderList();
+  } catch(err) {
+    renderShell(`
+      <div class="jmt-support-card">
+        <h2 style="font-size:21px;margin:0 0 8px;color:#FFFFFF;">Support Center unavailable</h2>
+        <p style="color:#CBD5E1;line-height:1.6;">${escapeHTML(err.message || 'Unable to load your support tickets.')}</p>
+        <button type="button" class="jmt-support-btn" onclick="location.reload()">Retry</button>
+      </div>
+    `);
   }
 }
 
