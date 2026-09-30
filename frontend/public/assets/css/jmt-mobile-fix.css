@@ -73,20 +73,20 @@ img, video, iframe { max-width: 100%; }
   .mobile-nav-links a:hover,
   .mobile-nav-links a:focus {
     background: rgba(255, 255, 255, 0.1) !important;
-    color: #FFFFFF !important;
+    color: var(--text-inverse) !important;
     transform: translateX(4px);
   }
 
   .mobile-nav-links a.active {
     background: linear-gradient(90deg, rgba(0, 230, 118, 0.2) 0%, rgba(0, 230, 118, 0.04) 100%) !important;
-    border-left: 3px solid #00E676 !important;
-    color: #00E676 !important;
+    border-left: 3px solid var(--jmt-green) !important;
+    color: var(--jmt-green) !important;
     font-weight: 700 !important;
   }
 
   [dir="rtl"] .mobile-nav-links a.active {
     border-left: none !important;
-    border-right: 3px solid #00E676 !important;
+    border-right: 3px solid var(--jmt-green) !important;
   }
 
   [dir="rtl"] .mobile-nav-links a:hover,
@@ -97,7 +97,7 @@ img, video, iframe { max-width: 100%; }
   .mobile-auth-signin {
     background: rgba(255, 255, 255, 0.12) !important;
     border: 1px solid rgba(255, 255, 255, 0.28) !important;
-    color: #FFFFFF !important;
+    color: var(--text-inverse) !important;
     border-radius: 12px !important;
     font-weight: 700 !important;
     padding: 12px 16px !important;
@@ -114,8 +114,8 @@ img, video, iframe { max-width: 100%; }
   }
 
   .mobile-auth-register {
-    background: linear-gradient(135deg, #00E676 0%, #00C853 100%) !important;
-    color: #07153B !important;
+    background: linear-gradient(135deg, var(--jmt-green) 0%, var(--jmt-green-hover) 100%) !important;
+    color: var(--jmt-navy) !important;
     font-weight: 800 !important;
     border-radius: 12px !important;
     padding: 12px 16px !important;
@@ -271,7 +271,7 @@ img, video, iframe { max-width: 100%; }
 }
 
 .jmt-modal-card {
-  background: linear-gradient(135deg, #07153B 0%, #0B286C 100%);
+  background: linear-gradient(135deg, var(--jmt-navy) 0%, var(--jmt-blue) 100%);
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 20px;
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
@@ -279,7 +279,7 @@ img, video, iframe { max-width: 100%; }
   max-width: 540px;
   max-height: 90vh;
   overflow-y: auto;
-  color: #FFFFFF;
+  color: var(--text-inverse);
   padding: 28px;
   position: relative;
 }
@@ -296,7 +296,7 @@ img, video, iframe { max-width: 100%; }
 .jmt-modal-close {
   background: rgba(255, 255, 255, 0.12);
   border: 1px solid rgba(255, 255, 255, 0.3);
-  color: #FFFFFF;
+  color: var(--text-inverse);
   width: 36px;
   height: 36px;
   border-radius: 50%;
@@ -314,7 +314,7 @@ img, video, iframe { max-width: 100%; }
 
 /* Global Contact Helper Banner */
 .jmt-global-helper-banner {
-  background: linear-gradient(135deg, #07153B 0%, #0B286C 100%);
+  background: linear-gradient(135deg, var(--jmt-navy) 0%, var(--jmt-blue) 100%);
   border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 18px;
   padding: 24px 30px;
@@ -374,5 +374,128 @@ img, video, iframe { max-width: 100%; }
     flex-direction: column !important;
     align-items: flex-start !important;
     gap: 10px !important;
+  }
+}
+
+
+/* =============================================================
+   JMT V6 MOBILE — LIGHT-FIRST VISUAL FOUNDATION
+   ============================================================= */
+html,
+body,
+#view-container {
+  background: var(--text-inverse);
+  color: var(--jmt-ink, var(--text));
+}
+
+#view-container {
+  width: 100%;
+  overflow-x: clip;
+}
+
+#view-container > .shell,
+#view-container > section > .shell,
+#view-container > .section > .shell {
+  width: min(100% - 28px, var(--jmt-content-max, 1320px));
+  margin-inline: auto;
+}
+
+.jmt-section-alt,
+.jmt-trust-section,
+.jmt-section-blue {
+  background: var(--jmt-section-bg, var(--jmt-section-bg)) !important;
+}
+
+.jmt-section-light {
+  background: var(--jmt-section-bg-soft, var(--jmt-section-bg-soft)) !important;
+}
+
+.card,
+.jmt-card,
+.jmt-panel,
+.jmt-visa-card,
+.jmt-hotel-card,
+.jmt-benefit-card,
+.jmt-feature-card,
+.jmt-step-card,
+.jmt-auth-card,
+.jmt-admin-card,
+.timeline-step-card,
+.review-card,
+.trust-benefit-card {
+  background: var(--text-inverse) !important;
+  color: var(--jmt-ink, var(--text)) !important;
+  border: 1px solid var(--jmt-border, var(--jmt-border)) !important;
+  box-shadow: 0 8px 24px rgba(7, 21, 59, 0.07) !important;
+}
+
+.btn,
+.btn-primary,
+.jmt-btn-primary,
+.jmt-btn-green,
+.search-submit-btn,
+.btn-create-account {
+  background: var(--jmt-green, var(--jmt-green)) !important;
+  color: var(--text-inverse) !important;
+  border-color: var(--jmt-green, var(--jmt-green)) !important;
+  min-height: 46px;
+}
+
+.search-field-group input,
+.search-field-group select,
+input,
+select,
+textarea {
+  background: var(--text-inverse) !important;
+  color: var(--jmt-ink, var(--text)) !important;
+  border-color: var(--jmt-border, var(--jmt-border)) !important;
+}
+
+@media (max-width: 640px) {
+  #view-container h1 {
+    font-size: clamp(28px, 8vw, 38px);
+  }
+
+  #view-container h2 {
+    font-size: clamp(24px, 7vw, 32px);
+  }
+
+  #view-container h3 {
+    font-size: clamp(20px, 5.5vw, 26px);
+  }
+
+  .hero-search-shell {
+    padding-inline: 14px;
+  }
+
+  .hero-search-card,
+  .jmt-home-search-card,
+  .search-card-container {
+    border-radius: 18px !important;
+  }
+
+  .card,
+  .jmt-card,
+  .jmt-panel,
+  .timeline-step-card,
+  .review-card,
+  .trust-benefit-card {
+    padding: 18px !important;
+    border-radius: 16px !important;
+  }
+
+  .btn,
+  .btn-primary,
+  .jmt-btn-primary,
+  .jmt-btn-green,
+  .search-submit-btn,
+  .btn-create-account {
+    width: 100%;
+    min-height: 46px;
+  }
+
+  .footer-main {
+    margin-top: 48px;
+    padding-top: 42px;
   }
 }

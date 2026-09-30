@@ -1,0 +1,929 @@
+/*
+ * JMT TRAVELS — V6 Visual System
+ * Light-first premium travel UI layer.
+ *
+ * Scope:
+ * - White page backgrounds
+ * - Faded lapis-blue section surfaces
+ * - JMT green action system
+ * - Navy typography
+ * - Consistent cards, forms, spacing, shadows and responsive structure
+ *
+ * This stylesheet is visual-only. It does not change application logic,
+ * routing, APIs, authentication, payments, bookings, or chatbot behaviour.
+ */
+
+/* ================================================================
+   01. LIGHT DESIGN TOKENS
+   ================================================================ */
+
+html:not([data-theme="dark"]) {
+  --jmt-v6-white: #FFFFFF;
+  --jmt-v6-page: #FFFFFF;
+  --jmt-v6-section: #EEF5FB;
+  --jmt-v6-section-strong: #E4EEF7;
+  --jmt-v6-surface: #FFFFFF;
+  --jmt-v6-surface-soft: #F8FAFD;
+  --jmt-v6-lapis: #164B73;
+  --jmt-v6-navy: #062A43;
+  --jmt-v6-navy-soft: #1E567C;
+  --jmt-v6-green: #00A651;
+  --jmt-v6-green-bright: #00A651;
+  --jmt-v6-green-dark: #007A3B;
+  --jmt-v6-green-soft: #EAF8F0;
+  --jmt-v6-text: #102A43;
+  --jmt-v6-text-strong: #082B49;
+  --jmt-v6-muted: #60758A;
+  --jmt-v6-muted-soft: #8A9CAE;
+  --jmt-v6-border: #D7E3EE;
+  --jmt-v6-border-soft: #E8EFF5;
+  --jmt-v6-danger: #C62828;
+  --jmt-v6-warning: #B86A00;
+  --jmt-v6-shadow-sm: 0 2px 10px rgba(7, 21, 59, 0.06);
+  --jmt-v6-shadow-md: 0 10px 28px rgba(7, 21, 59, 0.09);
+  --jmt-v6-shadow-lg: 0 18px 50px rgba(7, 21, 59, 0.13);
+  --jmt-v6-radius-sm: 10px;
+  --jmt-v6-radius-md: 16px;
+  --jmt-v6-radius-lg: 22px;
+  --jmt-v6-radius-xl: 28px;
+  --jmt-v6-container: 1320px;
+  --jmt-v6-gutter: 24px;
+  --jmt-v6-section-gap: clamp(56px, 7vw, 92px);
+  --jmt-v6-control-height: 48px;
+  --jmt-v6-control-radius: 12px;
+  --jmt-v6-card-radius: 18px;
+  --jmt-v6-section-radius: 24px;
+  --jmt-v6-focus: rgba(0, 166, 81, 0.14);
+  --jmt-v6-dark-text: #FFFFFF;
+  --jmt-v6-dark-muted: #D6E3EF;
+  --jmt-v6-transition: 180ms ease;
+}
+
+/* ================================================================
+   02. GLOBAL CANVAS / TYPOGRAPHY
+   ================================================================ */
+
+html:not([data-theme="dark"]),
+html:not([data-theme="dark"]) body,
+html:not([data-theme="dark"]) #view-container {
+  background: var(--jmt-v6-page);
+  color: var(--jmt-v6-text);
+}
+
+html:not([data-theme="dark"]) body {
+  font-family: var(--font-body);
+  line-height: 1.6;
+}
+
+html:not([data-theme="dark"]) #view-container {
+  min-height: 100vh;
+}
+
+html:not([data-theme="dark"]) h1,
+html:not([data-theme="dark"]) h2,
+html:not([data-theme="dark"]) h3,
+html:not([data-theme="dark"]) h4,
+html:not([data-theme="dark"]) h5 {
+  color: var(--jmt-v6-text-strong);
+  letter-spacing: -0.025em;
+}
+
+html:not([data-theme="dark"]) p {
+  color: var(--jmt-v6-text);
+}
+
+html:not([data-theme="dark"]) a {
+  color: var(--jmt-v6-lapis);
+}
+
+html:not([data-theme="dark"]) ::selection {
+  background: var(--jmt-v6-green-soft);
+  color: var(--jmt-v6-navy);
+}
+
+/* ================================================================
+   03. PAGE / SECTION STRUCTURE
+   ================================================================ */
+
+html:not([data-theme="dark"]) #view-container > section,
+html:not([data-theme="dark"]) #view-container .page-section,
+html:not([data-theme="dark"]) #view-container .section,
+html:not([data-theme="dark"]) #view-container .section-pad,
+html:not([data-theme="dark"]) #view-container .content-section {
+  position: relative;
+}
+
+html:not([data-theme="dark"]) #view-container > section:nth-of-type(even),
+html:not([data-theme="dark"]) #view-container .section-soft,
+html:not([data-theme="dark"]) #view-container .section-lapis,
+html:not([data-theme="dark"]) #view-container .page-section.soft {
+  background: var(--jmt-v6-section);
+}
+
+html:not([data-theme="dark"]) .jmt-section-soft,
+html:not([data-theme="dark"]) .jmt-section-lapis {
+  background: var(--jmt-v6-section);
+  border-top: 1px solid var(--jmt-v6-border-soft);
+  border-bottom: 1px solid var(--jmt-v6-border-soft);
+}
+
+html:not([data-theme="dark"]) .shell,
+html:not([data-theme="dark"]) .container {
+  width: min(100% - 48px, var(--jmt-v6-container));
+  max-width: var(--jmt-v6-container);
+  margin-inline: auto;
+}
+
+html:not([data-theme="dark"]) .jmt-page-width {
+  width: min(100% - 48px, var(--jmt-v6-container));
+  margin-inline: auto;
+}
+
+html:not([data-theme="dark"]) .jmt-section {
+  padding-block: var(--jmt-v6-section-gap);
+}
+
+/* ================================================================
+   04. PREMIUM HEADER / NAVIGATION
+   ================================================================ */
+
+html:not([data-theme="dark"]) .jmt-main-header {
+  background: rgba(255, 255, 255, 0.97);
+  color: var(--jmt-v6-text-strong);
+  border-bottom: 1px solid var(--jmt-v6-border-soft);
+  box-shadow: 0 4px 18px rgba(7, 21, 59, 0.055);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+html:not([data-theme="dark"]) .jmt-main-header .jmt-header-container {
+  min-height: 76px;
+}
+
+html:not([data-theme="dark"]) .jmt-main-header a,
+html:not([data-theme="dark"]) .jmt-main-header button {
+  color: var(--jmt-v6-text-strong);
+}
+
+html:not([data-theme="dark"]) .jmt-main-header .nav-link-item,
+html:not([data-theme="dark"]) .jmt-main-header .jmt-nav-link {
+  color: var(--jmt-v6-text-strong);
+  font-weight: 600;
+}
+
+html:not([data-theme="dark"]) .jmt-main-header .nav-link-item:hover,
+html:not([data-theme="dark"]) .jmt-main-header .jmt-nav-link:hover,
+html:not([data-theme="dark"]) .jmt-main-header .active {
+  color: var(--jmt-v6-green);
+}
+
+html:not([data-theme="dark"]) .header-util-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--jmt-v6-text);
+  border-radius: 10px;
+  transition: var(--jmt-v6-transition);
+}
+
+html:not([data-theme="dark"]) .header-util-btn:hover {
+  background: var(--jmt-v6-green-soft);
+  color: var(--jmt-v6-green-dark);
+}
+
+html:not([data-theme="dark"]) .jmt-header-container .btn,
+html:not([data-theme="dark"]) .jmt-header-container .jmt-create-account,
+html:not([data-theme="dark"]) .jmt-header-container .btn-primary {
+  background: var(--jmt-v6-green);
+  color: var(--jmt-v6-white);
+  border: 0;
+  box-shadow: 0 7px 18px rgba(0, 166, 81, 0.18);
+}
+
+html:not([data-theme="dark"]) .jmt-header-container .btn:hover,
+html:not([data-theme="dark"]) .jmt-header-container .jmt-create-account:hover,
+html:not([data-theme="dark"]) .jmt-header-container .btn-primary:hover {
+  background: var(--jmt-v6-green-dark);
+  transform: translateY(-1px);
+}
+
+/* ================================================================
+   05. BUTTON SYSTEM
+   ================================================================ */
+
+html:not([data-theme="dark"]) .btn,
+html:not([data-theme="dark"]) button.btn {
+  min-height: var(--jmt-v6-control-height);
+  border: 1px solid transparent;
+  border-radius: 12px;
+  background: var(--jmt-v6-green);
+  color: var(--jmt-v6-white);
+  padding: 0 20px;
+  font-weight: 700;
+  line-height: 1;
+  box-shadow: 0 7px 18px rgba(0, 166, 81, 0.16);
+  transition: background var(--jmt-v6-transition), transform var(--jmt-v6-transition), box-shadow var(--jmt-v6-transition);
+}
+
+html:not([data-theme="dark"]) .btn:hover,
+html:not([data-theme="dark"]) button.btn:hover {
+  background: var(--jmt-v6-green-dark);
+  color: var(--jmt-v6-white);
+  transform: translateY(-1px);
+  box-shadow: 0 10px 24px rgba(0, 122, 59, 0.2);
+}
+
+html:not([data-theme="dark"]) .btn:focus-visible,
+html:not([data-theme="dark"]) button:focus-visible {
+  outline: 3px solid rgba(0, 166, 81, 0.2);
+  outline-offset: 2px;
+}
+
+html:not([data-theme="dark"]) .btn-primary,
+html:not([data-theme="dark"]) .jmt-btn-primary {
+  background: var(--jmt-v6-green);
+  color: var(--jmt-v6-white);
+}
+
+html:not([data-theme="dark"]) .btn-secondary,
+html:not([data-theme="dark"]) .jmt-btn-secondary {
+  background: var(--jmt-v6-lapis);
+  color: var(--jmt-v6-white);
+  box-shadow: 0 7px 18px rgba(11, 40, 108, 0.16);
+}
+
+html:not([data-theme="dark"]) .btn-secondary:hover,
+html:not([data-theme="dark"]) .jmt-btn-secondary:hover {
+  background: var(--jmt-v6-navy);
+}
+
+html:not([data-theme="dark"]) .btn-outline,
+html:not([data-theme="dark"]) .jmt-btn-outline {
+  background: var(--jmt-v6-white);
+  color: var(--jmt-v6-lapis);
+  border-color: var(--jmt-v6-border);
+  box-shadow: none;
+}
+
+html:not([data-theme="dark"]) .btn-outline:hover,
+html:not([data-theme="dark"]) .jmt-btn-outline:hover {
+  background: var(--jmt-v6-section);
+  color: var(--jmt-v6-navy);
+  border-color: #B9C9DC;
+}
+
+/* ================================================================
+   06. CARDS / BOXES / PANELS
+   ================================================================ */
+
+html:not([data-theme="dark"]) .card,
+html:not([data-theme="dark"]) .jmt-card,
+html:not([data-theme="dark"]) .jmt-panel,
+html:not([data-theme="dark"]) .card-subtle,
+html:not([data-theme="dark"]) .jmt-card-subtle,
+html:not([data-theme="dark"]) .jmt-service-card,
+html:not([data-theme="dark"]) .jmt-card-v2,
+html:not([data-theme="dark"]) .review-card,
+html:not([data-theme="dark"]) .timeline-step-card,
+html:not([data-theme="dark"]) .trust-benefit-card {
+  background: var(--jmt-v6-surface);
+  color: var(--jmt-v6-text);
+  border: 1px solid var(--jmt-v6-border-soft);
+  border-radius: var(--jmt-v6-radius-md);
+  box-shadow: var(--jmt-v6-shadow-sm);
+}
+
+html:not([data-theme="dark"]) .card:hover,
+html:not([data-theme="dark"]) .jmt-card:hover,
+html:not([data-theme="dark"]) .jmt-service-card:hover,
+html:not([data-theme="dark"]) .review-card:hover,
+html:not([data-theme="dark"]) .timeline-step-card:hover,
+html:not([data-theme="dark"]) .trust-benefit-card:hover {
+  border-color: rgba(0, 166, 81, 0.28);
+  box-shadow: var(--jmt-v6-shadow-md);
+}
+
+html:not([data-theme="dark"]) .card h1,
+html:not([data-theme="dark"]) .card h2,
+html:not([data-theme="dark"]) .card h3,
+html:not([data-theme="dark"]) .card h4,
+html:not([data-theme="dark"]) .jmt-card h1,
+html:not([data-theme="dark"]) .jmt-card h2,
+html:not([data-theme="dark"]) .jmt-card h3,
+html:not([data-theme="dark"]) .jmt-card h4 {
+  color: var(--jmt-v6-text-strong);
+}
+
+html:not([data-theme="dark"]) .card p,
+html:not([data-theme="dark"]) .jmt-card p,
+html:not([data-theme="dark"]) .jmt-panel p {
+  color: var(--jmt-v6-muted);
+}
+
+/* ================================================================
+   07. FORM / SEARCH SYSTEM
+   ================================================================ */
+
+html:not([data-theme="dark"]) input,
+html:not([data-theme="dark"]) select,
+html:not([data-theme="dark"]) textarea,
+html:not([data-theme="dark"]) .jmt-field-input,
+html:not([data-theme="dark"]) .jmt-search-field-box {
+  color: var(--jmt-v6-text);
+  background: var(--jmt-v6-white);
+  border-color: var(--jmt-v6-border);
+  border-radius: 12px;
+}
+
+html:not([data-theme="dark"]) input,
+html:not([data-theme="dark"]) select,
+html:not([data-theme="dark"]) textarea {
+  min-height: 48px;
+  padding: 11px 14px;
+}
+
+html:not([data-theme="dark"]) input::placeholder,
+html:not([data-theme="dark"]) textarea::placeholder {
+  color: var(--jmt-v6-muted-soft);
+}
+
+html:not([data-theme="dark"]) input:focus,
+html:not([data-theme="dark"]) select:focus,
+html:not([data-theme="dark"]) textarea:focus {
+  border-color: var(--jmt-v6-green);
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(0, 166, 81, 0.09);
+}
+
+html:not([data-theme="dark"]) .hero-search-card,
+html:not([data-theme="dark"]) .jmt-hotel-search-panel,
+html:not([data-theme="dark"]) .jmt-search-panel,
+html:not([data-theme="dark"]) .search-panel {
+  background: rgba(255, 255, 255, 0.98);
+  color: var(--jmt-v6-text);
+  border: 1px solid var(--jmt-v6-border-soft);
+  border-radius: var(--jmt-v6-radius-lg);
+  box-shadow: var(--jmt-v6-shadow-lg);
+}
+
+/* ================================================================
+   08. HOME / HERO / DESTINATIONS
+   ================================================================ */
+
+html:not([data-theme="dark"]) .hero-eyebrow,
+html:not([data-theme="dark"]) .hero-eyebrow-dot,
+html:not([data-theme="dark"]) .hero-headline-accent {
+  color: var(--jmt-v6-green-bright);
+}
+
+html:not([data-theme="dark"]) .hero-search-wrapper {
+  z-index: 30;
+}
+
+html:not([data-theme="dark"]) .hero-search-card {
+  padding: clamp(18px, 3vw, 30px);
+}
+
+html:not([data-theme="dark"]) .search-tabs {
+  border-bottom-color: var(--jmt-v6-border-soft);
+}
+
+html:not([data-theme="dark"]) .search-tab-btn {
+  color: var(--jmt-v6-muted);
+}
+
+html:not([data-theme="dark"]) .search-tab-btn.active,
+html:not([data-theme="dark"]) .search-tab-btn:hover {
+  color: var(--jmt-v6-green);
+}
+
+html:not([data-theme="dark"]) .search-tab-btn.active::after {
+  background: var(--jmt-v6-green);
+}
+
+html:not([data-theme="dark"]) .destination-card {
+  border-radius: var(--jmt-v6-radius-md);
+  box-shadow: var(--jmt-v6-shadow-md);
+}
+
+html:not([data-theme="dark"]) .destination-card-overlay {
+  background: linear-gradient(
+    to top,
+    rgba(7, 21, 59, 0.94) 0%,
+    rgba(7, 21, 59, 0.42) 58%,
+    rgba(7, 21, 59, 0) 100%
+  );
+}
+
+html:not([data-theme="dark"]) .destination-badge {
+  color: var(--jmt-v6-navy);
+}
+
+html:not([data-theme="dark"]) .trust-icon-circle,
+html:not([data-theme="dark"]) .jmt-icon-circle {
+  background: var(--jmt-v6-green-soft);
+  color: var(--jmt-v6-green-dark);
+}
+
+/* ================================================================
+   09. TABLES / LISTS / DATA SURFACES
+   ================================================================ */
+
+html:not([data-theme="dark"]) table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: var(--jmt-v6-white);
+  border: 1px solid var(--jmt-v6-border);
+  border-radius: var(--jmt-v6-radius-md);
+  overflow: hidden;
+}
+
+html:not([data-theme="dark"]) th {
+  background: var(--jmt-v6-section);
+  color: var(--jmt-v6-navy);
+  font-size: 13px;
+  font-weight: 800;
+  text-align: left;
+}
+
+html:not([data-theme="dark"]) th,
+html:not([data-theme="dark"]) td {
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--jmt-v6-border-soft);
+}
+
+html:not([data-theme="dark"]) td {
+  color: var(--jmt-v6-text);
+  font-size: 14px;
+}
+
+html:not([data-theme="dark"]) tr:last-child td {
+  border-bottom: 0;
+}
+
+/* ================================================================
+   10. STATUS / BADGES
+   ================================================================ */
+
+html:not([data-theme="dark"]) .badge {
+  background: var(--jmt-v6-section-strong);
+  color: var(--jmt-v6-lapis);
+}
+
+html:not([data-theme="dark"]) .badge-success {
+  background: var(--jmt-v6-green-soft);
+  color: var(--jmt-v6-green-dark);
+}
+
+html:not([data-theme="dark"]) .badge-warning {
+  background: #FFF4DD;
+  color: var(--jmt-v6-warning);
+}
+
+html:not([data-theme="dark"]) .badge-danger {
+  background: #FDECEC;
+  color: var(--jmt-v6-danger);
+}
+
+/* ================================================================
+   11. CTA / DARK FEATURE BANDS
+   ================================================================ */
+
+html:not([data-theme="dark"]) .cta-banner-wrapper,
+html:not([data-theme="dark"]) .jmt-cta-banner-v2 {
+  background: linear-gradient(135deg, var(--jmt-v6-lapis), var(--jmt-v6-navy));
+  color: var(--jmt-v6-white);
+  border: 0;
+  border-radius: var(--jmt-v6-radius-lg);
+  box-shadow: var(--jmt-v6-shadow-lg);
+}
+
+html:not([data-theme="dark"]) .cta-banner-wrapper h1,
+html:not([data-theme="dark"]) .cta-banner-wrapper h2,
+html:not([data-theme="dark"]) .cta-banner-wrapper h3,
+html:not([data-theme="dark"]) .jmt-cta-banner-v2 h1,
+html:not([data-theme="dark"]) .jmt-cta-banner-v2 h2,
+html:not([data-theme="dark"]) .jmt-cta-banner-v2 h3,
+html:not([data-theme="dark"]) .cta-banner-wrapper p,
+html:not([data-theme="dark"]) .jmt-cta-banner-v2 p {
+  color: var(--jmt-v6-white);
+}
+
+html:not([data-theme="dark"]) .cta-banner-wrapper .btn,
+html:not([data-theme="dark"]) .jmt-cta-banner-v2 .btn {
+  background: var(--jmt-v6-green);
+}
+
+/* ================================================================
+   12. FOOTER
+   ================================================================ */
+
+html:not([data-theme="dark"]) .jmt-footer,
+html:not([data-theme="dark"]) .footer-main {
+  background: linear-gradient(180deg, #062447 0%, #041B34 100%);
+  color: #DCE8F3;
+  border-top: 0;
+}
+
+html:not([data-theme="dark"]) .jmt-footer h3,
+html:not([data-theme="dark"]) .jmt-footer h4,
+html:not([data-theme="dark"]) .footer-main h3,
+html:not([data-theme="dark"]) .footer-main h4 {
+  color: var(--jmt-v6-white);
+}
+
+html:not([data-theme="dark"]) .jmt-footer a,
+html:not([data-theme="dark"]) .footer-main a {
+  color: #D6E3EF;
+}
+
+html:not([data-theme="dark"]) .jmt-footer a:hover,
+html:not([data-theme="dark"]) .footer-main a:hover {
+  color: var(--jmt-v6-green-bright);
+}
+
+html:not([data-theme="dark"]) .jmt-footer-bottom,
+html:not([data-theme="dark"]) .footer-bottom {
+  border-top-color: rgba(255, 255, 255, 0.1);
+  color: #9FB1C2;
+}
+
+/* ================================================================
+   13. MODALS / CHAT / OVERLAYS
+   ================================================================ */
+
+html:not([data-theme="dark"]) .jmt-modal-overlay {
+  background: rgba(7, 21, 59, 0.58);
+  backdrop-filter: blur(10px);
+}
+
+html:not([data-theme="dark"]) .jmt-modal-card {
+  background: var(--jmt-v6-white);
+  color: var(--jmt-v6-text);
+  border: 1px solid var(--jmt-v6-border);
+  border-radius: var(--jmt-v6-radius-lg);
+  box-shadow: 0 24px 70px rgba(7, 21, 59, 0.2);
+}
+
+html:not([data-theme="dark"]) .jmt-modal-card h1,
+html:not([data-theme="dark"]) .jmt-modal-card h2,
+html:not([data-theme="dark"]) .jmt-modal-card h3,
+html:not([data-theme="dark"]) .jmt-modal-card h4 {
+  color: var(--jmt-v6-navy);
+}
+
+html:not([data-theme="dark"]) .chatbot-drawer {
+  background: var(--jmt-v6-navy);
+  border-color: rgba(7, 21, 59, 0.18);
+  box-shadow: 0 25px 80px rgba(7, 21, 59, 0.28);
+}
+
+html:not([data-theme="dark"]) .chatbot-trigger {
+  background: var(--jmt-v6-green);
+  color: var(--jmt-v6-white);
+  box-shadow: 0 10px 28px rgba(0, 166, 81, 0.28);
+}
+
+/* ================================================================
+   14. CONSISTENT SPACING / SECTION HEADERS
+   ================================================================ */
+
+html:not([data-theme="dark"]) .jmt-section-header {
+  max-width: 760px;
+  margin-inline: auto;
+  margin-bottom: 40px;
+}
+
+html:not([data-theme="dark"]) .jmt-section-header h1,
+html:not([data-theme="dark"]) .jmt-section-header h2,
+html:not([data-theme="dark"]) .jmt-section-header h3 {
+  margin-bottom: 10px;
+}
+
+html:not([data-theme="dark"]) .jmt-section-header p {
+  color: var(--jmt-v6-muted);
+  max-width: 680px;
+  margin-inline: auto;
+}
+
+/* ================================================================
+   15. ACCESSIBILITY / INTERACTION
+   ================================================================ */
+
+html:not([data-theme="dark"]) :focus-visible {
+  outline: 3px solid rgba(0, 166, 81, 0.2);
+  outline-offset: 2px;
+}
+
+html:not([data-theme="dark"]) .skip-link:focus {
+  background: var(--jmt-v6-navy);
+  color: var(--jmt-v6-white);
+}
+
+html:not([data-theme="dark"]) [aria-current="page"],
+html:not([data-theme="dark"]) .is-active,
+html:not([data-theme="dark"]) .active {
+  --jmt-active-accent: var(--jmt-v6-green);
+}
+
+/* ================================================================
+   16. RESPONSIVE SYSTEM
+   ================================================================ */
+
+@media (max-width: 1024px) {
+  html:not([data-theme="dark"]) .shell,
+  html:not([data-theme="dark"]) .container,
+  html:not([data-theme="dark"]) .jmt-page-width {
+    width: min(100% - 36px, var(--jmt-v6-container));
+  }
+
+  html:not([data-theme="dark"]) .jmt-section {
+    padding-block: 56px;
+  }
+
+  html:not([data-theme="dark"]) .jmt-main-header .jmt-header-container {
+    min-height: 68px;
+  }
+}
+
+@media (max-width: 768px) {
+  html:not([data-theme="dark"]) {
+    --jmt-v6-gutter: 18px;
+  }
+
+  html:not([data-theme="dark"]) .shell,
+  html:not([data-theme="dark"]) .container,
+  html:not([data-theme="dark"]) .jmt-page-width {
+    width: min(100% - 32px, var(--jmt-v6-container));
+  }
+
+  html:not([data-theme="dark"]) .jmt-section {
+    padding-block: 46px;
+  }
+
+  html:not([data-theme="dark"]) .card,
+  html:not([data-theme="dark"]) .jmt-card,
+  html:not([data-theme="dark"]) .jmt-panel {
+    border-radius: 14px;
+  }
+
+  html:not([data-theme="dark"]) .btn,
+  html:not([data-theme="dark"]) button.btn {
+    min-height: 46px;
+  }
+
+  html:not([data-theme="dark"]) .hero-headline {
+    font-size: clamp(36px, 10vw, 54px);
+  }
+}
+
+@media (max-width: 480px) {
+  html:not([data-theme="dark"]) .shell,
+  html:not([data-theme="dark"]) .container,
+  html:not([data-theme="dark"]) .jmt-page-width {
+    width: calc(100% - 24px);
+  }
+
+  html:not([data-theme="dark"]) .jmt-section {
+    padding-block: 38px;
+  }
+
+  html:not([data-theme="dark"]) .hero-search-card {
+    border-radius: 16px;
+    padding: 16px;
+  }
+
+  html:not([data-theme="dark"]) .btn,
+  html:not([data-theme="dark"]) button.btn {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html:not([data-theme="dark"]) *,
+  html:not([data-theme="dark"]) *::before,
+  html:not([data-theme="dark"]) *::after {
+    scroll-behavior: auto !important;
+  }
+}
+
+
+/* ================================================================
+   14. LIGHT SECTION TEXTURE / DEPTH
+   ================================================================ */
+
+html:not([data-theme="dark"]) .jmt-section-soft,
+html:not([data-theme="dark"]) .jmt-section-lapis,
+html:not([data-theme="dark"]) .section-soft,
+html:not([data-theme="dark"]) .section-lapis {
+  background-color: var(--jmt-v6-section);
+  background-image:
+    radial-gradient(circle at 8% 18%, rgba(38, 97, 156, 0.045) 0, transparent 34%),
+    radial-gradient(circle at 92% 82%, rgba(0, 166, 81, 0.035) 0, transparent 30%);
+  background-size: auto, auto;
+}
+
+html:not([data-theme="dark"]) .jmt-section-header {
+  margin-bottom: clamp(24px, 3vw, 36px);
+}
+
+html:not([data-theme="dark"]) .jmt-section-header h1,
+html:not([data-theme="dark"]) .jmt-section-header h2,
+html:not([data-theme="dark"]) .jmt-section-header h3 {
+  margin-bottom: 8px;
+}
+
+html:not([data-theme="dark"]) .jmt-section-header p {
+  max-width: 680px;
+  line-height: 1.7;
+}
+
+html:not([data-theme="dark"]) .jmt-card,
+html:not([data-theme="dark"]) .card,
+html:not([data-theme="dark"]) .jmt-service-card,
+html:not([data-theme="dark"]) .review-card,
+html:not([data-theme="dark"]) .timeline-step-card,
+html:not([data-theme="dark"]) .trust-benefit-card {
+  min-width: 0;
+}
+
+@media (max-width: 640px) {
+  html:not([data-theme="dark"]) .jmt-section {
+    padding-block: 48px;
+  }
+
+  html:not([data-theme="dark"]) .shell,
+  html:not([data-theme="dark"]) .container,
+  html:not([data-theme="dark"]) .jmt-page-width {
+    width: min(100% - 28px, var(--jmt-v6-container));
+  }
+}
+
+
+/* ================================================================
+   17. GLOBAL JMT POLISH — COHERENT SURFACES, TYPE, GAPS
+   ================================================================ */
+
+html:not([data-theme="dark"]) {
+  --jmt-surface: var(--jmt-v6-surface);
+  --jmt-section: var(--jmt-v6-section);
+  --jmt-text: var(--jmt-v6-text);
+  --jmt-text-strong: var(--jmt-v6-text-strong);
+  --jmt-muted: var(--jmt-v6-muted);
+  --jmt-brand: var(--jmt-v6-green);
+  --jmt-brand-hover: var(--jmt-v6-green-dark);
+  --jmt-accent: var(--jmt-v6-lapis);
+}
+
+/* Light-mode canvas: every routed page starts clean and white. */
+html:not([data-theme="dark"]) body,
+html:not([data-theme="dark"]) #view-container {
+  background: var(--jmt-v6-page) !important;
+  color: var(--jmt-v6-text);
+}
+
+/* Faded lapis-blue surfaces for intentional content sections. */
+html:not([data-theme="dark"]) .section-soft,
+html:not([data-theme="dark"]) .section-lapis,
+html:not([data-theme="dark"]) .jmt-section-soft,
+html:not([data-theme="dark"]) .jmt-section-lapis,
+html:not([data-theme="dark"]) .jmt-section-band,
+html:not([data-theme="dark"]) .jmt-page-section-alt {
+  background: var(--jmt-v6-section);
+  background-image:
+    radial-gradient(circle at 8% 15%, rgba(22, 75, 115, 0.045), transparent 32%),
+    radial-gradient(circle at 92% 85%, rgba(0, 166, 81, 0.035), transparent 30%);
+}
+
+/* Consistent content rhythm. */
+html:not([data-theme="dark"]) .jmt-section,
+html:not([data-theme="dark"]) .jmt-page-section {
+  padding-block: clamp(56px, 6vw, 88px);
+}
+
+html:not([data-theme="dark"]) .jmt-section > .shell,
+html:not([data-theme="dark"]) .jmt-page-section > .shell {
+  width: min(100% - 48px, var(--jmt-v6-container));
+  margin-inline: auto;
+}
+
+/* Premium cards: restrained radius, crisp borders, soft depth. */
+html:not([data-theme="dark"]) .jmt-card,
+html:not([data-theme="dark"]) .card,
+html:not([data-theme="dark"]) .jmt-panel,
+html:not([data-theme="dark"]) .jmt-service-card,
+html:not([data-theme="dark"]) .review-card,
+html:not([data-theme="dark"]) .trust-benefit-card,
+html:not([data-theme="dark"]) .timeline-step-card {
+  border-radius: var(--jmt-v6-card-radius);
+  border-color: var(--jmt-v6-border-soft);
+  background: var(--jmt-v6-surface);
+  box-shadow: 0 8px 24px rgba(7, 21, 59, 0.055);
+}
+
+html:not([data-theme="dark"]) .jmt-card:hover,
+html:not([data-theme="dark"]) .card:hover,
+html:not([data-theme="dark"]) .jmt-service-card:hover,
+html:not([data-theme="dark"]) .review-card:hover,
+html:not([data-theme="dark"]) .trust-benefit-card:hover,
+html:not([data-theme="dark"]) .timeline-step-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(0, 166, 81, 0.22);
+  box-shadow: 0 14px 34px rgba(7, 21, 59, 0.09);
+}
+
+/* One important-action language across the product. */
+html:not([data-theme="dark"]) .btn-primary,
+html:not([data-theme="dark"]) .jmt-btn-primary,
+html:not([data-theme="dark"]) .jmt-create-account,
+html:not([data-theme="dark"]) .search-submit-btn,
+html:not([data-theme="dark"]) .jmt-primary-action {
+  background: var(--jmt-v6-green) !important;
+  color: var(--jmt-v6-white) !important;
+  border-color: var(--jmt-v6-green) !important;
+}
+
+html:not([data-theme="dark"]) .btn-primary:hover,
+html:not([data-theme="dark"]) .jmt-btn-primary:hover,
+html:not([data-theme="dark"]) .jmt-create-account:hover,
+html:not([data-theme="dark"]) .search-submit-btn:hover,
+html:not([data-theme="dark"]) .jmt-primary-action:hover {
+  background: var(--jmt-v6-green-dark) !important;
+  border-color: var(--jmt-v6-green-dark) !important;
+}
+
+/* Section headings and body copy share a predictable type scale. */
+html:not([data-theme="dark"]) .jmt-section-title,
+html:not([data-theme="dark"]) .section-title {
+  font-size: clamp(28px, 3.2vw, 42px);
+  line-height: 1.12;
+  font-weight: 800;
+  color: var(--jmt-v6-text-strong);
+  letter-spacing: -0.03em;
+}
+
+html:not([data-theme="dark"]) .jmt-section-subtitle,
+html:not([data-theme="dark"]) .section-subtitle {
+  margin-top: 8px;
+  color: var(--jmt-v6-muted);
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+/* Form controls use the same dimensions everywhere. */
+html:not([data-theme="dark"]) input,
+html:not([data-theme="dark"]) select,
+html:not([data-theme="dark"]) textarea,
+html:not([data-theme="dark"]) .jmt-field-input {
+  border-radius: var(--jmt-v6-control-radius);
+  min-height: var(--jmt-v6-control-height);
+  border: 1px solid var(--jmt-v6-border);
+  background: var(--jmt-v6-white);
+}
+
+html:not([data-theme="dark"]) input:focus,
+html:not([data-theme="dark"]) select:focus,
+html:not([data-theme="dark"]) textarea:focus,
+html:not([data-theme="dark"]) .jmt-field-input:focus {
+  border-color: var(--jmt-v6-green);
+  box-shadow: 0 0 0 4px var(--jmt-v6-focus);
+}
+
+/* Consistent spacing between common content groups. */
+html:not([data-theme="dark"]) .jmt-grid,
+html:not([data-theme="dark"]) .jmt-card-grid,
+html:not([data-theme="dark"]) .jmt-service-grid {
+  gap: clamp(18px, 2vw, 28px);
+}
+
+/* Subtle texture: never compete with photography or readable content. */
+html:not([data-theme="dark"]) .jmt-texture {
+  background-image:
+    radial-gradient(circle at 10% 10%, rgba(22, 75, 115, 0.045), transparent 28%),
+    radial-gradient(circle at 90% 90%, rgba(0, 166, 81, 0.03), transparent 25%);
+}
+
+@media (max-width: 768px) {
+  html:not([data-theme="dark"]) .jmt-section,
+  html:not([data-theme="dark"]) .jmt-page-section {
+    padding-block: 48px;
+  }
+
+  html:not([data-theme="dark"]) .jmt-section-title,
+  html:not([data-theme="dark"]) .section-title {
+    font-size: clamp(26px, 8vw, 34px);
+  }
+
+  html:not([data-theme="dark"]) .jmt-card,
+  html:not([data-theme="dark"]) .card,
+  html:not([data-theme="dark"]) .jmt-panel {
+    border-radius: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  html:not([data-theme="dark"]) .jmt-section,
+  html:not([data-theme="dark"]) .jmt-page-section {
+    padding-block: 40px;
+  }
+}
