@@ -54,3 +54,28 @@ Post-change structural checks:
 CSS-02: controlled color-token migration and specificity cleanup.
 
 This phase must preserve application behavior and existing page structure. No backend, API, authentication, payment, hotel/flight, visa, tourism, chatbot, or business logic changes are permitted.
+
+
+## CSS-02 — Brand palette + visual rhythm
+
+- Established a single light-first palette: white page canvas, faded lapis-blue section surfaces, JMT logo green for primary actions, navy/ink typography, muted secondary text and restrained borders.
+- Refined `jmt-v6-visual-system.css` with shared color, control, card, section-radius, focus and dark-surface tokens.
+- Normalized common frontend inline colors in `app.js` and the shared shell in `index.html` to V6 CSS variables without changing routing, API calls, authentication, booking, payment or chatbot logic.
+- Aligned the mobile compatibility layer and light-mode portion of `jmt-theme.css` with semantic tokens while leaving dark-theme declarations intact.
+- Added consistent section rhythm, card depth, control dimensions, heading scale, gaps, focus states and subtle lapis/green textures.
+- Validation: CSS brace balance remains zero; changes are limited to presentation/style surfaces and frontend style strings.
+
+### CSS-02 visual contract
+
+| Element | Target |
+|---|---|
+| Page background | White |
+| Section surface | Faded lapis blue |
+| Primary action | JMT green `#00A651` |
+| Primary hover | Dark JMT green `#007A3B` |
+| Main text | Deep blue-black / navy |
+| Secondary text | Muted slate blue |
+| Cards | White, thin border, soft shadow, 18px radius |
+| Controls | 48px minimum height, 12px radius |
+| Section rhythm | ~56–88px vertical padding |
+| Mobile rhythm | ~40–48px vertical padding |
