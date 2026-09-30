@@ -10,17 +10,17 @@
   /* Global light canvas */
   --jmt-page-bg: #FFFFFF;
   --jmt-bg: #FFFFFF;
-  --jmt-bg-alt: #F2F6FB;
-  --jmt-bg-light: #F8FAFD;
+  --jmt-bg-alt: #EEF5FB;
+  --jmt-bg-light: #F7FAFD;
   --jmt-card-bg: #FFFFFF;
   --jmt-card-bg-solid: #FFFFFF;
-  --jmt-panel-bg: #F2F6FB;
+  --jmt-panel-bg: #EEF5FB;
   --jmt-input-bg: #FFFFFF;
   --jmt-input-hover: #F8FAFD;
 
   /* Borders & Shadows */
-  --jmt-border: #DCE5EF;
-  --jmt-border-strong: #B9C9DC;
+  --jmt-border: #D9E6F0;
+  --jmt-border-strong: #B9CDDE;
   --jmt-shadow-soft: 0 4px 16px rgba(7, 21, 59, 0.07);
   --jmt-shadow-float: 0 18px 50px rgba(7, 21, 59, 0.13);
 
@@ -60,6 +60,13 @@
   --jmt-ink: #102A43;
   --jmt-muted: #64748B;
   --jmt-card: #FFFFFF;
+  --jmt-section-bg: #EEF5FB;
+  --jmt-section-bg-soft: #F7FAFD;
+  --jmt-content-max: 1320px;
+  --jmt-section-y: clamp(52px, 6vw, 84px);
+  --jmt-section-gap: clamp(20px, 2.5vw, 32px);
+  --jmt-control-height: 48px;
+  --jmt-card-padding: clamp(18px, 2vw, 28px);
   --jmt-shadow: 0 12px 36px rgba(7,21,59,0.09);
   --jmt-shadow-hover: 0 18px 45px rgba(7,21,59,0.14);
 
@@ -218,9 +225,9 @@ body {
 .btn {
   border: 0;
   border-radius: var(--radius-sm);
-  background: var(--secondary);
+  background: var(--jmt-green);
   color: #FFFFFF;
-  padding: 10px 18px;
+  padding: 11px 20px;
   font-weight: 700;
   font-size: 13px;
   cursor: pointer;
@@ -232,13 +239,15 @@ body {
   transition: var(--transition);
 }
 .btn:hover {
-  background: var(--secondary-dark);
+  background: var(--jmt-green-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(0, 166, 81, 0.18);
 }
 .btn-primary {
-  background: var(--primary);
+  background: var(--jmt-green);
 }
 .btn-primary:hover {
-  background: var(--primary-dark);
+  background: var(--jmt-green-hover);
 }
 .btn-outline {
   background: transparent;
@@ -279,26 +288,26 @@ body {
   margin-top: 24px;
 }
 .card, .jmt-card, .jmt-panel {
-  background: #0B286C !important;
-  color: #FFFFFF !important;
-  border: 1px solid rgba(255, 255, 255, 0.10) !important;
+  background: var(--jmt-card) !important;
+  color: var(--jmt-ink) !important;
+  border: 1px solid var(--jmt-border) !important;
   border-radius: var(--radius-md);
-  padding: 24px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25) !important;
+  padding: var(--jmt-card-padding);
+  box-shadow: var(--jmt-shadow-soft) !important;
   transition: var(--transition);
 }
 .card:hover, .jmt-card:hover {
   transform: translateY(-3px);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35) !important;
-  border-color: rgba(0, 230, 118, 0.40) !important;
+  box-shadow: var(--jmt-shadow-hover) !important;
+  border-color: rgba(0, 166, 81, 0.30) !important;
 }
 
 .card-subtle, .jmt-card-subtle {
-  background: rgba(255, 255, 255, 0.05) !important;
-  color: #FFFFFF !important;
-  border: 1px solid rgba(255, 255, 255, 0.10) !important;
+  background: var(--jmt-section-bg-soft) !important;
+  color: var(--jmt-ink) !important;
+  border: 1px solid var(--jmt-border) !important;
   border-radius: var(--radius-md);
-  padding: 24px;
+  padding: var(--jmt-card-padding);
 }
 
 /* Badges */
@@ -1038,9 +1047,9 @@ body {
 /* Floating Search Card */
 .jmt-home-search-card,
 .search-card-container {
-  background: linear-gradient(135deg, #07153B 0%, #0B286C 50%, #153B8A 100%) !important;
+  background: var(--jmt-card) !important;
   border-radius: 24px;
-  box-shadow: 0 20px 50px rgba(7, 21, 59, 0.40) !important;
+  box-shadow: var(--jmt-shadow-float) !important;
   padding: 24px 28px;
   border: 1px solid rgba(255, 255, 255, 0.18) !important;
   position: relative;
@@ -1058,7 +1067,7 @@ body {
   border: 0;
   font-size: 14.5px;
   font-weight: 700;
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--jmt-muted);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -1070,12 +1079,12 @@ body {
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .search-tab-item:hover {
-  color: #FFFFFF;
-  background: rgba(255, 255, 255, 0.15);
+  color: var(--jmt-ink);
+  background: var(--jmt-section-bg-soft);
 }
 .search-tab-item.active {
   color: #FFFFFF !important;
-  background: linear-gradient(135deg, #00A651 0%, #008740 100%) !important;
+  background: var(--jmt-green) !important;
   font-weight: 800;
   box-shadow: 0 4px 16px rgba(0, 166, 81, 0.45);
 }
@@ -6402,11 +6411,11 @@ footer.site-footer {
 .jmt-section-alt,
 .jmt-trust-section,
 .jmt-section-blue {
-  background-color: var(--jmt-bg-alt, #EAF4FA) !important;
+  background-color: var(--jmt-section-bg) !important;
 }
 
 .jmt-section-light {
-  background-color: var(--jmt-bg-light, #F7FBFE) !important;
+  background-color: var(--jmt-section-bg-soft) !important;
 }
 
 /* Popover & Dropdown Blue-Theme Styling */
@@ -6414,11 +6423,11 @@ footer.site-footer {
 .jmt-flight-popover,
 .jmt-airport-dropdown,
 .dropdown-menu {
-  background: linear-gradient(135deg, #07153B 0%, #0B286C 100%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.22) !important;
-  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.5) !important;
+  background: var(--jmt-card) !important;
+  border: var(--jmt-border) !important;
+  box-shadow: var(--jmt-shadow-float) !important;
   border-radius: 18px !important;
-  color: #FFFFFF !important;
+  color: var(--jmt-ink) !important;
   z-index: 9999 !important;
 }
 
@@ -7407,3 +7416,151 @@ textarea:focus-visible {
 
 
 
+
+/* =============================================================
+   JMT V6 — LIGHT-FIRST VISUAL FOUNDATION
+   White canvas • faded Lapis Blue sections • JMT green actions
+   ============================================================= */
+#view-container {
+  background: var(--jmt-bg) !important;
+  color: var(--jmt-ink);
+}
+
+#view-container h1,
+#view-container h2,
+#view-container h3,
+#view-container h4,
+#view-container h5,
+#view-container h6 {
+  color: var(--jmt-navy);
+  letter-spacing: -0.02em;
+  line-height: 1.18;
+}
+
+#view-container p,
+#view-container li,
+#view-container label {
+  color: var(--jmt-ink);
+}
+
+#view-container > .shell,
+#view-container > section > .shell,
+#view-container > .section > .shell {
+  width: min(100% - 40px, var(--jmt-content-max));
+  margin-inline: auto;
+}
+
+.jmt-section-alt,
+.jmt-trust-section,
+.jmt-section-blue {
+  background: var(--jmt-section-bg) !important;
+}
+
+.jmt-section-light {
+  background: var(--jmt-section-bg-soft) !important;
+}
+
+.card,
+.jmt-card,
+.jmt-panel,
+.jmt-visa-card,
+.jmt-hotel-card,
+.jmt-benefit-card,
+.jmt-gulf-card,
+.jmt-feature-card,
+.jmt-step-card,
+.jmt-auth-card,
+.jmt-admin-card,
+.timeline-step-card,
+.review-card,
+.trust-benefit-card {
+  background: var(--jmt-card) !important;
+  color: var(--jmt-ink);
+  border: 1px solid var(--jmt-border) !important;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--jmt-shadow-soft) !important;
+}
+
+.card:hover,
+.jmt-card:hover,
+.jmt-panel:hover,
+.jmt-visa-card:hover,
+.jmt-hotel-card:hover,
+.jmt-benefit-card:hover,
+.jmt-feature-card:hover,
+.timeline-step-card:hover,
+.review-card:hover {
+  box-shadow: var(--jmt-shadow-hover) !important;
+  border-color: rgba(0, 166, 81, 0.28) !important;
+}
+
+.btn,
+.btn-primary,
+.jmt-btn-primary,
+.jmt-btn-green,
+.search-submit-btn,
+.btn-create-account,
+.jmt-dest-explore-btn {
+  background: var(--jmt-green) !important;
+  color: #FFFFFF !important;
+  border-color: var(--jmt-green) !important;
+}
+
+.btn:hover,
+.btn-primary:hover,
+.jmt-btn-primary:hover,
+.jmt-btn-green:hover,
+.search-submit-btn:hover,
+.btn-create-account:hover,
+.jmt-dest-explore-btn:hover {
+  background: var(--jmt-green-hover) !important;
+  border-color: var(--jmt-green-hover) !important;
+}
+
+.search-field-group select,
+.search-field-group input,
+.jmt-search-segmented-field,
+input,
+select,
+textarea {
+  border-color: var(--jmt-border);
+  background: #FFFFFF;
+  color: var(--jmt-ink);
+}
+
+.search-field-group select:focus,
+.search-field-group input:focus,
+.jmt-search-segmented-field:focus-within,
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--jmt-green);
+  box-shadow: 0 0 0 3px rgba(0, 166, 81, 0.10);
+}
+
+.heading-green-line {
+  background: var(--jmt-green);
+}
+
+.jmt-view-all-link,
+.nav-links a:hover,
+.nav-links a.active {
+  color: var(--jmt-green);
+}
+
+@media (max-width: 640px) {
+  #view-container > .shell,
+  #view-container > section > .shell,
+  #view-container > .section > .shell {
+    width: min(100% - 28px, var(--jmt-content-max));
+  }
+
+  .card,
+  .jmt-card,
+  .jmt-panel,
+  .timeline-step-card,
+  .review-card,
+  .trust-benefit-card {
+    border-radius: var(--radius-md);
+  }
+}
