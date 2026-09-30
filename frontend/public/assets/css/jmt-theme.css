@@ -3,9 +3,9 @@
   /* JMT V6 Light-first brand palette */
   --jmt-green: #00A651;
   --jmt-green-hover: #007A3B;
-  --jmt-navy: #07153B;
-  --jmt-blue: #0B286C;
-  --jmt-blue-dark: #06142E;
+  --jmt-navy: #062A43;
+  --jmt-blue: #164B73;
+  --jmt-blue-dark: #041B34;
 
   /* Global light canvas */
   --jmt-page-bg: #FFFFFF;
@@ -25,8 +25,8 @@
   --jmt-shadow-float: 0 18px 50px rgba(7, 21, 59, 0.13);
 
   /* Legacy mapping for compatibility */
-  --primary: #07153B;
-  --primary-dark: #06142E;
+  --primary: #062A43;
+  --primary-dark: #041B34;
   --secondary: #00A651;
   --secondary-dark: #007A3B;
   --accent-gold: #00A651;
