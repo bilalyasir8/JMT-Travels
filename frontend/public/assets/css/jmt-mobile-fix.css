@@ -376,3 +376,126 @@ img, video, iframe { max-width: 100%; }
     gap: 10px !important;
   }
 }
+
+
+/* =============================================================
+   JMT V6 MOBILE — LIGHT-FIRST VISUAL FOUNDATION
+   ============================================================= */
+html,
+body,
+#view-container {
+  background: #FFFFFF;
+  color: var(--jmt-ink, #102A43);
+}
+
+#view-container {
+  width: 100%;
+  overflow-x: clip;
+}
+
+#view-container > .shell,
+#view-container > section > .shell,
+#view-container > .section > .shell {
+  width: min(100% - 28px, var(--jmt-content-max, 1320px));
+  margin-inline: auto;
+}
+
+.jmt-section-alt,
+.jmt-trust-section,
+.jmt-section-blue {
+  background: var(--jmt-section-bg, #EEF5FB) !important;
+}
+
+.jmt-section-light {
+  background: var(--jmt-section-bg-soft, #F7FAFD) !important;
+}
+
+.card,
+.jmt-card,
+.jmt-panel,
+.jmt-visa-card,
+.jmt-hotel-card,
+.jmt-benefit-card,
+.jmt-feature-card,
+.jmt-step-card,
+.jmt-auth-card,
+.jmt-admin-card,
+.timeline-step-card,
+.review-card,
+.trust-benefit-card {
+  background: #FFFFFF !important;
+  color: var(--jmt-ink, #102A43) !important;
+  border: 1px solid var(--jmt-border, #D9E6F0) !important;
+  box-shadow: 0 8px 24px rgba(7, 21, 59, 0.07) !important;
+}
+
+.btn,
+.btn-primary,
+.jmt-btn-primary,
+.jmt-btn-green,
+.search-submit-btn,
+.btn-create-account {
+  background: var(--jmt-green, #00A651) !important;
+  color: #FFFFFF !important;
+  border-color: var(--jmt-green, #00A651) !important;
+  min-height: 46px;
+}
+
+.search-field-group input,
+.search-field-group select,
+input,
+select,
+textarea {
+  background: #FFFFFF !important;
+  color: var(--jmt-ink, #102A43) !important;
+  border-color: var(--jmt-border, #D9E6F0) !important;
+}
+
+@media (max-width: 640px) {
+  #view-container h1 {
+    font-size: clamp(28px, 8vw, 38px);
+  }
+
+  #view-container h2 {
+    font-size: clamp(24px, 7vw, 32px);
+  }
+
+  #view-container h3 {
+    font-size: clamp(20px, 5.5vw, 26px);
+  }
+
+  .hero-search-shell {
+    padding-inline: 14px;
+  }
+
+  .hero-search-card,
+  .jmt-home-search-card,
+  .search-card-container {
+    border-radius: 18px !important;
+  }
+
+  .card,
+  .jmt-card,
+  .jmt-panel,
+  .timeline-step-card,
+  .review-card,
+  .trust-benefit-card {
+    padding: 18px !important;
+    border-radius: 16px !important;
+  }
+
+  .btn,
+  .btn-primary,
+  .jmt-btn-primary,
+  .jmt-btn-green,
+  .search-submit-btn,
+  .btn-create-account {
+    width: 100%;
+    min-height: 46px;
+  }
+
+  .footer-main {
+    margin-top: 48px;
+    padding-top: 42px;
+  }
+}
