@@ -21,22 +21,22 @@ html:not([data-theme="dark"]) {
   --jmt-v6-white: #FFFFFF;
   --jmt-v6-page: #FFFFFF;
   --jmt-v6-section: #EEF5FB;
-  --jmt-v6-section-strong: #E2EDF6;
+  --jmt-v6-section-strong: #E4EEF7;
   --jmt-v6-surface: #FFFFFF;
   --jmt-v6-surface-soft: #F8FAFD;
-  --jmt-v6-lapis: #0B286C;
-  --jmt-v6-navy: #07153B;
-  --jmt-v6-navy-soft: #16345F;
+  --jmt-v6-lapis: #164B73;
+  --jmt-v6-navy: #062A43;
+  --jmt-v6-navy-soft: #1E567C;
   --jmt-v6-green: #00A651;
   --jmt-v6-green-bright: #00A651;
   --jmt-v6-green-dark: #007A3B;
   --jmt-v6-green-soft: #EAF8F0;
   --jmt-v6-text: #102A43;
-  --jmt-v6-text-strong: #071F3F;
-  --jmt-v6-muted: #64748B;
-  --jmt-v6-muted-soft: #94A3B8;
-  --jmt-v6-border: #DCE5EF;
-  --jmt-v6-border-soft: #EAF0F6;
+  --jmt-v6-text-strong: #082B49;
+  --jmt-v6-muted: #60758A;
+  --jmt-v6-muted-soft: #8A9CAE;
+  --jmt-v6-border: #D7E3EE;
+  --jmt-v6-border-soft: #E8EFF5;
   --jmt-v6-danger: #C62828;
   --jmt-v6-warning: #B86A00;
   --jmt-v6-shadow-sm: 0 2px 10px rgba(7, 21, 59, 0.06);
@@ -50,6 +50,12 @@ html:not([data-theme="dark"]) {
   --jmt-v6-gutter: 24px;
   --jmt-v6-section-gap: clamp(56px, 7vw, 92px);
   --jmt-v6-control-height: 48px;
+  --jmt-v6-control-radius: 12px;
+  --jmt-v6-card-radius: 18px;
+  --jmt-v6-section-radius: 24px;
+  --jmt-v6-focus: rgba(0, 166, 81, 0.14);
+  --jmt-v6-dark-text: #FFFFFF;
+  --jmt-v6-dark-muted: #D6E3EF;
   --jmt-v6-transition: 180ms ease;
 }
 
@@ -750,5 +756,174 @@ html:not([data-theme="dark"]) .trust-benefit-card {
   html:not([data-theme="dark"]) .container,
   html:not([data-theme="dark"]) .jmt-page-width {
     width: min(100% - 28px, var(--jmt-v6-container));
+  }
+}
+
+
+/* ================================================================
+   17. GLOBAL JMT POLISH — COHERENT SURFACES, TYPE, GAPS
+   ================================================================ */
+
+html:not([data-theme="dark"]) {
+  --jmt-surface: var(--jmt-v6-surface);
+  --jmt-section: var(--jmt-v6-section);
+  --jmt-text: var(--jmt-v6-text);
+  --jmt-text-strong: var(--jmt-v6-text-strong);
+  --jmt-muted: var(--jmt-v6-muted);
+  --jmt-brand: var(--jmt-v6-green);
+  --jmt-brand-hover: var(--jmt-v6-green-dark);
+  --jmt-accent: var(--jmt-v6-lapis);
+}
+
+/* Light-mode canvas: every routed page starts clean and white. */
+html:not([data-theme="dark"]) body,
+html:not([data-theme="dark"]) #view-container {
+  background: var(--jmt-v6-page) !important;
+  color: var(--jmt-v6-text);
+}
+
+/* Faded lapis-blue surfaces for intentional content sections. */
+html:not([data-theme="dark"]) .section-soft,
+html:not([data-theme="dark"]) .section-lapis,
+html:not([data-theme="dark"]) .jmt-section-soft,
+html:not([data-theme="dark"]) .jmt-section-lapis,
+html:not([data-theme="dark"]) .jmt-section-band,
+html:not([data-theme="dark"]) .jmt-page-section-alt {
+  background: var(--jmt-v6-section);
+  background-image:
+    radial-gradient(circle at 8% 15%, rgba(22, 75, 115, 0.045), transparent 32%),
+    radial-gradient(circle at 92% 85%, rgba(0, 166, 81, 0.035), transparent 30%);
+}
+
+/* Consistent content rhythm. */
+html:not([data-theme="dark"]) .jmt-section,
+html:not([data-theme="dark"]) .jmt-page-section {
+  padding-block: clamp(56px, 6vw, 88px);
+}
+
+html:not([data-theme="dark"]) .jmt-section > .shell,
+html:not([data-theme="dark"]) .jmt-page-section > .shell {
+  width: min(100% - 48px, var(--jmt-v6-container));
+  margin-inline: auto;
+}
+
+/* Premium cards: restrained radius, crisp borders, soft depth. */
+html:not([data-theme="dark"]) .jmt-card,
+html:not([data-theme="dark"]) .card,
+html:not([data-theme="dark"]) .jmt-panel,
+html:not([data-theme="dark"]) .jmt-service-card,
+html:not([data-theme="dark"]) .review-card,
+html:not([data-theme="dark"]) .trust-benefit-card,
+html:not([data-theme="dark"]) .timeline-step-card {
+  border-radius: var(--jmt-v6-card-radius);
+  border-color: var(--jmt-v6-border-soft);
+  background: var(--jmt-v6-surface);
+  box-shadow: 0 8px 24px rgba(7, 21, 59, 0.055);
+}
+
+html:not([data-theme="dark"]) .jmt-card:hover,
+html:not([data-theme="dark"]) .card:hover,
+html:not([data-theme="dark"]) .jmt-service-card:hover,
+html:not([data-theme="dark"]) .review-card:hover,
+html:not([data-theme="dark"]) .trust-benefit-card:hover,
+html:not([data-theme="dark"]) .timeline-step-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(0, 166, 81, 0.22);
+  box-shadow: 0 14px 34px rgba(7, 21, 59, 0.09);
+}
+
+/* One important-action language across the product. */
+html:not([data-theme="dark"]) .btn-primary,
+html:not([data-theme="dark"]) .jmt-btn-primary,
+html:not([data-theme="dark"]) .jmt-create-account,
+html:not([data-theme="dark"]) .search-submit-btn,
+html:not([data-theme="dark"]) .jmt-primary-action {
+  background: var(--jmt-v6-green) !important;
+  color: var(--jmt-v6-white) !important;
+  border-color: var(--jmt-v6-green) !important;
+}
+
+html:not([data-theme="dark"]) .btn-primary:hover,
+html:not([data-theme="dark"]) .jmt-btn-primary:hover,
+html:not([data-theme="dark"]) .jmt-create-account:hover,
+html:not([data-theme="dark"]) .search-submit-btn:hover,
+html:not([data-theme="dark"]) .jmt-primary-action:hover {
+  background: var(--jmt-v6-green-dark) !important;
+  border-color: var(--jmt-v6-green-dark) !important;
+}
+
+/* Section headings and body copy share a predictable type scale. */
+html:not([data-theme="dark"]) .jmt-section-title,
+html:not([data-theme="dark"]) .section-title {
+  font-size: clamp(28px, 3.2vw, 42px);
+  line-height: 1.12;
+  font-weight: 800;
+  color: var(--jmt-v6-text-strong);
+  letter-spacing: -0.03em;
+}
+
+html:not([data-theme="dark"]) .jmt-section-subtitle,
+html:not([data-theme="dark"]) .section-subtitle {
+  margin-top: 8px;
+  color: var(--jmt-v6-muted);
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+/* Form controls use the same dimensions everywhere. */
+html:not([data-theme="dark"]) input,
+html:not([data-theme="dark"]) select,
+html:not([data-theme="dark"]) textarea,
+html:not([data-theme="dark"]) .jmt-field-input {
+  border-radius: var(--jmt-v6-control-radius);
+  min-height: var(--jmt-v6-control-height);
+  border: 1px solid var(--jmt-v6-border);
+  background: var(--jmt-v6-white);
+}
+
+html:not([data-theme="dark"]) input:focus,
+html:not([data-theme="dark"]) select:focus,
+html:not([data-theme="dark"]) textarea:focus,
+html:not([data-theme="dark"]) .jmt-field-input:focus {
+  border-color: var(--jmt-v6-green);
+  box-shadow: 0 0 0 4px var(--jmt-v6-focus);
+}
+
+/* Consistent spacing between common content groups. */
+html:not([data-theme="dark"]) .jmt-grid,
+html:not([data-theme="dark"]) .jmt-card-grid,
+html:not([data-theme="dark"]) .jmt-service-grid {
+  gap: clamp(18px, 2vw, 28px);
+}
+
+/* Subtle texture: never compete with photography or readable content. */
+html:not([data-theme="dark"]) .jmt-texture {
+  background-image:
+    radial-gradient(circle at 10% 10%, rgba(22, 75, 115, 0.045), transparent 28%),
+    radial-gradient(circle at 90% 90%, rgba(0, 166, 81, 0.03), transparent 25%);
+}
+
+@media (max-width: 768px) {
+  html:not([data-theme="dark"]) .jmt-section,
+  html:not([data-theme="dark"]) .jmt-page-section {
+    padding-block: 48px;
+  }
+
+  html:not([data-theme="dark"]) .jmt-section-title,
+  html:not([data-theme="dark"]) .section-title {
+    font-size: clamp(26px, 8vw, 34px);
+  }
+
+  html:not([data-theme="dark"]) .jmt-card,
+  html:not([data-theme="dark"]) .card,
+  html:not([data-theme="dark"]) .jmt-panel {
+    border-radius: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  html:not([data-theme="dark"]) .jmt-section,
+  html:not([data-theme="dark"]) .jmt-page-section {
+    padding-block: 40px;
   }
 }
