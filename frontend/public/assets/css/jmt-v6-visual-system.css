@@ -20,15 +20,15 @@
 html:not([data-theme="dark"]) {
   --jmt-v6-white: #FFFFFF;
   --jmt-v6-page: #FFFFFF;
-  --jmt-v6-section: #F2F6FB;
-  --jmt-v6-section-strong: #E7EEF7;
+  --jmt-v6-section: #EEF5FB;
+  --jmt-v6-section-strong: #E2EDF6;
   --jmt-v6-surface: #FFFFFF;
   --jmt-v6-surface-soft: #F8FAFD;
   --jmt-v6-lapis: #0B286C;
   --jmt-v6-navy: #07153B;
   --jmt-v6-navy-soft: #16345F;
   --jmt-v6-green: #00A651;
-  --jmt-v6-green-bright: #00E676;
+  --jmt-v6-green-bright: #00A651;
   --jmt-v6-green-dark: #007A3B;
   --jmt-v6-green-soft: #EAF8F0;
   --jmt-v6-text: #102A43;
@@ -46,7 +46,7 @@ html:not([data-theme="dark"]) {
   --jmt-v6-radius-md: 16px;
   --jmt-v6-radius-lg: 22px;
   --jmt-v6-radius-xl: 28px;
-  --jmt-v6-container: 1240px;
+  --jmt-v6-container: 1320px;
   --jmt-v6-gutter: 24px;
   --jmt-v6-section-gap: clamp(56px, 7vw, 92px);
   --jmt-v6-control-height: 48px;
@@ -698,5 +698,57 @@ html:not([data-theme="dark"]) .active {
   html:not([data-theme="dark"]) *::before,
   html:not([data-theme="dark"]) *::after {
     scroll-behavior: auto !important;
+  }
+}
+
+
+/* ================================================================
+   14. LIGHT SECTION TEXTURE / DEPTH
+   ================================================================ */
+
+html:not([data-theme="dark"]) .jmt-section-soft,
+html:not([data-theme="dark"]) .jmt-section-lapis,
+html:not([data-theme="dark"]) .section-soft,
+html:not([data-theme="dark"]) .section-lapis {
+  background-color: var(--jmt-v6-section);
+  background-image:
+    radial-gradient(circle at 8% 18%, rgba(38, 97, 156, 0.045) 0, transparent 34%),
+    radial-gradient(circle at 92% 82%, rgba(0, 166, 81, 0.035) 0, transparent 30%);
+  background-size: auto, auto;
+}
+
+html:not([data-theme="dark"]) .jmt-section-header {
+  margin-bottom: clamp(24px, 3vw, 36px);
+}
+
+html:not([data-theme="dark"]) .jmt-section-header h1,
+html:not([data-theme="dark"]) .jmt-section-header h2,
+html:not([data-theme="dark"]) .jmt-section-header h3 {
+  margin-bottom: 8px;
+}
+
+html:not([data-theme="dark"]) .jmt-section-header p {
+  max-width: 680px;
+  line-height: 1.7;
+}
+
+html:not([data-theme="dark"]) .jmt-card,
+html:not([data-theme="dark"]) .card,
+html:not([data-theme="dark"]) .jmt-service-card,
+html:not([data-theme="dark"]) .review-card,
+html:not([data-theme="dark"]) .timeline-step-card,
+html:not([data-theme="dark"]) .trust-benefit-card {
+  min-width: 0;
+}
+
+@media (max-width: 640px) {
+  html:not([data-theme="dark"]) .jmt-section {
+    padding-block: 48px;
+  }
+
+  html:not([data-theme="dark"]) .shell,
+  html:not([data-theme="dark"]) .container,
+  html:not([data-theme="dark"]) .jmt-page-width {
+    width: min(100% - 28px, var(--jmt-v6-container));
   }
 }
