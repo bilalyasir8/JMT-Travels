@@ -16,13 +16,13 @@
   <meta property="og:description" id="og-desc" content="Visa Services • Holiday Packages • Travel Assistance">
   <meta property="og:type" content="website">
   <meta property="og:url" id="og-url" content="https://jmttravels.com/">
-  <meta property="og:image" content="https://jmttravels.com/assets/logo.png">
+  <meta property="og:image" content="https://jmttravels.com/assets/logo.svg">
 
   <!-- Twitter Card Metadata -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" id="twitter-title" content="JMT TRAVELS — Muscat, Oman">
   <meta name="twitter:description" id="twitter-desc" content="Visa Services • Holiday Packages • Travel Assistance">
-  <meta name="twitter:image" content="https://jmttravels.com/assets/logo.png">
+  <meta name="twitter:image" content="https://jmttravels.com/assets/logo.svg">
 
   <!-- Fonts & Icons -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -32,8 +32,8 @@
   <link rel="manifest" href="/manifest.webmanifest">
 
   <!-- Centralized Design System CSS -->
-  <link rel="stylesheet" href="/assets/css/jmt-theme.css">
-  <link rel="stylesheet" href="/assets/css/jmt-mobile-fix.css">
+  <link rel="stylesheet" href="/assets/css/jmt-theme.css?v=19">
+  <link rel="stylesheet" href="/assets/css/jmt-mobile-fix.css?v=9">
 
   <!-- Structured Data JSON-LD -->
   <script type="application/ld+json" id="json-ld-schema">
@@ -41,7 +41,7 @@
     "@context": "https://schema.org",
     "@type": "TravelAgency",
     "name": "JMT TRAVELS",
-    "image": "https://jmttravels.com/assets/logo.png",
+    "image": "https://jmttravels.com/assets/logo.svg",
     "telephone": ["+96825655711", "+96825655177"],
     "email": "info@jmttravels.com",
     "address": {
@@ -109,8 +109,6 @@
           <li><a href="/tourism" onclick="event.preventDefault(); navigate('/tourism')" class="nav-link-item" data-nav="tourism">Tourism</a></li>
           <li><a href="/hotels" onclick="event.preventDefault(); navigate('/hotels')" class="nav-link-item" data-nav="hotels">Hotels</a></li>
           <li><a href="/flights" onclick="event.preventDefault(); navigate('/flights')" class="nav-link-item" data-nav="flights">Flights</a></li>
-          <li><a href="/about" onclick="event.preventDefault(); navigate('/about')" class="nav-link-item" data-nav="about">About</a></li>
-          <li><a href="/contact" onclick="event.preventDefault(); navigate('/contact')" class="nav-link-item" data-nav="contact">Contact</a></li>
         </ul>
       </nav>
 
@@ -130,7 +128,7 @@
         <a class="brand-logo jmt-mobile-brand" href="/" onclick="event.preventDefault(); navigate('/')" aria-label="JMT Travels Home">
           <img src="/assets/logo.png" alt="JMT TRAVELS Logo" width="46" height="46" fetchpriority="high" decoding="async">
           <span class="brand-title">
-            <b style="font-size:18px; color:#07153B; font-weight:800; letter-spacing:-0.4px; line-height:1.1;">JMT TRAVELS</b>
+            <b style="font-size:18px; color:#33328C; font-weight:800; letter-spacing:0; line-height:1.1;">JMT&nbsp;TRAVELS</b>
             <small style="color:#00A859; font-size:8.5px; font-weight:700; letter-spacing:1.2px; margin-top:2px;">JOURNEY MORE TOGETHER</small>
           </span>
         </a>
@@ -180,18 +178,6 @@
               <span>Flights</span>
             </a>
           </li>
-          <li>
-            <a href="/about" onclick="event.preventDefault(); toggleMobileMenu(); navigate('/about')" class="nav-link-item" data-nav="about">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-              <span>About</span>
-            </a>
-          </li>
-          <li>
-            <a href="/contact" onclick="event.preventDefault(); toggleMobileMenu(); navigate('/contact')" class="nav-link-item" data-nav="contact">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
-              <span>Contact</span>
-            </a>
-          </li>
         </ul>
         <div class="mobile-nav-footer">
           <div id="mobile-nav-auth" class="mobile-auth-wrap">
@@ -222,11 +208,13 @@
   </main>
 
   <!-- FLOATING CHATBOT WIDGET (TASK #9 & #10 ACCESSIBLE) -->
-  <div style="position:fixed; bottom:24px; right:24px; z-index:999; display:flex; align-items:center; gap:12px;">
+  <div id="chat-widget" style="position:fixed; bottom:24px; right:24px; z-index:999; display:flex; align-items:center; gap:12px;">
     <div style="background:#0B286C; border-radius:99px; padding:8px 16px; box-shadow:0 10px 25px rgba(0,0,0,0.4); font-size:12px; font-weight:700; color:#FFFFFF; border:1px solid rgba(255,255,255,0.18);">
       <span style="color:#E2E8F0; font-weight:500;">Need help?</span><br><strong style="color:#00E676;">Chat with us</strong>
     </div>
-    <button class="chatbot-trigger" id="chat-trigger" aria-expanded="false" aria-controls="chat-drawer" aria-label="Open JMT Assistant Chatbot" style="width:56px; height:56px; border-radius:50%; background:#00A651; color:#FFFFFF; border:0; font-size:24px; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 8px 20px rgba(0,166,81,0.4); position:static; right:auto; bottom:auto;">💬</button>
+    <button class="chatbot-trigger" id="chat-trigger" aria-expanded="false" aria-controls="chat-drawer" aria-label="Open JMT Assistant Chatbot" style="width:56px; height:56px; border-radius:50%; background:#00A651; color:#FFFFFF; border:0; font-size:24px; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 8px 20px rgba(0,166,81,0.4); position:static; right:auto; bottom:auto;">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><path d="M5 18.5V7.5C5 6.12 6.12 5 7.5 5H16.5C17.88 5 19 6.12 19 7.5V13.5C19 14.88 17.88 16 16.5 16H9L5 18.5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8.5 9.5H15.5M8.5 12.5H13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
   </div>
 
   <div class="chatbot-drawer" id="chat-drawer" role="dialog" aria-modal="true" aria-labelledby="chat-heading" tabindex="-1">
@@ -262,7 +250,7 @@
               <small style="color:#00A651; font-size:9px; font-weight:800; letter-spacing:1.5px;">JOURNEY MORE TOGETHER</small>
             </div>
           </div>
-          <p style="font-size:13.5px; line-height:1.7; color:#94A3B8; margin-bottom:24px;">
+          <p style="font-size:13.5px; line-height:1.7; color:#FFFFFF; margin-bottom:24px;">
             Your premier Oman-based travel agency offering seamless visa clearing, bespoke tour packages, luxury hotels, and international flight ticketing.
           </p>
           <div style="display:flex; gap:10px; align-items:center;">
@@ -288,7 +276,6 @@
             <li><a href="/tourism" onclick="event.preventDefault(); navigate('/tourism')" class="jmt-footer-link">Oman Tours</a></li>
             <li><a href="/visa?service=schengen" onclick="event.preventDefault(); navigate('/visa?service=schengen')" class="jmt-footer-link">Schengen Visas</a></li>
             <li><a href="/visa" onclick="event.preventDefault(); navigate('/visa')" class="jmt-footer-link">Visa Services</a></li>
-            <li><a href="/tourism" onclick="event.preventDefault(); navigate('/tourism')" class="jmt-footer-link">Tour Packages</a></li>
             <li><a href="/hotels" onclick="event.preventDefault(); navigate('/hotels')" class="jmt-footer-link">Hotels</a></li>
             <li><a href="/flights" onclick="event.preventDefault(); navigate('/flights')" class="jmt-footer-link">Flights</a></li>
           </ul>
@@ -308,10 +295,10 @@
         <div class="jmt-footer-column">
           <h3 class="jmt-footer-heading">Support</h3>
           <ul class="jmt-footer-list">
-            <li><a href="/contact" onclick="event.preventDefault(); navigate('/contact')" class="jmt-footer-link">Help Center</a></li>
-            <li><a href="/account" onclick="event.preventDefault(); navigate('/account')" class="jmt-footer-link">Track Booking</a></li>
-            <li><a href="/contact" onclick="event.preventDefault(); navigate('/contact')" class="jmt-footer-link">Customer Support</a></li>
-            <li><a href="#" onclick="event.preventDefault(); document.getElementById('chat-trigger').click();" class="jmt-footer-link">JMT Assistant</a></li>
+            <li><a href="/contact" onclick="event.preventDefault(); navigate('/contact')" class="jmt-footer-link">Help&nbsp;Center</a></li>
+            <li><a href="/account" onclick="event.preventDefault(); navigate('/account')" class="jmt-footer-link">Track&nbsp;Booking</a></li>
+            <li><a href="/contact" onclick="event.preventDefault(); navigate('/contact')" class="jmt-footer-link">Customer&nbsp;Support</a></li>
+            <li><a href="#" onclick="event.preventDefault(); document.getElementById('chat-trigger').click();" class="jmt-footer-link">JMT&nbsp;Assistant</a></li>
           </ul>
         </div>
 
@@ -353,6 +340,6 @@
     }
   </script>
   <!-- Client Application Script -->
-  <script src="/assets/js/app.js" defer></script>
+  <script src="/assets/js/app.js?v=27" defer></script>
 </body>
 </html>

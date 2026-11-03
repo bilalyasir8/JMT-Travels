@@ -15,6 +15,7 @@ const helmet = require('helmet');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const multer = require('multer');
+const https = require('https');
 require('dotenv').config();
 
 const db = require('./db');
@@ -56,14 +57,14 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", 'https://challenges.cloudflare.com'],
       scriptSrcAttr: ["'unsafe-inline'"],
       styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
       styleSrcAttr: ["'unsafe-inline'"],
       fontSrc: ["'self'", 'https://fonts.gstatic.com', 'data:'],
       imgSrc: ["'self'", 'data:', 'blob:', 'https:'],
-      connectSrc: ["'self'", 'https://jmttravels.com', 'https://www.jmttravels.com', 'https://secure.paytabs.com', 'https://checkout.thawani.om'],
-      frameSrc: ["'self'", 'https://www.google.com', 'https://maps.google.com', 'https://secure.paytabs.com', 'https://checkout.thawani.om'],
+      connectSrc: ["'self'", 'https://jmttravels.com', 'https://www.jmttravels.com', 'https://secure.paytabs.com', 'https://checkout.thawani.om', 'https://challenges.cloudflare.com'],
+      frameSrc: ["'self'", 'https://www.google.com', 'https://maps.google.com', 'https://secure.paytabs.com', 'https://checkout.thawani.om', 'https://challenges.cloudflare.com'],
       frameAncestors: ["'self'"],
       baseUri: ["'self'"],
       objectSrc: ["'none'"],
@@ -721,10 +722,57 @@ app.get('/ready', (req, res) => {
 
 // --- 2. AUTHENTICATION & USER MANAGEMENT ---
 
+app.get('/api/config/public', (req, res) => {
+  const siteKey = process.env.TURNSTILE_SITE_KEY;
+  const secretKey = process.env.TURNSTILE_SECRET_KEY;
+  res.json({
+    turnstileEnabled: Boolean(siteKey && secretKey),
+    turnstileSiteKey: siteKey && secretKey ? siteKey : ''
+  });
+});
+
+function verifyTurnstileToken(token, remoteIp) {
+  return new Promise((resolve, reject) => {
+    const body = new URLSearchParams({
+      secret: process.env.TURNSTILE_SECRET_KEY,
+      response: token
+    });
+    if (remoteIp) body.set('remoteip', remoteIp);
+
+    const request = https.request('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Content-Length': Buffer.byteLength(body.toString())
+      },
+      timeout: 5000
+    }, response => {
+      let responseBody = '';
+      response.setEncoding('utf8');
+      response.on('data', chunk => { responseBody += chunk; });
+      response.on('end', () => {
+        if (response.statusCode !== 200) {
+          reject(new Error(`Turnstile verification returned HTTP ${response.statusCode}.`));
+          return;
+        }
+        try {
+          resolve(JSON.parse(responseBody));
+        } catch (err) {
+          reject(new Error(`Turnstile verification returned invalid JSON: ${err.message}`));
+        }
+      });
+    });
+
+    request.on('timeout', () => request.destroy(new Error('Turnstile verification timed out.')));
+    request.on('error', reject);
+    request.end(body.toString());
+  });
+}
+
 // CUSTOMER REGISTRATION & MASS ASSIGNMENT PROTECTION (Task #2 Section 4, 10, 16, 17)
 app.post('/api/auth/register', registerLimiter, async (req, res) => {
   try {
-    const { name, email, password, phone } = req.body || {};
+    const { name, email, password, phone, termsAccepted, cookiesAccepted, captchaToken } = req.body || {};
     const cleanEmail = (email || '').trim().toLowerCase();
     const cleanName = (name || '').trim();
 
@@ -737,6 +785,26 @@ app.post('/api/auth/register', registerLimiter, async (req, res) => {
     }
     if (!password || password.length < 8 || password.length > 128) {
       return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Password must be between 8 and 128 characters.' } });
+    }
+    if (termsAccepted !== true || cookiesAccepted !== true) {
+      return res.status(400).json({ success: false, error: { code: 'CONSENT_REQUIRED', message: 'Please accept the Terms & Conditions, Privacy Policy, and Cookie Policy before registering.' } });
+    }
+    if (!process.env.TURNSTILE_SITE_KEY || !process.env.TURNSTILE_SECRET_KEY) {
+      return res.status(503).json({ success: false, error: { code: 'CAPTCHA_NOT_CONFIGURED', message: 'Registration verification is not configured. Please contact the site administrator.' } });
+    }
+    if (typeof captchaToken !== 'string' || !captchaToken) {
+      return res.status(400).json({ success: false, error: { code: 'CAPTCHA_REQUIRED', message: 'Please complete the CAPTCHA verification.' } });
+    }
+
+    let captchaResult;
+    try {
+      captchaResult = await verifyTurnstileToken(captchaToken, req.ip);
+    } catch (err) {
+      console.error('[CAPTCHA Error] Turnstile verification failed:', err.message);
+      return res.status(503).json({ success: false, error: { code: 'CAPTCHA_VERIFICATION_UNAVAILABLE', message: 'CAPTCHA verification is temporarily unavailable. Please try again.' } });
+    }
+    if (!captchaResult.success) {
+      return res.status(400).json({ success: false, error: { code: 'CAPTCHA_INVALID', message: 'CAPTCHA verification failed. Please try again.' } });
     }
 
     const existing = await db.users.findOne({ email: cleanEmail });
@@ -756,6 +824,9 @@ app.post('/api/auth/register', registerLimiter, async (req, res) => {
       email: cleanEmail,
       phone: phone || '',
       passwordHash,
+      termsAcceptedAt: new Date(),
+      privacyPolicyAcceptedAt: new Date(),
+      cookiePolicyAcceptedAt: new Date(),
       role: 'CUSTOMER',
       status: 'UNVERIFIED',
       verified: false,
