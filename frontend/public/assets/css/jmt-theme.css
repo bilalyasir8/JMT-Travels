@@ -1207,6 +1207,12 @@ body {
   color: #FFFFFF !important;
 }
 
+html.light-page-canvas,
+html.light-page-canvas body,
+html.light-page-canvas #view-container {
+  background: #FFFFFF !important;
+}
+
 /* Shared page container */
 #view-container {
   min-height: 100vh !important;
@@ -1894,6 +1900,12 @@ form input:focus, form select:focus, form textarea:focus {
   letter-spacing: -.45px;
 }
 #view-container p:not(.jmt-dest-sub) { color: #E2E8F0 !important; }
+:root:not([data-theme="dark"]) #view-container p:not(.jmt-dest-sub) { color: #000000 !important; }
+:root:not([data-theme="dark"]) #view-container p.hero-subtext:not(.jmt-dest-sub),
+:root:not([data-theme="dark"]) #view-container p.jmt-trust-desc:not(.jmt-dest-sub),
+:root:not([data-theme="dark"]) #view-container .jmt-global-helper-banner p:not(.jmt-dest-sub) {
+  color: #E2E8F0 !important;
+}
 
 /* Destination / package imagery */
 .dest-card-box, .destination-card { border-radius: 18px !important; }
@@ -2560,7 +2572,7 @@ html, body { max-width: 100%; overflow-x: hidden; }
 #view-container [style*="background: #0B286C"] h1,
 #view-container [style*="background: #0B286C"] h2,
 #view-container [style*="background: #0B286C"] h3 {
-  color: #FFFFFF !important;
+  color: #00E676 !important;
 }
 
 #view-container .jmt-hero p,
@@ -2570,7 +2582,7 @@ html, body { max-width: 100%; overflow-x: hidden; }
 #view-container [style*="background: linear-gradient"] p,
 #view-container [style*="background: #07153B"] p,
 #view-container [style*="background: #0B286C"] p {
-  color: #D6E0F4 !important;
+  color: #FFFFFF !important;
 }
 
 /* Secondary hero glassmorphism buttons styling override */
@@ -5622,6 +5634,8 @@ a[href^="mailto:"]:hover,
 }
 
 .search-tab-item {
+  flex: 1 1 0;
+  min-width: 0;
   color: #D6E0F4 !important;
   background: transparent !important;
   border: 0 !important;
@@ -5630,6 +5644,7 @@ a[href^="mailto:"]:hover,
   font-size: 13.5px !important;
   border-radius: 10px !important;
   cursor: pointer !important;
+  text-align: center;
   transition: all 0.2s ease !important;
 }
 .search-tab-item:hover {
@@ -6598,6 +6613,16 @@ footer.site-footer {
   background-color: #0A0F1D !important;
 }
 
+:root:not([data-theme="dark"]) {
+  background: #FFFFFF !important;
+}
+
+:root:not([data-theme="dark"]) body,
+:root:not([data-theme="dark"]) #view-container {
+  background: #FFFFFF !important;
+  color: #07153B !important;
+}
+
 [data-theme="dark"] .site-header,
 [data-theme="dark"] header.site-header,
 [data-theme="dark"] header[style] {
@@ -6809,6 +6834,20 @@ footer.site-footer {
 .nav-signin-link:hover,
 #nav-signin-link:hover {
   color: #00E676 !important;
+}
+
+#nav-auth #nav-signin-link,
+#nav-auth .jmt-signin-btn {
+  background: #DC2626 !important;
+  border: 1px solid #DC2626 !important;
+  color: #FFFFFF !important;
+}
+
+#nav-auth #nav-signin-link:hover,
+#nav-auth .jmt-signin-btn:hover {
+  background: #B91C1C !important;
+  border-color: #B91C1C !important;
+  color: #FFFFFF !important;
 }
 
 [data-theme="dark"] .nav-signin-link {
@@ -7422,5 +7461,542 @@ textarea:focus-visible {
   overflow: hidden !important;
 }
 
+/* Sign-in page layout */
+.jmt-login-page {
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: calc(100vh - 118px);
+  padding: 44px 20px 100px;
+  background:
+    radial-gradient(circle at 15% 15%, rgba(0, 166, 81, 0.08), transparent 28%),
+    linear-gradient(145deg, #F8FAFC 0%, #EDF3F9 100%);
+}
 
+#view-container > .jmt-login-page > .jmt-login-shell {
+  box-sizing: border-box !important;
+  width: 100% !important;
+  max-width: 460px !important;
+  margin: 0 auto !important;
+  padding: 0 !important;
+}
 
+#login-form.jmt-login-card {
+  box-sizing: border-box !important;
+  width: 100% !important;
+  padding: 34px 36px !important;
+  background: #FFFFFF !important;
+  color: #0F172A !important;
+  border: 1px solid #E2E8F0 !important;
+  border-top: 4px solid #00A651 !important;
+  border-radius: 22px !important;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.12) !important;
+  transform: none !important;
+}
+
+#login-form > div:first-child {
+  margin-bottom: 28px !important;
+}
+
+#login-form > div:first-child img {
+  display: block;
+  width: 64px;
+  height: 64px !important;
+  object-fit: contain;
+  margin: 0 auto 16px !important;
+}
+
+#login-form > div:first-child h1 {
+  color: #0B286C !important;
+  font-size: 28px !important;
+  line-height: 1.2;
+  margin-bottom: 8px !important;
+}
+
+#login-form > div:first-child p {
+  color: #64748B !important;
+  font-size: 14px !important;
+  line-height: 1.6;
+}
+
+#login-form label {
+  display: block !important;
+  margin-bottom: 8px !important;
+  color: #1E293B !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+}
+
+#login-form label span {
+  color: #00A651 !important;
+}
+
+#login-form > div[style*="margin-bottom"] {
+  margin-bottom: 20px !important;
+}
+
+#login-form div[style*="position:relative"] {
+  min-width: 0;
+}
+
+#login-form div[style*="position:relative"] > span {
+  left: 14px !important;
+}
+
+#login-form div[style*="position:relative"] > span > span {
+  display: none !important;
+}
+
+#login-form .chat-input {
+  box-sizing: border-box !important;
+  min-width: 0 !important;
+  min-height: 50px !important;
+  padding-top: 12px !important;
+  padding-bottom: 12px !important;
+  border: 1px solid #CBD5E1 !important;
+  border-radius: 11px !important;
+  background: #F8FAFC !important;
+  color: #0F172A !important;
+  font-size: 15px !important;
+}
+
+#login-form #login-email {
+  padding-left: 50px !important;
+}
+
+#login-form .jmt-login-email-error:not([hidden]) {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  margin: 8px 2px 0;
+  color: #B91C1C;
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+#login-form .jmt-login-email-error svg {
+  flex: 0 0 16px;
+  margin-top: 1px;
+}
+
+#login-form #login-pass {
+  padding-left: 44px !important;
+  padding-right: 52px !important;
+}
+
+#login-form .jmt-password-toggle {
+  position: absolute;
+  right: 10px;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: #64748B;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+#login-form .jmt-password-toggle:hover,
+#login-form .jmt-password-toggle:focus-visible {
+  background: #E8F5EE;
+  color: #008842;
+}
+
+#login-form .jmt-password-toggle:focus-visible {
+  outline: 2px solid #00A651;
+  outline-offset: 2px;
+}
+
+#login-form .chat-input:focus {
+  border-color: #00A651 !important;
+  background: #FFFFFF !important;
+  box-shadow: 0 0 0 3px rgba(0, 166, 81, 0.14) !important;
+}
+
+#login-form .jmt-btn-primary {
+  min-height: 50px;
+  margin-top: 4px;
+  border-radius: 11px !important;
+  font-size: 15px !important;
+  box-shadow: 0 8px 18px rgba(0, 166, 81, 0.2) !important;
+}
+
+#login-error {
+  color: #B91C1C !important;
+  font-size: 13px;
+}
+
+#login-form > div:last-child {
+  margin-top: 22px !important;
+  padding-top: 18px !important;
+  border-top: 1px solid #E2E8F0 !important;
+  color: #64748B !important;
+  line-height: 1.6;
+}
+
+#login-form > div:last-child a {
+  color: #008842 !important;
+  font-weight: 800 !important;
+  text-decoration: none !important;
+  white-space: nowrap;
+}
+
+#login-form > div:last-child a:hover {
+  text-decoration: underline !important;
+}
+
+@media (max-width: 520px) {
+  .jmt-login-page {
+    min-height: calc(100vh - 76px);
+    padding: 28px 16px 104px;
+  }
+
+  #login-form.jmt-login-card {
+    padding: 28px 22px !important;
+    border-radius: 18px !important;
+  }
+
+  #login-form > div:first-child h1 {
+    font-size: 25px !important;
+  }
+}
+
+/* Registration page shares the sign-in layout and controls. */
+#view-container > .jmt-register-page > .jmt-login-shell {
+  max-width: 500px !important;
+}
+
+.registration-page #chat-widget {
+  display: none !important;
+}
+
+.jmt-policy-page {
+  min-height: 100vh;
+  background: #FFFFFF;
+  color: #0F172A;
+}
+
+#view-container .jmt-policy-page h1 {
+  margin-bottom: 20px;
+  color: #0B286C !important;
+  font-size: 32px;
+  font-weight: 800;
+}
+
+.jmt-policy-page .jmt-policy-card {
+  padding: 32px !important;
+  border: 1px solid #E2E8F0 !important;
+  background: #FFFFFF !important;
+  color: #334155 !important;
+}
+
+.jmt-policy-page .jmt-policy-card p {
+  color: #334155;
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+.jmt-policy-page .jmt-policy-card p:first-child {
+  margin-bottom: 16px;
+  font-size: 16px;
+}
+
+.jmt-policy-page .jmt-policy-card a {
+  color: #008544;
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+.jmt-policy-page .jmt-policy-card p:last-child .jmt-email-link {
+  margin-inline: 4px;
+}
+
+.jmt-flight-custom-cta-content {
+  flex-direction: column !important;
+  justify-content: center !important;
+  align-items: center !important;
+  text-align: center;
+}
+
+.jmt-flight-custom-cta-copy {
+  width: 100%;
+  max-width: 900px !important;
+  text-align: center;
+}
+
+.jmt-flight-custom-cta-actions {
+  justify-content: center;
+}
+
+#register-form.jmt-register-card {
+  box-sizing: border-box !important;
+  width: 100% !important;
+  padding: 32px 36px !important;
+  background: #FFFFFF !important;
+  color: #0F172A !important;
+  border: 1px solid #E2E8F0 !important;
+  border-top: 4px solid #00A651 !important;
+  border-radius: 22px !important;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.12) !important;
+  transform: none !important;
+}
+
+#register-form > div:first-child {
+  margin-bottom: 26px !important;
+}
+
+#register-form > div:first-child img {
+  display: block;
+  width: 60px;
+  height: 60px !important;
+  object-fit: contain;
+  margin: 0 auto 14px !important;
+}
+
+#register-form > div:first-child h1 {
+  color: #0B286C !important;
+  font-size: 26px !important;
+  line-height: 1.25;
+  margin-bottom: 8px !important;
+}
+
+#register-form > div:first-child p {
+  color: #64748B !important;
+  font-size: 14px !important;
+  line-height: 1.55;
+}
+
+#register-form label,
+#register-form .jmt-register-confirm-field label {
+  display: block !important;
+  margin-bottom: 8px !important;
+  color: #1E293B !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+}
+
+#register-form label span {
+  color: #00A651 !important;
+}
+
+#register-form > div[style*="margin-bottom"] {
+  margin-bottom: 17px !important;
+}
+
+#register-form div[style*="position:relative"],
+#register-form .jmt-register-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+#register-form div[style*="position:relative"] > span,
+#register-form .jmt-register-field-icon {
+  position: absolute;
+  left: 14px !important;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  pointer-events: none;
+}
+
+#register-form div[style*="position:relative"] > span > span {
+  display: none !important;
+}
+
+#register-form .chat-input {
+  box-sizing: border-box !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 48px !important;
+  padding-top: 11px !important;
+  padding-bottom: 11px !important;
+  padding-left: 44px !important;
+  border: 1px solid #CBD5E1 !important;
+  border-radius: 11px !important;
+  background: #F8FAFC !important;
+  color: #0F172A !important;
+  font-size: 14px !important;
+}
+
+#register-form #reg-email {
+  padding-left: 50px !important;
+}
+
+#register-form #reg-pass,
+#register-form #reg-confirm-pass {
+  padding-right: 52px !important;
+}
+
+#register-form .chat-input:focus {
+  border-color: #00A651 !important;
+  background: #FFFFFF !important;
+  box-shadow: 0 0 0 3px rgba(0, 166, 81, 0.14) !important;
+}
+
+#register-form .jmt-register-password-toggle {
+  position: absolute;
+  right: 10px;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: #64748B;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+#register-form .jmt-register-password-toggle:hover,
+#register-form .jmt-register-password-toggle:focus-visible {
+  background: #E8F5EE;
+  color: #008842;
+}
+
+#register-form .jmt-register-password-toggle:focus-visible {
+  outline: 2px solid #00A651;
+  outline-offset: 2px;
+}
+
+#register-form .jmt-register-confirm-field {
+  margin: 0 0 22px;
+}
+
+#register-form .jmt-register-password-error:not([hidden]) {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  margin: 8px 2px 0;
+  color: #B91C1C;
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+#register-form .jmt-register-password-error svg {
+  flex: 0 0 16px;
+  margin-top: 1px;
+}
+
+#register-form .jmt-register-consent {
+  display: grid;
+  gap: 12px;
+  margin: 0 0 22px;
+}
+
+#register-form .jmt-register-consent label {
+  display: flex !important;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0 !important;
+  color: #475569 !important;
+  font-size: 12.5px !important;
+  font-weight: 500 !important;
+  line-height: 1.55;
+  cursor: pointer;
+}
+
+#register-form .jmt-register-consent input {
+  flex: 0 0 16px;
+  width: 16px;
+  height: 16px;
+  min-height: 16px !important;
+  margin: 2px 0 0;
+  accent-color: #00A651;
+}
+
+#register-form .jmt-register-consent .jmt-register-consent-copy {
+  color: #475569 !important;
+}
+
+#register-form .jmt-register-consent a {
+  color: #008842 !important;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+#register-form .jmt-register-captcha-section {
+  display: grid;
+  justify-items: start;
+  gap: 6px;
+  margin: 0 0 20px;
+}
+
+#register-captcha {
+  min-height: 0;
+}
+
+#register-form .jmt-register-captcha-status {
+  margin: 0;
+  color: #64748B;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+#register-form .jmt-register-captcha-status.is-error {
+  color: #B91C1C;
+}
+
+#register-form button[type="submit"]:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+#register-form .jmt-btn-primary {
+  min-height: 50px;
+  border-radius: 11px !important;
+  font-size: 15px !important;
+  box-shadow: 0 8px 18px rgba(0, 166, 81, 0.2) !important;
+}
+
+#register-error {
+  color: #B91C1C !important;
+  font-size: 13px;
+}
+
+#register-form > div:last-child {
+  margin-top: 22px !important;
+  padding-top: 18px !important;
+  border-top: 1px solid #E2E8F0 !important;
+  color: #64748B !important;
+  line-height: 1.6;
+}
+
+#register-form > div:last-child a {
+  color: #008842 !important;
+  font-weight: 800 !important;
+  text-decoration: none !important;
+  white-space: nowrap;
+}
+
+#register-form > div:last-child a:hover {
+  text-decoration: underline !important;
+}
+
+@media (max-width: 520px) {
+  #register-form.jmt-register-card {
+    padding: 28px 22px !important;
+    border-radius: 18px !important;
+  }
+
+  #register-form > div:first-child h1 {
+    font-size: 24px !important;
+  }
+}
